@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add global styles and resets here */
+body {
+  /* Apply light mode default and specific dark mode background */
+  @apply bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Stronger override for dark mode background */
+:root.dark {
+  --bg-color: #202020; /* Neutral dark gray hex value */
+}
+
+.dark body,
+.dark .bg-gray-100,
+.dark main,
+.dark div[class*="bg-"] {
+  background-color: var(--bg-color) !important;
+}
+
+/* Random Pick Animation */
+@keyframes hype-animation {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.05); opacity: 1; } /* Overshoot slightly */
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-hype {
+  animation: hype-animation 0.5s ease-out forwards;
+}
+
+/* Enhanced Slot Machine Animation */
+.slot-machine-container {
+  position: relative;
+  height: 60px;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+.slot-reel {
+  position: relative;
+  width: 100%;
+  height: 300px; /* Taller to accommodate multiple items */
+  transform-style: preserve-3d;
+}
+
+@keyframes slot-spin {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-100%); }
+}
+
+.animate-slot-spin {
+  animation: slot-spin 0.5s linear infinite;
+}
+
+.slot-item {
+  position: absolute;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.slot-final-pick {
+  animation: highlight-pick 0.5s ease-out forwards;
+}
+
+@keyframes highlight-pick {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+  100% { transform: scale(1); text-shadow: 0 0 15px rgba(255, 255, 255, 0.3); }
+}
+
+/* Old slot animation (keeping for compatibility) */
+@keyframes old-slot-spin {
+  0% { transform: translateY(-10px); opacity: 0; }
+  20% { transform: translateY(0); opacity: 1; } /* Quick appear */
+  80% { transform: translateY(0); opacity: 1; } /* Hold */
+  100% { transform: translateY(10px); opacity: 0; } /* Quick disappear */
+}
