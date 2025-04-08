@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth'; // Updated import path
 import { Watchlist } from '../../types/watchlist';
 import toast from 'react-hot-toast';
 import { CheckIcon } from '@heroicons/react/24/solid'; // Import CheckIcon
@@ -74,9 +74,9 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
       onWatchlistUpdated();
       onClose();
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for catch block
       console.error("Error updating watchlist:", err);
-      toast.error(err.message || 'Failed to update watchlist.', { id: toastId });
+      toast.error(err instanceof Error ? err.message : 'Failed to update watchlist.', { id: toastId }); // Check error type
     } finally {
         setLoading(false);
     }
@@ -90,9 +90,9 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
         try {
             await onDelete(watchlist.id);
             // Let parent handle closing on success via subscription/refresh
-        } catch (deleteErr: any) {
+        } catch (deleteErr: unknown) { // Use unknown for catch block
              console.error("Error during delete callback:", deleteErr);
-             toast.error(deleteErr.message || "Failed to delete watchlist.", { id: toastId });
+             toast.error(deleteErr instanceof Error ? deleteErr.message : "Failed to delete watchlist.", { id: toastId }); // Check error type
              setDeleteLoading(false);
         }
     }

@@ -2,53 +2,60 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { useAuth } from '../context/AuthContext';
-import { Watchlist, WatchlistItem, WatchlistRole } from '../types/watchlist';
-import { Profile } from '../types/profile';
-import { TmdbMediaDetails, getMediaDetails, TmdbMovieDetails, TmdbTvDetails } from '../services/tmdbService';
+import { useAuth } from '../hooks/useAuth';
+import { TmdbMediaDetails } from '../services/tmdbService'; // Removed getMediaDetails
+import { isMovieDetails } from '../utils/tmdbUtils';
 import MediaListItem from '../components/movies/MovieListItem';
 import MovieListItemSkeleton from '../components/movies/MovieListItemSkeleton';
 import Skeleton from 'react-loading-skeleton';
 import toast from 'react-hot-toast';
-import { useLayoutActions } from '../context/LayoutActionContext';
-import { useHeader } from '../context/HeaderContext';
-
-// Helper type guards
-function isMovieDetails(details: TmdbMediaDetails): details is TmdbMovieDetails {
-  return details.media_type === 'movie';
-}
-export function isTvDetails(details: TmdbMediaDetails): details is TmdbTvDetails {
-  return details.media_type === 'tv';
-}
-
+import { useLayoutActions } from '../hooks/useLayoutActions'; // Updated import path
+import { useHeader } from '../hooks/useHeader'; // Updated import path
+import { useWatchlistDetails } from '../hooks/useWatchlistDetails'; // Import hook
+import { useWatchlistItems, WatchlistItemWithDetails } from '../hooks/useWatchlistItems'; // Import hook
+import { useWatchlistMembers } from '../hooks/useWatchlistMembers'; // Import hook
+import { RandomItemPickerModal } from '../components/watchlists/RandomItemPickerModal'; // Import the modal component
 function WatchlistDetailPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { registerRandomPickTrigger } = useLayoutActions();
   const { setHeaderTitle } = useHeader();
-  const [watchlist, setWatchlist] = useState<Watchlist | null>(null);
-  const [watchlistItems, setWatchlistItems] = useState<(WatchlistItem & { tmdbDetails?: TmdbMediaDetails })[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<WatchlistRole | null>(null);
-  const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set());
-  const [members, setMembers] = useState<Profile[]>([]);
-  const [membersWatchedMediaMap, setMembersWatchedMediaMap] = useState<Map<string, Set<string>>>(new Map());
+
+  // --- Use Custom Hooks for Data Fetching ---
+  const {
+    watchlist,
+    userRole,
+    loading: loadingDetails,
+    error: errorDetails,
+    // refetch: refetchDetails // If needed later
+  } = useWatchlistDetails(watchlistId);
+
+  const {
+    items: watchlistItems,
+    loading: loadingItems,
+    error: errorItems,
+    // refetch: refetchItems // If needed later
+  } = useWatchlistItems(watchlistId);
+
+  const {
+    members,
+    membersWatchedMediaMap,
+    loading: loadingMembers,
+    error: errorMembers,
+    // refetch: refetchMembers // If needed later
+  } = useWatchlistMembers(watchlistId);
+
+  // --- Local UI State ---
+  const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set()); // User's watched status
   const [hideWatched, setHideWatched] = useState(false);
   const [sortBy, setSortBy] = useState<string>('item_order');
-  const [randomPick, setRandomPick] = useState<TmdbMediaDetails | null>(null);
-  const [showRandomPick, setShowRandomPick] = useState(false);
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [showPickerContent, setShowPickerContent] = useState(false);
-  const [spinningTitle, setSpinningTitle] = useState<string | null>(null);
-  const [sortedAndFilteredItems, setSortedAndFilteredItems] = useState<(WatchlistItem & { tmdbDetails?: TmdbMediaDetails })[]>([]);
-  const [spinProgress, setSpinProgress] = useState(0);
-  const spinDuration = 2000; // Spin for 2 seconds
-  const [availableTitles, setAvailableTitles] = useState<string[]>([]); // Store titles for slot machine
+  const [showRandomPickModal, setShowRandomPickModal] = useState(false); // State to control modal visibility
+  const [sortedAndFilteredItems, setSortedAndFilteredItems] = useState<WatchlistItemWithDetails[]>([]);
+  // Removed state related to picker internals: randomPick, isSpinning, showPickerContent, setSpinningTitle, spinProgress, availableTitles, spinDuration
 
   // --- Sorting Logic ---
   const sortAndFilterItems = useCallback(() => {
-    let processedItems = [...watchlistItems];
+    let processedItems = [...watchlistItems]; // Use items from useWatchlistItems hook
     if (hideWatched) {
       processedItems = processedItems.filter(item =>
         item.media_id && !watchedMedia.has(item.media_id)
@@ -57,125 +64,61 @@ function WatchlistDetailPage() {
     processedItems.sort((a, b) => {
       const aDetails = a.tmdbDetails;
       const bDetails = b.tmdbDetails;
-      const aTitle = aDetails ? (isMovieDetails(aDetails) ? aDetails.title : aDetails.name) : '';
-      const bTitle = bDetails ? (isMovieDetails(bDetails) ? bDetails.title : bDetails.name) : '';
-      const aRating = aDetails?.vote_average || 0;
-      const bRating = bDetails?.vote_average || 0;
       switch (sortBy) {
-        case 'title_asc': return aTitle.localeCompare(bTitle);
-        case 'title_desc': return bTitle.localeCompare(aTitle);
-        case 'rating_asc': return aRating - bRating;
-        case 'rating_desc': return bRating - aRating;
-        case 'added_at_desc': return new Date(b.added_at).getTime() - new Date(a.added_at).getTime();
-        case 'added_at_asc': return new Date(a.added_at).getTime() - new Date(b.added_at).getTime();
+        case 'title_asc': {
+          const aTitle = aDetails ? (isMovieDetails(aDetails) ? aDetails.title : aDetails.name) : '';
+          const bTitle = bDetails ? (isMovieDetails(bDetails) ? bDetails.title : bDetails.name) : '';
+          return aTitle.localeCompare(bTitle);
+        }
+        case 'title_desc': {
+          const aTitle = aDetails ? (isMovieDetails(aDetails) ? aDetails.title : aDetails.name) : '';
+          const bTitle = bDetails ? (isMovieDetails(bDetails) ? bDetails.title : bDetails.name) : '';
+          return bTitle.localeCompare(aTitle);
+        }
+        case 'rating_asc': {
+          const aRating = aDetails?.vote_average || 0;
+          const bRating = bDetails?.vote_average || 0;
+          return aRating - bRating;
+        }
+        case 'rating_desc': {
+          const aRating = aDetails?.vote_average || 0;
+          const bRating = bDetails?.vote_average || 0;
+          return bRating - aRating;
+        }
+        case 'added_at_desc':
+          return new Date(b.added_at).getTime() - new Date(a.added_at).getTime();
+        case 'added_at_asc':
+          return new Date(a.added_at).getTime() - new Date(b.added_at).getTime();
         case 'item_order':
-        default:
-            const orderA = a.item_order ?? Infinity;
-            const orderB = b.item_order ?? Infinity;
-            if (orderA === orderB) {
-                return new Date(a.added_at).getTime() - new Date(b.added_at).getTime();
-            }
-            return orderA - orderB;
+        default: {
+          const orderA = a.item_order ?? Infinity;
+          const orderB = b.item_order ?? Infinity;
+          if (orderA === orderB) {
+            // Fallback sort by added date if order is the same
+            return new Date(a.added_at).getTime() - new Date(b.added_at).getTime();
+          }
+          return orderA - orderB;
+        }
       }
     });
     setSortedAndFilteredItems(processedItems);
-  }, [watchlistItems, sortBy, hideWatched, watchedMedia]);
+  }, [watchlistItems, sortBy, hideWatched, watchedMedia]); // Dependency is watchlistItems from hook
 
   useEffect(() => {
     sortAndFilterItems();
-  }, [sortAndFilterItems]);
+  }, [sortAndFilterItems]); // This effect depends on the callback above
 
-
-  // --- Data Fetching ---
-  const fetchDetails = useCallback(async () => {
-    if (!watchlistId || !user) return;
-    setLoading(true); setError(null); setMembers([]); setMembersWatchedMediaMap(new Map());
-
-    try {
-      // Fetch Watchlist, Owner, User Role
-      const { data: watchlistData, error: watchlistError } = await supabase
-        .from('watchlists').select('*, owner:profiles!watchlists_owner_id_fkey(id, display_name, avatar_url)').eq('id', watchlistId).maybeSingle();
-      if (watchlistError) throw watchlistError;
-      if (!watchlistData) throw new Error("Watchlist not found or access denied.");
-
-      const ownerProfile = Array.isArray(watchlistData.owner) ? watchlistData.owner[0] : watchlistData.owner;
-
-      const { data: memberData, error: memberError } = await supabase
-        .from('watchlist_members').select('role').eq('watchlist_id', watchlistId).eq('user_id', user.id).maybeSingle();
-      if (memberError) throw memberError;
-      const currentUserRole = (memberData?.role as WatchlistRole) || null;
-
-      if (!watchlistData.is_public && !currentUserRole) {
-        throw new Error("Access denied. This watchlist is private.");
-      }
-
-      setWatchlist({ ...watchlistData, owner: ownerProfile || undefined });
-      setUserRole(currentUserRole);
-      setHeaderTitle(watchlistData.title); // Set header title
-
-      // Fetch Watchlist Items
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('watchlist_items').select('*').eq('watchlist_id', watchlistId)
-        .order('item_order', { ascending: true, nullsFirst: false })
-        .order('added_at', { ascending: true });
-      if (itemsError) throw itemsError;
-
-      // Fetch TMDB details for each item
-      const itemsWithDetails = await Promise.all(
-        (itemsData || []).map(async (item) => {
-          let tmdbDetails: TmdbMediaDetails | undefined | null = undefined;
-          try {
-            tmdbDetails = await getMediaDetails(item.media_id);
-          } catch (tmdbError) { console.error(`Failed fetch TMDB for ${item.media_id}:`, tmdbError); }
-          return { ...item, tmdbDetails: tmdbDetails || undefined };
-        })
-      );
-      setWatchlistItems(itemsWithDetails);
-
-      // Fetch All Members & Their Watched Status
-      const { data: allMembersData, error: allMembersError } = await supabase
-        .from('watchlist_members').select(`user_id, role, profile:profiles!inner(id, display_name, avatar_url)`)
-        .eq('watchlist_id', watchlistId);
-      if (allMembersError) throw allMembersError;
-
-      const fetchedMemberProfiles: Profile[] = [];
-      const fetchedMemberIds: string[] = [];
-      (allMembersData || []).forEach(m => {
-        const profileData = Array.isArray(m.profile) ? m.profile[0] : m.profile;
-        if (profileData?.id && profileData.display_name) {
-          fetchedMemberProfiles.push(profileData);
-          if (m.user_id) fetchedMemberIds.push(m.user_id);
-        } else { console.warn("Invalid profile data for member:", m); }
-      });
-      setMembers(fetchedMemberProfiles);
-
-      if (fetchedMemberIds.length > 0) {
-        const { data: fetchedMembersWatchedData, error: mwError } = await supabase
-          .from('user_watched_items').select('user_id, media_id').in('user_id', fetchedMemberIds);
-        if (mwError) {
-          console.error("Error fetching members' watched media:", mwError);
-          setMembersWatchedMediaMap(new Map());
-        } else {
-          const mwMap = new Map<string, Set<string>>();
-          (fetchedMembersWatchedData || []).forEach(watched => {
-            if (!mwMap.has(watched.media_id)) mwMap.set(watched.media_id, new Set());
-            mwMap.get(watched.media_id)?.add(watched.user_id);
-          });
-          setMembersWatchedMediaMap(mwMap);
-        }
-      } else { setMembersWatchedMediaMap(new Map()); }
-
-    } catch (err: any) {
-      console.error("Error fetching watchlist details:", err);
-      setError(err.message || 'Failed to load watchlist details.');
-    } finally {
-      setLoading(false);
-    }
-  }, [watchlistId, user, setHeaderTitle]); // Added setHeaderTitle dependency
-
+  // --- Set Header Title ---
   useEffect(() => {
-    fetchDetails();
-  }, [fetchDetails]);
+    if (watchlist?.title) {
+      setHeaderTitle(watchlist.title);
+    }
+    // Cleanup function to reset title if component unmounts or watchlist changes
+    return () => setHeaderTitle('');
+  }, [watchlist, setHeaderTitle]);
+
+
+  // --- Removed Data Fetching Logic (now in hooks) ---
 
   // Fetch current user's watched media
   useEffect(() => {
@@ -218,7 +161,7 @@ function WatchlistDetailPage() {
         }
         if (operationError) throw operationError;
         toast.success(currentState ? 'Marked as unwatched.' : 'Marked as watched.', { id: toastId });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Supabase Error (Toggle Watched):", err);
         // Revert UI state using functional update
         setWatchedMedia(prev => {
@@ -230,105 +173,73 @@ function WatchlistDetailPage() {
             }
             return revertedSet;
         });
-        toast.error(err.message || 'Failed to update watched status.', { id: toastId });
+        toast.error(err instanceof Error ? err.message : 'Failed to update watched status.', { id: toastId });
     }
   };
 
-  // --- Random Picker Logic ---
+  // --- Random Picker Trigger ---
+  // This function now just opens the modal
   const handlePickRandom = useCallback(() => {
-    setError(null);
-    setRandomPick(null);
-    setShowPickerContent(false);
-    setIsSpinning(false);
-    setSpinProgress(0);
-
+    // Check if there are items to pick from before opening
     const availableItems = sortedAndFilteredItems.filter(item => item.tmdbDetails);
-
     if (availableItems.length === 0) {
       toast.error("No available items to pick from (check filters).");
-      setShowRandomPick(false);
       return;
     }
-    if (availableItems.length === 1) {
-        const singleItemDetails = availableItems[0].tmdbDetails;
-        if (singleItemDetails) {
-            setRandomPick(singleItemDetails);
-            setShowRandomPick(true);
-            setShowPickerContent(true);
-        } else {
-             toast.error("Could not display the only available item.");
-             setShowRandomPick(false);
-        }
-        return;
-    }
+    setShowRandomPickModal(true); // Open the modal
+  }, [sortedAndFilteredItems]); // Depends on the items available
 
-    // Generate the titles array and set it in state
-    const titles = availableItems.map(item => 
-      item.tmdbDetails ? (isMovieDetails(item.tmdbDetails) ? item.tmdbDetails.title : item.tmdbDetails.name) : 'Unknown'
-    );
-    setAvailableTitles(titles);
-    
-    setIsSpinning(true);
-    setShowRandomPick(true);
-
-    let spinIndex = 0;
-    const spinInterval = setInterval(() => {
-        setSpinningTitle(titles[spinIndex % titles.length]);
-        spinIndex++;
-        setSpinProgress(Math.min(spinIndex * 50, spinDuration)); // Update progress with a cap
-    }, 50); // Match CSS animation duration (0.05s = 50ms)
-
-    // Increase total spin duration
-    setTimeout(() => {
-        clearInterval(spinInterval);
-        setIsSpinning(false);
-        const finalRandomIndex = Math.floor(Math.random() * availableItems.length);
-        const finalPickedItem = availableItems[finalRandomIndex].tmdbDetails;
-
-        if (finalPickedItem) {
-            setRandomPick(finalPickedItem);
-            setTimeout(() => setShowPickerContent(true), 50);
-        } else {
-            toast.error("An error occurred selecting the final random item.");
-            setShowRandomPick(false);
-        }
-    }, spinDuration); // Spin for 2 seconds
-  }, [sortedAndFilteredItems, spinDuration]);
-
-  const closeRandomPick = () => {
-    setShowRandomPick(false);
-    setShowPickerContent(false);
-    setTimeout(() => { setRandomPick(null); }, 300);
+  // Function to close the modal, passed to the modal component
+  const closeRandomPickModal = () => {
+    setShowRandomPickModal(false);
   };
 
   // --- Register/Unregister Random Pick Trigger ---
   useEffect(() => {
-    console.log("WatchlistDetail mounting/updating, registering trigger");
+    // Register trigger when component mounts or handler changes
     registerRandomPickTrigger(handlePickRandom);
     return () => {
-      console.log("WatchlistDetail unmounting, unregistering trigger");
+      // Unregister trigger when component unmounts
       registerRandomPickTrigger(null);
     };
   }, [registerRandomPickTrigger, handlePickRandom]);
 
 
+  // --- Combined Loading and Error Handling ---
+  const isLoading = loadingDetails || loadingItems || loadingMembers;
+  // Prioritize details error, then items, then members
+  const overallError = errorDetails || errorItems || errorMembers;
+
   // --- Render ---
-  if (loading && watchlistItems.length === 0) return (
-      <div className="p-4">
-          <Skeleton height={30} width={200} className="mb-1"/>
-          <Skeleton height={20} width={150} className="mb-4"/>
-          <div className="mb-4 flex flex-wrap gap-2">
-              <Skeleton height={36} width={140} />
-              <Skeleton height={36} width={180} />
+  if (isLoading && watchlistItems.length === 0) { // Show skeleton only on initial load
+      return (
+          <div className="p-4">
+              <Skeleton height={30} width={200} className="mb-1"/>
+              <Skeleton height={20} width={150} className="mb-4"/>
+              <div className="mb-4 flex flex-wrap gap-2">
+                  <Skeleton height={36} width={140} />
+                  <Skeleton height={36} width={180} />
+              </div>
+              <Skeleton height={24} width={100} className="mb-3"/>
+              <div className="space-y-3">
+                  {[...Array(8)].map((_, i) => <MovieListItemSkeleton key={i} />)}
+              </div>
           </div>
-          <Skeleton height={24} width={100} className="mb-3"/>
-          <div className="space-y-3">
-              {[...Array(8)].map((_, i) => <MovieListItemSkeleton key={i} />)}
-          </div>
-      </div>
-  );
-  if (error && !watchlist) return <div className="text-center p-4 text-red-600">Error: {error}</div>;
-  if (!watchlist) return <div className="text-center p-4">Watchlist not found or access denied.</div>;
+      );
+  }
+
+  if (overallError && !watchlist) { // Show error if details failed and we have no watchlist
+      return <div className="text-center p-4 text-red-600">Error: {overallError}</div>;
+  }
+
+  if (!watchlist && !isLoading) { // Handle case where watchlist is null after loading (not found or access denied)
+      return <div className="text-center p-4">Watchlist not found or access denied.</div>;
+  }
+
+  // If watchlist exists but other parts failed, we might still render partial data
+  // Or show specific error messages for items/members if needed.
+  // For now, we proceed if watchlist is available.
+  if (!watchlist) return null; // Should not happen if logic above is correct, but acts as a safeguard
 
   return (
     <div className="p-4">
@@ -372,10 +283,12 @@ function WatchlistDetailPage() {
 
       {/* Item List */}
       <h3 className="text-xl font-semibold mb-3">Items ({sortedAndFilteredItems.length})</h3>
-      {error && !loading && <p className="text-center p-4 text-red-600">{error}</p>}
-      {watchlistItems.length === 0 && !loading ? (
+      {/* Display item/member specific errors if needed, separate from the main loading/error state */}
+      {errorItems && <p className="text-center p-2 text-orange-600">Could not load all item details.</p>}
+      {errorMembers && <p className="text-center p-2 text-orange-600">Could not load member watched status.</p>}
+      {watchlistItems.length === 0 && !isLoading ? ( // Use combined loading state
         <p className="text-gray-500 dark:text-gray-400">No items added yet.</p>
-      ) : sortedAndFilteredItems.length === 0 && !loading ? (
+      ) : sortedAndFilteredItems.length === 0 && !isLoading ? ( // Use combined loading state
         <p className="text-gray-500 dark:text-gray-400">No items match the current filter.</p>
       ) : (
         <div className="space-y-3">
@@ -405,61 +318,12 @@ function WatchlistDetailPage() {
         </div>
       )}
 
-       {/* Random Pick Result Overlay/Modal */}
-       {showRandomPick && (
-            <div className={`fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${showRandomPick ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={closeRandomPick}>
-                <div className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center transform transition-all duration-300 ease-in-out ${showRandomPick ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} animate-hype`} onClick={(e) => e.stopPropagation()}>
-                    {isSpinning ? (
-                        <div className="flex flex-col items-center">
-                            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Picking Random Item...</h3>
-                            <div className="slot-machine-container mb-4 w-full">
-                                <div className={`slot-reel ${isSpinning ? 'animate-slot-spin' : ''}`}>
-                                    {/* We'll populate this dynamically with items */}
-                                    {availableTitles.map((title, index) => (
-                                        <div 
-                                            key={`slot-${index}`} 
-                                            className="slot-item"
-                                            style={{ 
-                                                top: `${(index * 40)}px`,
-                                                fontSize: '1.2rem'
-                                            }}
-                                        >
-                                            {title}
-                                        </div>
-                                    ))}
-                                    {/* Duplicate the first few items to make the animation loop smoothly */}
-                                    {availableTitles.slice(0, 5).map((title, index) => (
-                                        <div 
-                                            key={`slot-dup-${index}`} 
-                                            className="slot-item"
-                                            style={{ 
-                                                top: `${(availableTitles.length * 40) + (index * 40)}px`,
-                                                fontSize: '1.2rem'
-                                            }}
-                                        >
-                                            {title}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="h-2 w-full bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-primary transition-all duration-100 ease-linear rounded-full"
-                                    style={{ width: `${(spinProgress / spinDuration) * 100}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className={`transition-opacity duration-300 ease-in ${showPickerContent ? 'opacity-100' : 'opacity-0'}`}>
-                            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Your Random Pick!</h3>
-                            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">{randomPick ? (isMovieDetails(randomPick) ? randomPick.title : randomPick.name) : ''}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{randomPick ? (isMovieDetails(randomPick) ? randomPick.release_date?.substring(0,4) : randomPick.first_air_date?.substring(0,4)) : ''}</p>
-                            <button onClick={closeRandomPick} className="mt-6 bg-primary hover:bg-opacity-80 text-white py-2 px-4 rounded">Close</button>
-                        </div>
-                    )}
-                </div>
-            </div>
-       )}
+      {/* Render the Random Item Picker Modal */}
+      <RandomItemPickerModal
+        isOpen={showRandomPickModal}
+        onClose={closeRandomPickModal}
+        items={sortedAndFilteredItems} // Pass the items to be picked from
+      />
     </div>
   );
 }

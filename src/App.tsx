@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import './App.css';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth'; // Updated import path
 import MainLayout from './components/layout/MainLayout'; // Import MainLayout
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -30,11 +30,7 @@ const ProtectedRoute = () => {
   }
 
   // If logged in, render the nested routes via Outlet within the MainLayout
-  return (
-    <MainLayout>
-      <Outlet /> {/* Child routes will render here */}
-    </MainLayout>
-  );
+  return <MainLayout><Outlet /></MainLayout>;
 };
 
 
@@ -68,7 +64,6 @@ function App() {
         {/* Add other protected routes here */}
       </Route>
 
-      {/* TODO: Add routes for specific watchlists, movie details etc. */}
       {/* Handle 404 or redirect for unmatched routes if needed */}
       <Route path="*" element={<Navigate to="/" replace />} /> {/* Basic fallback */}
 

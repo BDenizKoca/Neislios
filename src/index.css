@@ -38,7 +38,7 @@ body {
 /* Enhanced Slot Machine Animation */
 .slot-machine-container {
   position: relative;
-  height: 60px;
+  /* height: 60px; */ /* Remove fixed height, rely on Tailwind class in component */
   overflow: hidden;
   mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
@@ -53,11 +53,17 @@ body {
 
 @keyframes slot-spin {
   0% { transform: translateY(0); }
-  100% { transform: translateY(-100%); }
+  /* Translate by a much larger amount to simulate faster spinning */
+  /* Reduce translation for slower spin */
+  /* Reduce translation further */
+  /* Use the CSS variable set by the component */
+  100% { transform: translateY(var(--reel-translation, -500%)); } /* Fallback just in case */
 }
 
 .animate-slot-spin {
-  animation: slot-spin 0.5s linear infinite;
+  /* Duration is set inline, remove infinite */
+  /* Define only name and timing function, duration/iteration set inline/conditionally */
+  animation: slot-spin 1.5s linear infinite; /* Slow down loop duration */
 }
 
 .slot-item {

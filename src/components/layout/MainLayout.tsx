@@ -1,21 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode, useRef } from 'react'; // Import useRef
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import SideMenu from './SideMenu';
 import { Bars3Icon, XMarkIcon, PlusIcon, SparklesIcon, HomeIcon, ArrowLeftIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import FloatingActionButton from '../common/FloatingActionButton';
 import CreateWatchlistModal from '../watchlists/CreateWatchlistModal';
-import { useLayoutActions } from '../../context/LayoutActionContext';
-import { useAuth } from '../../context/AuthContext';
-import { useHeader } from '../../context/HeaderContext'; // Import useHeader
+import { useLayoutActions } from '../../hooks/useLayoutActions'; // Updated import path
+import { useHeader } from '../../hooks/useHeader'; // Updated import path
 
-const MainLayout: React.FC = () => {
+interface MainLayoutProps {
+  children?: ReactNode;
+}
+
+const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { triggerRandomPick } = useLayoutActions();
-  const { user: _user } = useAuth(); // Keep user, might be needed later
-  const { headerTitle, setHeaderTitle } = useHeader(); // Get title and setter
+  const { headerTitle, setHeaderTitle } = useHeader();
+  const mainContentRef = useRef<HTMLElement>(null); // Ref for the main content area
+  // Removed topOfPageRef
 
   // Determine if back button should be shown
   const showBackButton = location.pathname !== '/';
@@ -62,7 +66,36 @@ const MainLayout: React.FC = () => {
     // Subscription should handle refresh
     console.log("New list created, HomePage might need refresh if not using subscriptions effectively.");
   };
-
+  const handleTitleClick = () => {
+    if (mainContentRef.current) {
+      const scrollElement = mainContentRef.current;
+      const currentPosition = scrollElement.scrollTop;
+      
+      // Only perform scroll if we're not already at the top
+      if (currentPosition <= 0) return;
+      
+      // Better smooth scroll implementation using animation frames
+      let start: number | null = null;
+      const duration = 500; // ms - duration of scroll animation
+      
+      function animateScroll(timestamp: number) {
+        if (!start) start = timestamp;
+        const elapsed = timestamp - start;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smoother deceleration
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        
+        scrollElement.scrollTop = currentPosition * (1 - easeOutCubic);
+        
+        if (progress < 1) {
+          window.requestAnimationFrame(animateScroll);
+        }
+      }
+      
+      window.requestAnimationFrame(animateScroll);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
@@ -95,8 +128,15 @@ const MainLayout: React.FC = () => {
               </div>
 
               {/* Center Section (Title) */}
-              <div className="flex-1 flex justify-center items-center px-12"> {/* Ensure title doesn't overlap icons */}
-                 <h1 className="text-lg font-semibold text-white truncate">{headerTitle}</h1>
+              <div className="flex-1 flex justify-center items-center px-4"> {/* Reduced padding to give title more space */}
+                 {/* Apply manual truncation */}
+                 <h1
+                    className="text-lg font-semibold text-white cursor-pointer" // Add cursor-pointer
+                    onClick={handleTitleClick} // Add onClick handler
+                    title={headerTitle} // Show full title on hover
+                 >
+                    {headerTitle.length > 26 ? `${headerTitle.substring(0, 26)}...` : headerTitle}
+                 </h1>
               </div>
 
               {/* Right Section (Search) */}
@@ -114,8 +154,9 @@ const MainLayout: React.FC = () => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900">
-           <Outlet />
+        <main ref={mainContentRef} className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 scroll-smooth"> {/* Keep scroll-smooth */}
+           {/* Removed invisible top element */}
+           {children || <Outlet />}
         </main>
 
          {/* Context-Aware Floating Action Button */}

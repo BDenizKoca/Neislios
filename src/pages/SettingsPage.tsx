@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from 'react'; // Removed unused state/effect for dark mode
+// Removed unused Link import
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
-import { useHeader } from '../context/HeaderContext'; // Import useHeader
-
+import { useHeader } from '../hooks/useHeader';
+import { useTheme } from '../hooks/useTheme'; // Import useTheme hook
 function SettingsPage() {
   const { signOut, user } = useAuth();
-  const { setHeaderTitle } = useHeader(); // Get setter
+  const { setHeaderTitle } = useHeader();
+  const { isDarkMode, toggleDarkMode } = useTheme(); // Use theme context
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -15,31 +16,14 @@ function SettingsPage() {
   // const [passwordError, setPasswordError] = useState<string | null>(null);
   // const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
-  // --- Dark Mode Logic ---
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const storedTheme = localStorage.getItem('theme');
-    if (storedTheme) return storedTheme === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
+  // --- Dark Mode Logic removed (now handled by ThemeProvider) ---
 
   // Set Header Title
   useEffect(() => {
     setHeaderTitle('Settings');
   }, [setHeaderTitle]);
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  // toggleDarkMode function now comes from useTheme hook
 
   // --- Logout Handler ---
   const handleLogout = async () => {
@@ -85,9 +69,9 @@ function SettingsPage() {
       setNewPassword('');
       setConfirmPassword('');
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown
       console.error("Error updating password:", err);
-      toast.error(err.message || 'Failed to update password.', { id: toastId });
+      toast.error(err instanceof Error ? err.message : 'Failed to update password.', { id: toastId }); // Check error type
     } finally {
       setPasswordLoading(false);
     }
@@ -115,9 +99,9 @@ function SettingsPage() {
               toast.success("Account deleted successfully. Logging out...", { id: toastId, duration: 4000 });
               await signOut(); // Logout happens after toast is shown
 
-          } catch (err: any) {
+          } catch (err: unknown) { // Use unknown
                console.error("Error deleting account:", err);
-               toast.error(err.message || 'Failed to delete account.', { id: toastId });
+               toast.error(err instanceof Error ? err.message : 'Failed to delete account.', { id: toastId }); // Check error type
                setPasswordLoading(false); // Ensure loading stops on error
           }
           // No finally block needed here as logout navigates away
@@ -148,7 +132,7 @@ function SettingsPage() {
         <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
           <h3 className="text-lg font-semibold mb-3 border-b pb-2 dark:border-gray-700 dark:text-gray-100">Account</h3>
           <div className="space-y-4">
-            <Link to="/profile" className="block text-primary dark:text-primary hover:underline">Edit Display Name</Link>
+            {/* Removed Edit Display Name link */}
 
             {/* Change Password Form */}
             <form onSubmit={handleChangePassword} className="space-y-3 pt-4 border-t dark:border-gray-600">
@@ -170,12 +154,11 @@ function SettingsPage() {
             {/* Delete Account Button */}
             <div className="pt-4 border-t dark:border-gray-600">
               <button
-                className="text-left w-full text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50" // Changed styling
                 onClick={handleDeleteAccount}
-                disabled={passwordLoading} // Still disable if password change is loading
+                disabled={passwordLoading}
               >
-                {/* Text remains static, loading shown via toast */}
-                Delete Account
+                Delete Account {/* Removed comment */}
               </button>
             </div>
           </div>

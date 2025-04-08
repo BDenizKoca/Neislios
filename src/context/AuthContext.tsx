@@ -1,15 +1,19 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react'; // Removed createContext
 import {
   Session,
   User,
   SignInWithPasswordCredentials,
   // SignUpWithPasswordCredentials, // Removed unused
   // Provider, // Removed unused
+  // AuthResponse, // Removed unused import
+  // AuthError, // Removed unused import
+  // Provider // Removed unused import
 } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
+// Note: SignInWithOAuthCredentials was removed as it's not used
 
-// Define the shape of the signup data including the required display name
-interface SignUpData {
+ // Define the shape of the signup data including the required display name
+export interface SignUpData { // Add export
   email: string;
   password: string;
   options: { // options must exist
@@ -19,17 +23,8 @@ interface SignUpData {
   };
 }
 
-interface AuthContextType {
-  session: Session | null;
-  user: User | null;
-  loading: boolean;
-  signInWithEmail: (credentials: SignInWithPasswordCredentials) => Promise<any>; // Return type can be more specific if needed
-  signUpWithEmail: (credentials: SignUpData) => Promise<any>;
-  signInWithGoogle: () => Promise<any>;
-  signOut: () => Promise<any>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Import the context object and type from the definition file
+import { AuthContext } from './AuthContextDefinition'; // Removed unused AuthContextType import
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -71,7 +66,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword(credentials);
       if (error) throw error;
-      return data;
+      return { data, error }; // Return the full response object
     } catch (error) {
       console.error('Error signing in:', error);
       // Consider more specific error handling/feedback
@@ -90,7 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) throw error;
       // Note: Supabase might require email confirmation by default.
       // The user object might be null until confirmation.
-      return data;
+      return { data, error }; // Return the full response object
     } catch (error) {
       console.error('Error signing up:', error);
       throw error;
@@ -107,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // options: { redirectTo: window.location.origin } // Optional: Redirect URL after login
       });
       if (error) throw error;
-      return data;
+      return { data, error }; // Return the full response object
     } catch (error) {
       console.error('Error signing in with Google:', error);
       throw error;
@@ -122,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      return { error }; // Return the error object as per type
       // State updates (session, user) are handled by onAuthStateChange listener
     } catch (error) {
       console.error('Error signing out:', error);
@@ -146,16 +142,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Render children only when initial loading is complete
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children} {/* Always render children; consumers handle loading state */}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook to use the AuthContext
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// Removed useAuth hook (moved to src/hooks/useAuth.ts)

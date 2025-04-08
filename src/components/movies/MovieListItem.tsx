@@ -83,8 +83,9 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
             <div
                 className="flex-shrink-0 cursor-grab text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
                 title="Drag to reorder"
-                {...attributes} // Spread attributes onto the handle
-                {...listeners}  // Spread listeners onto the handle
+                style={{ touchAction: 'none' }} // Explicitly set touch-action for the handle
+                {...attributes}
+                {...listeners}
             >
                 <Bars3Icon className="h-5 w-5" />
             </div>

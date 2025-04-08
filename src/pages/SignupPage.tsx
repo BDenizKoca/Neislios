@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { useNavigate, Link } from 'react-router-dom';
 
 function SignupPage() {
@@ -50,8 +50,8 @@ function SignupPage() {
          setMessage('Signup successful! Please check your email for a confirmation link.');
       }
 
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up. Please try again.');
+    } catch (err: unknown) { // Use unknown
+      setError(err instanceof Error ? err.message : 'Failed to sign up. Please try again.'); // Check error type
       console.error("Signup error:", err);
     } finally {
       setLoading(false);
@@ -65,8 +65,8 @@ function SignupPage() {
     try {
       await signInWithGoogle();
       // Redirect/session update handled by Supabase & AuthContext listener
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google.');
+    } catch (err: unknown) { // Use unknown
+      setError(err instanceof Error ? err.message : 'Failed to sign in with Google.'); // Check error type
       console.error("Google login error:", err);
       setLoading(false);
     }

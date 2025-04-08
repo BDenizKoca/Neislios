@@ -11,7 +11,7 @@ export interface Watchlist {
   card_color?: string | null;
   is_public: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at: string | null;
   // Optional fields populated by joins/queries
   owner?: Profile; // Populated owner profile
   member_role?: WatchlistRole; // Role of the current user viewing the list

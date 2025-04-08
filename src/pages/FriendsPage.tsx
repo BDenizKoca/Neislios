@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { supabase } from '../lib/supabaseClient';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'; // Import type for payload
 import toast from 'react-hot-toast';
-import { useHeader } from '../context/HeaderContext'; // Import useHeader
+import { useHeader } from '../hooks/useHeader'; // Updated import path
 
 // Define types for clarity
 interface Profile {
@@ -78,9 +79,9 @@ function FriendsPage() {
       const mappedOutgoing = outgoing?.map(req => ({ ...req, receiver: Array.isArray(req.receiver) ? req.receiver[0] : req.receiver })) || [];
       setOutgoingRequests(mappedOutgoing);
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown
       console.error("Error fetching friends data:", err);
-      toast.error(err.message || 'Failed to load friends data.'); // Use toast for fetch error
+      toast.error(err instanceof Error ? err.message : 'Failed to load friends data.'); // Check error type
       setFriends([]); setIncomingRequests([]); setOutgoingRequests([]); // Clear data on error
     } finally {
       setLoading(false);
@@ -99,7 +100,7 @@ function FriendsPage() {
   // Realtime subscription setup for friends and requests
   useEffect(() => {
     if (!user) return;
-    const handleDbChange = (payload: any) => {
+    const handleDbChange = (payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>) => { // Use unknown instead of any
         console.log('DB change detected on FriendsPage:', payload);
         fetchData(); // Simple refetch on any relevant change
     };
@@ -125,7 +126,7 @@ function FriendsPage() {
     // setError(null); // Remove error state reset
     const toastId = toast.loading(`${actionType.charAt(0).toUpperCase() + actionType.slice(1)}ing...`); // Generic loading message
     try {
-      let rpcName: string; let params: any; let successMsg: string;
+      let rpcName: string; let params: unknown; let successMsg: string; // Use unknown for params
 
       switch (actionType) {
         case 'accept': rpcName = 'handle_friend_request'; params = { request_id: id, action: 'accept' }; successMsg = 'Friend request accepted!'; break;
@@ -141,9 +142,9 @@ function FriendsPage() {
       toast.success(successMsg, { id: toastId });
       // Realtime should trigger fetchData, no manual call needed here
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown
       console.error(`Error performing action ${actionType} for ID ${id}:`, err);
-      toast.error(err.message || `Failed to ${actionType}.`, { id: toastId });
+      toast.error(err instanceof Error ? err.message : `Failed to ${actionType}.`, { id: toastId }); // Check error type
     } finally {
       setActionLoading(prev => ({ ...prev, [id]: false }));
     }
@@ -155,7 +156,7 @@ function FriendsPage() {
   const handleRemove = (friendId: string) => handleAction('remove', friendId);
 
   // --- Search Functionality ---
-  const handleSearch = async (term: string) => {
+  const handleSearch = useCallback(async (term: string) => {
     if (!user || term.trim().length < 3) { // Minimum search term length
       setSearchResults([]);
       setSearchError(term.trim().length > 0 ? 'Search term must be at least 3 characters.' : null);
@@ -179,19 +180,39 @@ function FriendsPage() {
       setSearchResults(data || []);
       if (!data || data.length === 0) setSearchError('No matching users found.');
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown
       console.error("Error searching users:", err);
-      setSearchError(err.message || 'Failed to search users.');
+      setSearchError(err instanceof Error ? err.message : 'Failed to search users.'); // Check error type
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
     }
-  };
+  }, [user, friends, incomingRequests, outgoingRequests]); // Add dependencies for useCallback
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => { handleSearch(searchTerm); }, 500);
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, user, friends, incomingRequests, outgoingRequests]); // Re-run search if dependencies change
+    // Clear previous timeout if searchTerm changes
+    const handler = setTimeout(() => {
+      // Only trigger search if term is valid (not empty and long enough)
+      if (searchTerm.trim().length >= 3) {
+        handleSearch(searchTerm);
+      } else if (searchTerm.trim().length > 0) {
+        // If term is too short but not empty, clear results and show error
+        setSearchResults([]);
+        setSearchError('Search term must be at least 3 characters.');
+      } else {
+        // If term is empty, clear results and error
+        setSearchResults([]);
+        setSearchError(null);
+      }
+    }, 500); // 500ms debounce
+
+    // Cleanup function
+    return () => {
+      clearTimeout(handler);
+    };
+    // Dependencies: Re-run effect only when searchTerm or user changes.
+    // handleSearch is intentionally omitted to use the latest version when the timeout fires.
+  }, [searchTerm, user, handleSearch]); // Add handleSearch to dependencies
 
   // --- Send Request Functionality ---
   const handleSendRequest = async (receiverId: string) => {
@@ -204,9 +225,9 @@ function FriendsPage() {
         toast.success('Friend request sent!', { id: toastId });
         setSearchResults(prev => prev.filter(p => p.id !== receiverId)); // Optimistic UI update
         // Realtime should trigger fetchData eventually
-     } catch (err: any) {
+     } catch (err: unknown) { // Use unknown
         console.error(`Error sending friend request to ${receiverId}:`, err);
-        toast.error(err.message || 'Failed to send friend request.', { id: toastId });
+        toast.error(err instanceof Error ? err.message : 'Failed to send friend request.', { id: toastId }); // Check error type
      } finally {
         setActionLoading(prev => ({ ...prev, [receiverId]: false }));
      }

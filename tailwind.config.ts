@@ -1,5 +1,5 @@
-import type { Config } from 'tailwindcss'
-
+// Removed unused import: import type { Config } from 'tailwindcss'
+import aspectRatio from '@tailwindcss/aspect-ratio'; // Import the plugin
 export default {
   darkMode: 'class', // Enable class-based dark mode
   content: [
@@ -17,6 +17,6 @@ export default {
     },
   },
   plugins: [
-     require('@tailwindcss/aspect-ratio'), // Add aspect-ratio plugin if not already present
+     aspectRatio, // Use the imported plugin
   ],
 } // Removed 'satisfies Config'

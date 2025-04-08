@@ -10,6 +10,7 @@ interface MediaCardProps {
   isWatched?: boolean;
   onToggleWatched?: (item: TmdbSearchResult, currentState: boolean) => void; // Pass the item
   watchedByFriends?: Profile[];
+  onNavigate?: (path: string) => void; // Add custom navigation handler prop
   // Removed watchedByMembers and addedBy as they are list-context specific
 }
 
@@ -19,6 +20,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
   isWatched,
   onToggleWatched,
   watchedByFriends,
+  onNavigate,
 }) => {
   const posterUrl = getMoviePosterUrl(mediaItem.poster_path, 'w342');
 
@@ -48,9 +50,16 @@ const MediaCard: React.FC<MediaCardProps> = ({
     }
   };
 
+  const handleNavigate = (e: React.MouseEvent) => {
+    if (onNavigate) {
+      e.preventDefault();
+      onNavigate(detailLink);
+    }
+  };
+
   return (
     <div className="group relative bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-200">
-      <Link to={detailLink}>
+      <Link to={detailLink} onClick={handleNavigate}>
         {/* Image Container */}
         <div className="relative aspect-[2/3] w-full bg-gray-200 dark:bg-gray-700">
           {posterUrl ? (
@@ -69,7 +78,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
       {/* Content Below Image */}
       <div className="p-4"> {/* Consistent padding */}
-        <Link to={detailLink} className="block hover:text-primary dark:hover:text-primary">
+        <Link to={detailLink} className="block hover:text-primary dark:hover:text-primary" onClick={handleNavigate}>
             <h3 className="text-md font-semibold text-gray-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-primary" title={title}>
               {title}
             </h3>

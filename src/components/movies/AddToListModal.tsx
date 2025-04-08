@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth'; // Updated import path
 import { TmdbSearchResult } from '../../services/tmdbService'; // Use union type
 import toast from 'react-hot-toast';
 
@@ -14,6 +14,10 @@ interface EditableListInfo {
     id: string;
     title: string;
 }
+// Type for the data structure returned by the Supabase query
+// Supabase returns the joined table as an array, even for one-to-one/many-to-one joins
+// Type for the data structure returned by the Supabase query
+// Removed WatchlistMemberWithWatchlist interface, as we fetch IDs first now
 
 const AddToListModal: React.FC<AddToListModalProps> = ({
   isOpen,
@@ -31,31 +35,35 @@ const AddToListModal: React.FC<AddToListModalProps> = ({
     setSelectedLists(new Set());
 
     try {
-      const { data, error: fetchError } = await supabase
+      // Step 1: Get IDs of watchlists where user is owner or editor
+      const { data: membershipData, error: membershipError } = await supabase
         .from('watchlist_members')
-        .select(`watchlist:watchlists!inner ( id, title )`)
+        .select('watchlist_id')
         .eq('user_id', user.id)
-        .in('role', ['owner', 'editor']);
+        .in('role', ['owner', 'editor']); // Re-add role filter here
 
-      if (fetchError) throw fetchError;
+      if (membershipError) throw membershipError;
 
-      const lists: EditableListInfo[] = data
-        ?.map(item => {
-            const rawWatchlist: any = item.watchlist;
-            if (rawWatchlist && typeof rawWatchlist === 'object' && !Array.isArray(rawWatchlist) && rawWatchlist.id && rawWatchlist.title) {
-                return { id: rawWatchlist.id, title: rawWatchlist.title };
-            }
-            console.warn("Skipping invalid watchlist data for selection:", item);
-            return null;
-        })
-        .filter((list): list is EditableListInfo => list !== null)
-        || [];
+      const watchlistIds = membershipData?.map(m => m.watchlist_id) || [];
+
+      let lists: EditableListInfo[] = [];
+      if (watchlistIds.length > 0) {
+        // Step 2: Fetch details for those specific watchlists
+        const { data: watchlistData, error: watchlistError } = await supabase
+          .from('watchlists')
+          .select('id, title')
+          .in('id', watchlistIds);
+
+        if (watchlistError) throw watchlistError;
+        // Ensure data is mapped correctly even if some lists weren't found (due to RLS/deletion)
+        lists = watchlistData?.map(w => ({ id: w.id, title: w.title })) || [];
+      }
 
       setEditableLists(lists);
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for catch block
       console.error("Error fetching editable lists:", err);
-      toast.error(err.message || 'Failed to load your watchlists.');
+      toast.error(err instanceof Error ? err.message : 'Failed to load your watchlists.'); // Check error type
       setEditableLists([]);
     } finally {
       setLoading(false);
@@ -108,9 +116,9 @@ const AddToListModal: React.FC<AddToListModalProps> = ({
 
       setTimeout(() => { onClose(); }, 1500);
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for catch block
       console.error("Error adding item to lists:", err);
-      toast.error(err.message || 'Failed to add item.', { id: toastId });
+      toast.error(err instanceof Error ? err.message : 'Failed to add item.', { id: toastId }); // Check error type
     } finally {
       setLoading(false);
     }

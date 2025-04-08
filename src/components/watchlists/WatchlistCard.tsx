@@ -4,8 +4,8 @@ import { StarIcon as StarIconSolid, PencilSquareIcon } from '@heroicons/react/24
 import { StarIcon as StarIconOutline, GlobeAltIcon, LockClosedIcon } from '@heroicons/react/24/outline'; // Added GlobeAltIcon, LockClosedIcon
 import { useNavigate, Link } from 'react-router-dom'; // Import Link
 import { Watchlist } from '../../types/watchlist';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabaseClient'; // Import supabase client
+import { useAuth } from '../../hooks/useAuth'; // Updated import path
+// Removed unused supabase import
 // import { Profile } from '../../types/profile'; // Removed unused import
 
 interface WatchlistCardProps {
@@ -22,11 +22,11 @@ const getContrastingTextColor = (hexColor: string | null | undefined): 'text-bla
 
     try {
         // Basic luminance calculation (simplified)
-        let rgb = parseInt(hexColor.substring(1), 16); // Convert hex to integer
-        let r = (rgb >> 16) & 0xff;
-        let g = (rgb >> 8) & 0xff;
-        let b = (rgb >> 0) & 0xff;
-        let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b; // per WCAG
+        const rgb = parseInt(hexColor.substring(1), 16); // Convert hex to integer
+        const r = (rgb >> 16) & 0xff;
+        const g = (rgb >> 8) & 0xff;
+        const b = (rgb >> 0) & 0xff;
+        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b; // per WCAG
         return luminance > 140 ? 'text-black' : 'text-white'; // Threshold might need adjustment
     } catch (e) {
         console.error("Error parsing color:", hexColor, e);
@@ -50,8 +50,6 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
 
   // Determine secondary text color based on primary text color
   const secondaryTextColorClass = cardTextColorClass === 'text-white' ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400';
-  const tertiaryTextColorClass = cardTextColorClass === 'text-white' ? 'text-gray-200' : 'text-gray-600 dark:text-gray-300';
-
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -106,6 +104,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
     // Apply swipe handlers to the main div
     <div
       {...handlers}
+      data-no-swipe-navigate="true" // Add data attribute to identify this element
       className={`relative rounded-lg shadow-md p-4 border border-transparent cursor-pointer hover:shadow-lg hover:brightness-95 dark:hover:brightness-110 transition-all duration-200 flex flex-col justify-between h-full overflow-hidden`} // Use brightness instead of bg change due to dynamic color
       style={cardStyle}
       onClick={handleCardClick}

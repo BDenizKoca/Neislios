@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { Profile } from '../types/profile';
 import { Watchlist } from '../types/watchlist';
 import WatchlistCard from '../components/watchlists/WatchlistCard'; // To display public lists
@@ -9,7 +9,6 @@ import WatchlistCard from '../components/watchlists/WatchlistCard'; // To displa
 function UserProfilePage() {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth(); // Current logged-in user
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [publicWatchlists, setPublicWatchlists] = useState<Watchlist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,8 +79,8 @@ function UserProfilePage() {
         }
       }
 
-    } catch (err: any) {
-      setError(err.message || 'Failed to load profile data.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load profile data.');
     } finally {
       setLoading(false);
     }
@@ -100,7 +99,7 @@ function UserProfilePage() {
           const { error } = await supabase.rpc('send_friend_request', { receiver_profile_id: userId });
           if (error) throw error;
           setFriendRequestStatus('sent'); // Optimistic update
-      } catch (err: any) { setError(err.message || 'Failed to send request.'); }
+      } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to send request.'); }
   };
   // Add handleCancelRequest, handleAcceptRequest, handleDeclineRequest similarly...
 
@@ -115,8 +114,6 @@ function UserProfilePage() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-       <button onClick={() => navigate(-1)} className="mb-4 text-blue-500 hover:underline">&larr; Back</button>
-
        {/* Profile Header */}
        <div className="flex items-center space-x-4 mb-6 p-4 bg-white dark:bg-gray-800 rounded shadow">
             {profile.avatar_url ? (

@@ -1,23 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { useParams, useNavigate } from 'react-router-dom'; // Removed unused Link
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers'; // Import modifier
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from '../components/common/SortableItem';
 import { supabase } from '../lib/supabaseClient';
-import { useAuth } from '../context/AuthContext';
-import { TmdbSearchResult, getMediaDetails, searchMulti, TmdbMediaDetails, TmdbMovieDetails } from '../services/tmdbService';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
+import { TmdbSearchResult, getMediaDetails, searchMulti, TmdbMediaDetails } from '../services/tmdbService';
 import { Watchlist, WatchlistItem } from '../types/watchlist';
 import { Profile } from '../types/profile';
 import MediaListItem from '../components/movies/MovieListItem';
 import MovieListItemSkeleton from '../components/movies/MovieListItemSkeleton';
 import Skeleton from 'react-loading-skeleton';
 import toast from 'react-hot-toast';
-import { PlusIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
-
-// Helper to check if details are for a movie
-function isMovieDetails(details: TmdbMediaDetails): details is TmdbMovieDetails {
-  return details.media_type === 'movie';
-}
+import { PlusIcon } from '@heroicons/react/24/outline'; // Removed unused ArrowUturnLeftIcon
 
 function ManageItemsPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
@@ -37,8 +33,17 @@ function ManageItemsPage() {
 
   // --- Drag and Drop Sensors ---
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(PointerSensor), // Keep for mouse/stylus input
+    useSensor(TouchSensor, {
+      // Reduce delay to make dragging easier to initiate on touch
+      activationConstraint: {
+        delay: 150, // Reduced from 250ms
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
 
   // --- Data Fetching ---
@@ -93,11 +98,12 @@ function ManageItemsPage() {
             }));
        setMembers(fetchedMemberProfiles);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching watchlist data:", err);
-      setError(err.message || 'Failed to load watchlist data.');
-      toast.error(err.message || 'Failed to load watchlist data.');
-      if (err.message.includes("permission")) navigate('/');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load watchlist data.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      if (errorMessage.includes("permission")) navigate('/');
     } finally {
       setLoading(false);
     }
@@ -141,7 +147,7 @@ function ManageItemsPage() {
         );
         setSearchResults(filteredResults);
         if (filteredResults.length === 0) setSearchError('No new movies or TV shows found.');
-      } catch (err: any) { setSearchError(err.message || 'Failed to search.'); setSearchResults([]); }
+      } catch (err: unknown) { setSearchError(err instanceof Error ? err.message : 'Failed to search.'); setSearchResults([]); }
       finally { setSearchLoading(false); }
     };
 
@@ -188,9 +194,9 @@ function ManageItemsPage() {
         setSearchResults(prev => prev.filter(r => r.id !== itemToAdd.id || r.media_type !== itemToAdd.media_type));
         toast.success('Item added!', { id: toastId });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Error adding item:", err);
-        toast.error(err.message || 'Failed to add item.', { id: toastId });
+        toast.error(err instanceof Error ? err.message : 'Failed to add item.', { id: toastId });
     } finally {
         setIsAdding(prev => ({ ...prev, [mediaId]: false }));
     }
@@ -211,9 +217,9 @@ function ManageItemsPage() {
         .eq('id', itemId);
       if (deleteError) throw deleteError;
       toast.success('Item removed.', { id: toastId });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error removing item:", err);
-      toast.error(err.message || 'Failed to remove item.', { id: toastId });
+      toast.error(err instanceof Error ? err.message : 'Failed to remove item.', { id: toastId });
       setItems(prev => [...prev, itemToRemove].sort((a, b) => (a.item_order ?? Infinity) - (b.item_order ?? Infinity)));
     }
   };
@@ -246,7 +252,7 @@ function ManageItemsPage() {
             }
             if (operationError) throw operationError;
             toast.success(currentState ? 'Marked as unwatched.' : 'Marked as watched.', { id: toastId });
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Supabase Error (Toggle Watched):", err);
             // Revert UI state using functional update
             setWatchedMedia(prevWatchedMedia => {
@@ -258,7 +264,7 @@ function ManageItemsPage() {
                 }
                 return revertedSet;
             });
-            toast.error(err.message || 'Failed to update watched status.', { id: toastId });
+            toast.error(err instanceof Error ? err.message : 'Failed to update watched status.', { id: toastId });
         }
    };
 
@@ -286,9 +292,9 @@ function ManageItemsPage() {
         });
         if (rpcError) throw rpcError;
         // Success!
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error saving order:', err);
-        toast.error('Failed to save new order.');
+        toast.error(err instanceof Error ? err.message : 'Failed to save new order.');
         setItems(arrayMove(newOrder, newIndex, oldIndex)); // Revert
       }
     }
@@ -313,11 +319,8 @@ function ManageItemsPage() {
   if (!watchlist) return <div className="p-4 text-center">Watchlist not found or permission denied.</div>;
 
   return (
-    <div className="p-4">
-      <Link to={`/watchlist/${watchlistId}`} className="inline-flex items-center text-sm text-primary hover:underline mb-4">
-        <ArrowUturnLeftIcon className="h-4 w-4 mr-1"/>
-        Back to Watchlist
-      </Link>
+    <div className="p-4 overflow-hidden"> {/* Add overflow hidden to main container */}
+      {/* Removed redundant Back to Watchlist link */}
       <h2 className="text-2xl font-bold mb-1">Manage Items</h2>
       <h3 className="text-lg text-gray-600 dark:text-gray-400 mb-4">{watchlist.title}</h3>
 
@@ -363,9 +366,14 @@ function ManageItemsPage() {
       <h4 className="text-lg font-semibold mb-2 dark:text-gray-100">Current Items ({items.length})</h4>
       {!loading && items.length === 0 && <p className="text-gray-500 dark:text-gray-400">No items in this list yet.</p>}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+        modifiers={[restrictToVerticalAxis]} // Add modifier to restrict movement
+      >
         <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-x-hidden"> {/* Prevent horizontal overflow */}
             {items.map(item => (
               <SortableItem key={item.id} id={item.id}>
                 {({ attributes, listeners, ref, style }) => (

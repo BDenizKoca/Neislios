@@ -1,19 +1,45 @@
-import { useState, useEffect } from 'react'; // Removed unused useCallback
-import { searchMulti, TmdbSearchResult } from '../services/tmdbService'; // Removed unused TmdbMovieSearchResult, TmdbTvSearchResult
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { searchMulti, TmdbSearchResult } from '../services/tmdbService';
 import MediaCard from '../components/movies/MediaCard';
 import AddToListModal from '../components/movies/AddToListModal';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
 import { Profile } from '../types/profile';
 import { Watchlist } from '../types/watchlist';
 import WatchlistCard from '../components/watchlists/WatchlistCard';
 import toast from 'react-hot-toast';
-import { useHeader } from '../context/HeaderContext'; // Import useHeader
+import { useNavigate } from 'react-router-dom';
 
 type SearchType = 'media' | 'watchlists';
 
+// Store last known scroll position in sessionStorage to persist between page navigations
+const SCROLL_STORAGE_KEY = 'searchPageScrollPosition';
+
 function MovieSearchPage() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const pageRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  
+  // Custom navigation function that saves scroll position before navigating
+  const navigateWithScrollSave = useCallback((to: string) => {
+    // Save scroll position directly from the container ref
+    if (pageRef.current) {
+      const currentScroll = pageRef.current.scrollTop;
+      sessionStorage.setItem(SCROLL_STORAGE_KEY, currentScroll.toString());
+    }
+    navigate(to);
+  }, [navigate]);
+  
+  // Initialize state from sessionStorage if available, otherwise use defaults
+  const [searchTerm, setSearchTerm] = useState<string>(() => {
+    const savedSearch = sessionStorage.getItem('movieSearchTerm');
+    return savedSearch || '';
+  });
+  
+  const [searchType, setSearchType] = useState<SearchType>(() => {
+    const savedType = sessionStorage.getItem('movieSearchType') as SearchType;
+    return savedType === 'watchlists' ? 'watchlists' : 'media';
+  });
+  
   const [results, setResults] = useState<TmdbSearchResult[]>([]);
   const [watchlistResults, setWatchlistResults] = useState<Watchlist[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,9 +49,8 @@ function MovieSearchPage() {
   const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set());
   const [friendsWatchedMediaMap, setFriendsWatchedMediaMap] = useState<Map<string, Set<string>>>(new Map());
   const [friends, setFriends] = useState<Profile[]>([]);
-  const [searchType, setSearchType] = useState<SearchType>('media');
+  const [favoriteWatchlistIds, setFavoriteWatchlistIds] = useState<Set<string>>(new Set());
   const { user } = useAuth();
-  const { setHeaderTitle } = useHeader(); // Get setter
 
   // Debounced search effect
   useEffect(() => {
@@ -41,7 +66,7 @@ function MovieSearchPage() {
                 const response = await searchMulti(searchTerm, 1);
                 setResults(response.results);
                 if (response.results.length === 0) setError('No movies or TV shows found.');
-            } catch (err: any) { setError(err.message || 'Failed to search media.'); setResults([]); }
+            } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to search media.'); setResults([]); }
             finally { setLoading(false); }
         } else { // searchType === 'watchlists'
             setResults([]);
@@ -59,7 +84,7 @@ function MovieSearchPage() {
                 })) || [];
                 setWatchlistResults(processedResults);
                 if (processedResults.length === 0) setError('No public watchlists found.');
-            } catch (err: any) { setError(err.message || 'Failed to search watchlists.'); setWatchlistResults([]); }
+            } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to search watchlists.'); setWatchlistResults([]); }
             finally { setLoading(false); }
         }
     };
@@ -67,6 +92,17 @@ function MovieSearchPage() {
     const delayDebounceFn = setTimeout(() => { handleSearch(); }, 500);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, searchType]);
+
+  // Save search state to sessionStorage whenever it changes
+  useEffect(() => {
+    if (searchTerm) {
+      sessionStorage.setItem('movieSearchTerm', searchTerm);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    sessionStorage.setItem('movieSearchType', searchType);
+  }, [searchType]);
 
   // Fetch watched media
   useEffect(() => {
@@ -119,10 +155,78 @@ function MovieSearchPage() {
     fetchFriendsAndWatched();
   }, [user]);
 
-  // Set Header Title
+  // Fetch favorite watchlists
   useEffect(() => {
-    setHeaderTitle('Search');
-  }, [setHeaderTitle]);
+    const fetchFavoriteWatchlists = async () => {
+      if (!user) return;
+      try {
+        const { data, error } = await supabase
+          .from('user_favorite_watchlists')
+          .select('watchlist_id')
+          .eq('user_id', user.id);
+        if (error) throw error;
+        setFavoriteWatchlistIds(new Set(data?.map(f => f.watchlist_id) || []));
+      } catch (err) { console.error("Failed to fetch favorite watchlists:", err); }
+    };
+    fetchFavoriteWatchlists();
+  }, [user]);
+
+  // Set up scroll event listener on the container div
+  useEffect(() => {
+    const containerElement = pageRef.current;
+    if (!containerElement) return;
+    
+    const handleScroll = () => {
+      const newPosition = containerElement.scrollTop;
+      sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
+    };
+    
+    containerElement.addEventListener('scroll', handleScroll);
+    return () => {
+      if (containerElement) {
+        containerElement.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
+
+  // Restore scroll position when component mounts and content is loaded
+  useEffect(() => {
+    if (!loading && (results.length > 0 || watchlistResults.length > 0)) {
+      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      if (savedPosition && pageRef.current) {
+        const position = parseInt(savedPosition, 10);
+        if (position > 0) {
+          setTimeout(() => {
+            if (pageRef.current) {
+              pageRef.current.scrollTop = position;
+            }
+          }, 300);
+        }
+      }
+    }
+  }, [loading, results.length, watchlistResults.length]);
+
+  // Handle popstate event (browser back/forward buttons)
+  useEffect(() => {
+    const handlePopState = () => {
+      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      if (savedPosition && pageRef.current) {
+        const position = parseInt(savedPosition, 10);
+        if (position > 0) {
+          setTimeout(() => {
+            if (pageRef.current) {
+              pageRef.current.scrollTop = position;
+            }
+          }, 300);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   // --- Modal Handlers ---
   const handleOpenAddToListModal = (item: TmdbSearchResult) => {
@@ -151,10 +255,10 @@ function MovieSearchPage() {
                 if (error) throw error;
                 toast.success('Marked as watched.', { id: toastId });
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to toggle watched status:", err);
             setWatchedMedia(prev => { const ns = new Set(prev); if (currentState) ns.add(mediaId); else ns.delete(mediaId); return ns; }); // Revert
-            toast.error('Failed to update watched status.', { id: toastId });
+            toast.error(err instanceof Error ? err.message : 'Failed to update watched status.', { id: toastId });
         }
    };
 
@@ -176,9 +280,9 @@ function MovieSearchPage() {
                 list.id === watchlistId ? { ...list, is_favorite: !isCurrentlyFavorite } : list
              ));
         }
-     } catch (err: any) {
+     } catch (err: unknown) {
         console.error("Error toggling favorite:", err);
-        toast.error('Failed to update favorite status.', { id: toastId });
+        toast.error(err instanceof Error ? err.message : 'Failed to update favorite status.', { id: toastId });
      }
   };
   // Placeholder Edit handler
@@ -188,8 +292,12 @@ function MovieSearchPage() {
 
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Search</h2>
+    <div 
+      className="p-4 h-[calc(100vh-64px)] overflow-y-auto" 
+      ref={pageRef}
+      style={{ position: 'relative' }}
+    >
+      {/* Removed redundant h2 title */}
 
       {/* Search Type Toggle */}
       <div className="mb-4 flex justify-center space-x-2 border-b dark:border-gray-700 pb-2">
@@ -227,6 +335,7 @@ function MovieSearchPage() {
                     isWatched={watchedMedia.has(mediaIdStr)}
                     onToggleWatched={handleToggleWatched}
                     watchedByFriends={friendsWhoWatched}
+                    onNavigate={navigateWithScrollSave}
                   />
                 );
             })}
@@ -236,7 +345,7 @@ function MovieSearchPage() {
       {searchType === 'watchlists' && !loading && watchlistResults.length > 0 && (
            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
              {watchlistResults.map(list => {
-                 const isFavorite = false; // Placeholder
+                 const isFavorite = favoriteWatchlistIds.has(list.id);
                  return (
                     <WatchlistCard
                         key={list.id}

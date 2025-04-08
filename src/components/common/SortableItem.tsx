@@ -26,7 +26,7 @@ export function SortableItem(props: SortableItemProps) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    // zIndex: isDragging ? 10 : 'auto', // Uncomment if needed for stacking
+    zIndex: isDragging ? 10 : 'auto', // Ensure dragging item is on top
   };
 
   // Pass down necessary props via render prop

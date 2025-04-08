@@ -1,1 +1,119 @@
 /* Add application-specific styles here */
+
+/* Slot machine styles */
+.slot-machine-container {
+  position: relative;
+  overflow: hidden;
+  height: 14rem;
+  margin: 1rem 0;
+}
+
+/* Add highlight/selection area effect */
+.slot-machine-container::before,
+.slot-machine-container::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 35%;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.slot-machine-container::before {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 100%);
+}
+
+.slot-machine-container::after {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%);
+}
+
+/* Center highlight zone */
+.slot-highlight-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 86px;
+  transform: translateY(-50%);
+  border-top: 2px solid #ef4444; /* Changed from blue to red */
+  border-bottom: 2px solid #ef4444; /* Changed from blue to red */
+  background-color: rgba(239, 68, 68, 0.08); /* Changed from blue to red with transparency */
+  z-index: 1;
+  pointer-events: none;
+}
+
+.slot-reel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.slot-item {
+  position: absolute;
+  width: 100%;
+  line-height: 1.6 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 5px !important; /* Increased padding for better spacing */
+  margin: 4px 0 !important; /* Added vertical margin for extra spacing between items */
+  text-align: center;
+  min-height: 70px;
+  white-space: normal;
+  word-break: break-word;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  box-sizing: border-box;
+  border-top: 2px solid transparent; /* Optional: adds visual spacing */
+  border-bottom: 2px solid transparent; /* Optional: adds visual spacing */
+  transition: all 0.2s ease;
+}
+
+/* Enhanced spin animation with variable speed */
+.animate-slot-spin {
+  animation: slotSpin 2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes slotSpin {
+  0% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(calc(var(--reel-translation) * 0.3));
+  }
+  65% {
+    transform: translateY(calc(var(--reel-translation) * 0.8));
+  }
+  85% {
+    transform: translateY(calc(var(--reel-translation) * 0.95));
+  }
+  92% {
+    transform: translateY(calc(var(--reel-translation) * 1.02));
+  }
+  100% {
+    transform: translateY(var(--reel-translation));
+  }
+}
+
+/* Add flicker effect for items during spin */
+@keyframes itemFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.animate-slot-spin .slot-item {
+  animation: itemFlicker 0.2s ease-in-out infinite;
+}
+
+@keyframes winReveal {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.win-reveal {
+  animation: winReveal 0.6s ease-out forwards;
+}

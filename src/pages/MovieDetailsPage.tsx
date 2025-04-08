@@ -1,22 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getMediaDetails, getMoviePosterUrl, getProfilePictureUrl, TmdbMediaDetails, TmdbMovieDetails, TmdbTvDetails, TmdbSearchResult, TmdbCastMember } from '../services/tmdbService';
-import { useAuth } from '../context/AuthContext';
+import { getMediaDetails, getMoviePosterUrl, getProfilePictureUrl, TmdbMediaDetails, TmdbSearchResult } from '../services/tmdbService'; // Removed TmdbMovieDetails, TmdbTvDetails
+import { isMovieDetails, isTvDetails } from '../utils/tmdbUtils'; // Import type guards from utils
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { supabase } from '../lib/supabaseClient';
 import { Profile } from '../types/profile';
 import AddToListModal from '../components/movies/AddToListModal';
 import { EyeIcon, EyeSlashIcon, ArrowTopRightOnSquareIcon, ListBulletIcon, CalendarDaysIcon, StarIcon, ClockIcon, TvIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import Skeleton from 'react-loading-skeleton';
-import { useHeader } from '../context/HeaderContext'; // Import useHeader
+import { useHeader } from '../hooks/useHeader'; // Updated import path
 
-// Helper type guards
-function isMovieDetails(details: TmdbMediaDetails): details is TmdbMovieDetails {
-  return details.media_type === 'movie';
-}
-function isTvDetails(details: TmdbMediaDetails): details is TmdbTvDetails {
-  return details.media_type === 'tv';
-}
+// Removed local type guard definitions
 
 function MovieDetailsPage() {
   const location = useLocation();
@@ -91,7 +86,7 @@ function MovieDetailsPage() {
               setFriendsWhoWatched(watcherProfiles || []);
             } else { setFriendsWhoWatched([]); }
           } else { setFriendsWhoWatched([]); }
-        } catch (friendErr: any) { console.error("Error fetching friends watched status:", friendErr); setFriendsWhoWatched([]); }
+        } catch (friendErr: unknown) { console.error("Error fetching friends watched status:", friendErr instanceof Error ? friendErr.message : friendErr); setFriendsWhoWatched([]); }
         finally { setLoadingFriends(false); }
 
         // Fetch which editable lists contain this item
@@ -119,9 +114,9 @@ function MovieDetailsPage() {
         setLoadingFriends(false); setLoadingEditableLists(false);
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching media details:", err);
-      setError(err.message || 'Failed to load media details.');
+      setError(err instanceof Error ? err.message : 'Failed to load media details.');
       setHeaderTitle("Error"); // Set error title
     } finally {
       setLoading(false);
@@ -152,11 +147,11 @@ function MovieDetailsPage() {
         }
         if (operationError) throw operationError;
         toast.success(currentState ? 'Marked as unwatched.' : 'Marked as watched.', { id: toastId });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Supabase Error (Toggle Watched):", err);
         // Revert UI state using functional update
         setIsWatched(prev => !prev); // Toggle back
-        toast.error(err.message || 'Failed to update watched status.', { id: toastId });
+        toast.error(err instanceof Error ? err.message : 'Failed to update watched status.', { id: toastId });
     }
   };
 
@@ -175,9 +170,9 @@ function MovieDetailsPage() {
           const { error: deleteError } = await supabase.from('watchlist_items').delete().eq('id', wmEntry.id);
           if (deleteError) throw deleteError;
           toast.success('Removed from list.', { id: toastId });
-      } catch (err: any) {
+      } catch (err: unknown) {
           console.error("Error removing item from list:", err);
-          toast.error(err.message || 'Failed to remove item from list.', { id: toastId });
+          toast.error(err instanceof Error ? err.message : 'Failed to remove item from list.', { id: toastId });
           setContainingEditableLists(originalContainingLists); // Revert
       }
   };
@@ -238,12 +233,15 @@ function MovieDetailsPage() {
 
        {/* Top Section */}
        <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-6">
-            <div className="md:w-1/4 flex-shrink-0 mx-auto md:mx-0">
+            {/* Added flex column and center alignment for poster and title */}
+            <div className="md:w-1/4 flex flex-col items-center flex-shrink-0 mx-auto md:mx-0">
                 {posterUrl ? (
                     <img src={posterUrl} alt={`${title} poster`} className="w-48 md:w-full h-auto rounded-lg shadow-md" />
                 ) : (
                     <div className="w-48 h-72 md:w-full md:h-auto md:aspect-[2/3] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 rounded-lg shadow-md">No Poster</div>
                 )}
+                {/* Display Full Title Below Poster */}
+                <h1 className="text-lg md:text-xl font-semibold mt-2 dark:text-white text-center">{title}</h1>
             </div>
             <div className="md:w-3/4 flex flex-col">
                 {/* Removed redundant h1 title */}
@@ -268,6 +266,7 @@ function MovieDetailsPage() {
                  )}
             </div>
        </div>
+       {/* Title moved under poster */}
 
         {/* Overview */}
         <div className="mt-4">

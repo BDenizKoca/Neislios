@@ -1,20 +1,44 @@
 import { useState, useEffect, useCallback } from 'react'; // Removed unused React
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 // Removed FloatingActionButton import
+import { useSwipeable } from 'react-swipeable'; // Import for swipe gestures
 import CreateWatchlistModal from '../components/watchlists/CreateWatchlistModal';
 import EditWatchlistModal from '../components/watchlists/EditWatchlistModal'; // Import Edit Modal
 import WatchlistCard from '../components/watchlists/WatchlistCard';
 import WatchlistCardSkeleton from '../components/watchlists/WatchlistCardSkeleton'; // Import Skeleton
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { supabase } from '../lib/supabaseClient';
 import { Watchlist, WatchlistRole } from '../types/watchlist'; // Import Watchlist & WatchlistRole
 import { Profile } from '../types/profile';
-import { useHeader } from '../context/HeaderContext'; // Import useHeader
+// Removed useHeader import as setHeaderTitle is no longer used
 
 type Tab = 'favorites' | 'yourLists' | 'sharedLists';
 
+// Type for the raw owner data structure from Supabase join
+type RawOwnerData = {
+    id: string;
+    display_name: string | null;
+} | Array<{
+    id: string;
+    display_name: string | null;
+}> | null | undefined;
+
+// Type for the raw watchlist data structure from Supabase join
+type RawWatchlistData = {
+    id: string;
+    owner_id: string;
+    title: string;
+    description: string | null;
+    card_color: string | null;
+    is_public: boolean;
+    created_at: string;
+    updated_at: string | null;
+    owner: RawOwnerData;
+} | null | undefined;
+
 function HomePage() {
   const { user } = useAuth();
-  const { setHeaderTitle } = useHeader(); // Get setter from context
+  // const { setHeaderTitle } = useHeader(); // Removed unused setter
   // Read initial tab from localStorage or default to 'favorites'
   const [activeTab, setActiveTab] = useState<Tab>(() => {
       return (localStorage.getItem('activeHomeTab') as Tab) || 'favorites';
@@ -28,7 +52,7 @@ function HomePage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingWatchlist, setEditingWatchlist] = useState<Watchlist | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState<Record<string, boolean>>({}); // Loading state for delete actions by ID
+  // Remove unused deleteLoading state
 
   const fetchWatchlists = useCallback(async () => {
     if (!user) return;
@@ -83,7 +107,9 @@ function HomePage() {
         ?.map(m => {
           // Define expected shape from Supabase query result more explicitly
           // Use 'any' for the initial access due to complex/unpredictable join types from Supabase
-          const rawWatchlistData: any = m.watchlist;
+          // Handle potential array from Supabase join (though !inner should prevent it)
+          const watchlistData = Array.isArray(m.watchlist) ? m.watchlist[0] : m.watchlist;
+          const rawWatchlistData: RawWatchlistData = watchlistData;
 
           // Basic validation that we have *something* resembling watchlist data
           if (!rawWatchlistData || typeof rawWatchlistData !== 'object' || Array.isArray(rawWatchlistData) || !rawWatchlistData.id) {
@@ -93,7 +119,7 @@ function HomePage() {
 
           // Handle nested owner profile carefully
           let ownerProfile: Profile | undefined = undefined;
-          const rawOwnerData: any = rawWatchlistData.owner; // Access owner data
+          const rawOwnerData: RawOwnerData = rawWatchlistData?.owner; // Access owner data safely
           if (rawOwnerData) {
             // Check if owner data is an array (from join) or a single object
             const ownerData = Array.isArray(rawOwnerData) ? rawOwnerData[0] : rawOwnerData;
@@ -119,6 +145,7 @@ function HomePage() {
             card_color: rawWatchlistData.card_color,
             is_public: rawWatchlistData.is_public,
             created_at: rawWatchlistData.created_at,
+            // Provide fallback for updated_at to satisfy Watchlist type (which now allows null)
             updated_at: rawWatchlistData.updated_at,
             owner: ownerProfile, // Assign the processed owner profile
             member_role: m.role as WatchlistRole | undefined, // Cast role
@@ -134,11 +161,11 @@ function HomePage() {
       // Filter lists for each tab
       setFavoriteLists(processedLists.filter(list => list.is_favorite));
       setYourLists(processedLists.filter(list => list.owner_id === user.id));
-      setSharedLists(processedLists.filter(list => list.member_role === 'editor'));
+      setSharedLists(processedLists.filter(list => list.owner_id !== user.id && (list.member_role === 'editor' || list.member_role === 'viewer')));
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching watchlists:", err);
-      setError(err.message || 'Failed to load watchlists.');
+      setError(err instanceof Error ? err.message : 'Failed to load watchlists.');
       setAllWatchlists([]);
       setFavoriteLists([]);
       setYourLists([]);
@@ -157,16 +184,14 @@ function HomePage() {
     localStorage.setItem('activeHomeTab', activeTab);
   }, [activeTab]);
 
-  // Set Header Title on Mount
-  useEffect(() => {
-    setHeaderTitle('Your Watchlists'); // Set the desired title for the home page
-  }, [setHeaderTitle]);
+  // Removed useEffect that set header title to 'Your Watchlists'
+  // Default 'Neislios' from HeaderProvider will be used unless another page sets it.
 
   // Realtime subscription setup - Simplified
   useEffect(() => {
     if (!user) return;
 
-    const handleDbChange = (payload: any) => {
+    const handleDbChange = (payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>) => { // Use indexable unknown
         console.log('DB Change received! Refetching lists...', payload); // Add more detail
         fetchWatchlists();
     };
@@ -195,8 +220,36 @@ function HomePage() {
 
   }, [user, fetchWatchlists]);
 
+  // --- Handle Tab Switching ---
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+  };
+
+  // --- Setup Swipe Handlers ---
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: (eventData) => {
+      // Check if swipe originated from a card
+      if (eventData.event.target instanceof Element && eventData.event.target.closest('[data-no-swipe-navigate="true"]')) {
+        return; // Ignore swipe if it started on a card
+      }
+      // Move to next tab when swiping left
+      if (activeTab === 'favorites') handleTabChange('yourLists');
+      else if (activeTab === 'yourLists') handleTabChange('sharedLists');
+    },
+    onSwipedRight: (eventData) => {
+      // Check if swipe originated from a card
+      if (eventData.event.target instanceof Element && eventData.event.target.closest('[data-no-swipe-navigate="true"]')) {
+        return; // Ignore swipe if it started on a card
+      }
+      // Move to previous tab when swiping right
+      if (activeTab === 'sharedLists') handleTabChange('yourLists');
+      else if (activeTab === 'yourLists') handleTabChange('favorites');
+    },
+    touchEventOptions: { passive: false },
+    trackMouse: false
+  });
+
   // --- Placeholder Action Handlers ---
-  const handleCreateListClick = () => setIsCreateModalOpen(true); // Open modal
   const handleCloseCreateModal = () => setIsCreateModalOpen(false); // Close modal
   const handleWatchlistCreated = () => {
     // No need to call fetchWatchlists here, subscription should handle it
@@ -248,7 +301,7 @@ function HomePage() {
         setError('Failed to update favorite status.');
     }
 
-    // alert(`Toggle favorite for: ${watchlistId}, currently: ${isCurrentlyFavorite}`);
+    // alert(`Toggle favorite for: ${watchlistId, currently: ${isCurrentlyFavorite}`);
   };
   const handleEdit = (watchlistId: string) => { // Opens Edit Modal
     const listToEdit = allWatchlists.find(list => list.id === watchlistId);
@@ -301,7 +354,6 @@ function HomePage() {
   // --- Delete Watchlist Handler ---
   const handleDeleteWatchlist = async (watchlistId: string) => {
       // Confirmation is handled in the modal now
-      setDeleteLoading(prev => ({ ...prev, [watchlistId]: true })); // Set loading for this specific list
       setError(null);
       try {
           // RLS policy should enforce ownership, but we could double-check owner_id if needed
@@ -320,11 +372,9 @@ function HomePage() {
               handleCloseEditModal();
           }
 
-      } catch (err: any) {
+      } catch (err: unknown) {
           console.error("Error deleting watchlist:", err);
-          setError(err.message || 'Failed to delete watchlist.');
-      } finally {
-          setDeleteLoading(prev => ({ ...prev, [watchlistId]: false }));
+          setError(err instanceof Error ? err.message : 'Failed to delete watchlist.');
       }
   };
 
@@ -350,10 +400,10 @@ function HomePage() {
   };
 
   return (
-    <div>
+    <div {...swipeHandlers}>
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
-        <nav className="-mb-px flex space-x-4" aria-label="Tabs">
+        <nav className="-mb-px flex justify-center space-x-8" aria-label="Tabs">
           <button onClick={() => setActiveTab('favorites')} className={getTabClass('favorites')}>Favorites</button>
           <button onClick={() => setActiveTab('yourLists')} className={getTabClass('yourLists')}>Your Lists</button>
           <button onClick={() => setActiveTab('sharedLists')} className={getTabClass('sharedLists')}>Shared Lists</button>

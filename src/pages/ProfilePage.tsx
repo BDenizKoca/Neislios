@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { supabase } from '../lib/supabaseClient';
 import { Profile } from '../types/profile';
 import toast from 'react-hot-toast';
-import { useHeader } from '../context/HeaderContext'; // Import useHeader
+import { useHeader } from '../hooks/useHeader'; // Updated import path
 
 function ProfilePage() {
   const { user, session } = useAuth();
@@ -31,9 +31,9 @@ function ProfilePage() {
         setDisplayName(data.display_name || '');
         setAvatarUrl(data.avatar_url || '');
       }
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown
       console.error("Error fetching profile:", err);
-      toast.error(err.message || 'Failed to load profile.'); // Use toast for fetch error
+      toast.error(err instanceof Error ? err.message : 'Failed to load profile.'); // Check error type
     } finally {
       setLoading(false);
     }
@@ -68,9 +68,9 @@ function ProfilePage() {
         if (rpcError) throw rpcError;
         toast.success("Display name updated successfully!", { id: toastId });
         await fetchProfile(); // Re-fetch to update displayed name
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown
         console.error("Error updating profile:", err);
-        toast.error(err.message || 'Failed to update display name.', { id: toastId });
+        toast.error(err instanceof Error ? err.message : 'Failed to update display name.', { id: toastId }); // Check error type
     } finally {
         setUpdatingDisplayName(false);
     }
@@ -92,9 +92,9 @@ function ProfilePage() {
         if (rpcError) throw rpcError;
         toast.success("Avatar URL updated successfully!", { id: toastId });
         await fetchProfile(); // Re-fetch to update displayed avatar
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown
         console.error("Error updating avatar URL:", err);
-        toast.error(err.message || 'Failed to update avatar URL.', { id: toastId });
+        toast.error(err instanceof Error ? err.message : 'Failed to update avatar URL.', { id: toastId }); // Check error type
     } finally {
         setUpdatingAvatar(false);
     }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { useNavigate, Link } from 'react-router-dom';
 
 function LoginPage() {
@@ -17,8 +17,8 @@ function LoginPage() {
     try {
       await signInWithEmail({ email, password });
       navigate('/'); // Redirect to home page on successful login
-    } catch (err: any) {
-      setError(err.message || 'Failed to log in. Please check your credentials.');
+    } catch (err: unknown) { // Use unknown
+      setError(err instanceof Error ? err.message : 'Failed to log in. Please check your credentials.'); // Check error type
       console.error("Login error:", err);
     } finally {
       setLoading(false);
@@ -32,8 +32,8 @@ function LoginPage() {
       await signInWithGoogle();
       // Supabase handles the redirect and session update via onAuthStateChange
       // No explicit navigate('/') needed here usually, but depends on flow
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google.');
+    } catch (err: unknown) { // Use unknown
+      setError(err instanceof Error ? err.message : 'Failed to sign in with Google.'); // Check error type
       console.error("Google login error:", err);
       setLoading(false); // Set loading false on error
     }

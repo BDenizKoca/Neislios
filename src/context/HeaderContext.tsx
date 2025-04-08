@@ -1,11 +1,5 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
-
-interface HeaderContextType {
-  headerTitle: string;
-  setHeaderTitle: (title: string) => void;
-}
-
-const HeaderContext = createContext<HeaderContextType | undefined>(undefined);
+import React, { useState, useCallback } from 'react';
+import { HeaderContext } from './HeaderContextDefinition';
 
 export const HeaderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [headerTitle, setHeaderTitle] = useState<string>('Neislios'); // Default title
@@ -21,10 +15,4 @@ export const HeaderProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
-export const useHeader = (): HeaderContextType => {
-  const context = useContext(HeaderContext);
-  if (context === undefined) {
-    throw new Error('useHeader must be used within a HeaderProvider');
-  }
-  return context;
-};
+// Removed useHeader hook (moved to src/hooks/useHeader.ts)

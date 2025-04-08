@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth'; // Updated import path
 import { CheckIcon } from '@heroicons/react/24/solid'; // For selected color indication
 
 interface CreateWatchlistModalProps {
@@ -80,9 +80,9 @@ const CreateWatchlistModal: React.FC<CreateWatchlistModalProps> = ({
       onWatchlistCreated();
       onClose();
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for catch block
       console.error("Error creating watchlist:", err);
-      setError(err.message || 'Failed to create watchlist.');
+      setError(err instanceof Error ? err.message : 'Failed to create watchlist.'); // Check error type
     } finally {
       setLoading(false);
     }

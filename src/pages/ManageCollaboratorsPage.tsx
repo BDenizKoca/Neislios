@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { Watchlist, WatchlistMember, WatchlistRole } from '../types/watchlist';
 import { Profile } from '../types/profile';
 
@@ -85,8 +85,8 @@ function ManageCollaboratorsPage() {
         setFriends([]);
       }
 
-    } catch (err: any) {
-      setError(err.message || 'Failed to load collaborator data.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load collaborator data.');
     } finally {
       setLoading(false);
     }
@@ -127,9 +127,9 @@ function ManageCollaboratorsPage() {
         if (rpcError) throw rpcError;
         // Refresh data on success
         await fetchCollaboratorData();
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Error changing role:", err);
-        setError(err.message || 'Failed to change role.');
+        setError(err instanceof Error ? err.message : 'Failed to change role.');
         // Optionally revert UI optimistically if needed
     } finally {
         setActionLoading(prev => ({ ...prev, [`role-${userId}`]: false }));
@@ -151,9 +151,9 @@ function ManageCollaboratorsPage() {
         if (rpcError) throw rpcError;
         // Refresh data on success
         await fetchCollaboratorData();
-     } catch (err: any) {
+     } catch (err: unknown) {
         console.error("Error removing member:", err);
-        setError(err.message || 'Failed to remove member.');
+        setError(err instanceof Error ? err.message : 'Failed to remove member.');
      } finally {
         setActionLoading(prev => ({ ...prev, [`remove-${userId}`]: false }));
      }
@@ -173,9 +173,9 @@ function ManageCollaboratorsPage() {
         // Refresh data on success
         await fetchCollaboratorData();
         // TODO: Clear friend search results
-     } catch (err: any) {
+     } catch (err: unknown) {
         console.error("Error adding collaborator:", err);
-        setError(err.message || 'Failed to add collaborator.');
+        setError(err instanceof Error ? err.message : 'Failed to add collaborator.');
         // Clear search term on error too? Maybe not.
      } finally {
         setActionLoading(prev => ({ ...prev, [`add-${friendId}`]: false }));
@@ -189,7 +189,6 @@ function ManageCollaboratorsPage() {
 
   return (
     <div className="p-4 space-y-6">
-      <Link to={`/watchlist/${watchlistId}`} className="text-blue-500 hover:underline mb-4 inline-block">&larr; Back to Watchlist</Link>
       <h2 className="text-2xl font-bold">Manage Collaborators for "{watchlist.title}"</h2>
 
       {/* TODO: Add Friend Search Section to Add Collaborators */}
@@ -200,7 +199,7 @@ function ManageCollaboratorsPage() {
           placeholder="Search your friends to add as editor..."
           value={friendSearchTerm}
           onChange={(e) => setFriendSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-md"
+          className="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
         />
         {searchError && <p className="text-sm text-red-500 dark:text-red-400 mb-2">{searchError}</p>}
         <div className="max-h-40 overflow-y-auto space-y-1 pr-2">
