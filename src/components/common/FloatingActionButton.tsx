@@ -7,6 +7,14 @@ interface Position {
   top?: number;
 }
 
+// Define the coordinate tracking interface
+interface DragCoordinates {
+  x: number;
+  y: number;
+  buttonX: number;
+  buttonY: number;
+}
+
 interface FloatingActionButtonProps {
   onClick: () => void;
   icon: React.ReactNode;
@@ -36,16 +44,17 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
 }) => {
   const [isDraggingInternal, setIsDraggingInternal] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const dragStartRef = useRef<{ x: number; y: number; buttonX: number; buttonY: number } | null>(null);
+  const dragStartRef = useRef<DragCoordinates | null>(null);
   const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef<number>(0);
-
+  const isDoubleClickRef = useRef<boolean>(false);
+  
   useEffect(() => {
     setIsDraggingInternal(isDragging);
   }, [isDragging]);
 
-  // Improve typing for touch event handlers
-  const handleTouchMove = (e: TouchEvent) => {
+  // Fixed: Use correct DOM event type for touch move
+  const handleTouchMove = (e: globalThis.TouchEvent) => {
     if (!isDraggingInternal || !dragStartRef.current || !e.touches[0]) return;
     
     e.preventDefault();
@@ -101,7 +110,8 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   useEffect(() => {
     if (!isDraggable) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    // Fixed: Use correct DOM event type for mouse move
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
       if (!isDraggingInternal || !dragStartRef.current) return;
       
       e.preventDefault();
@@ -165,7 +175,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       
-      // Use properly typed touch handlers
+      // Fixed: Use correctly typed handlers with DOM events
       document.addEventListener('touchmove', handleTouchMove, { passive: false });
       document.addEventListener('touchend', handleMouseUp);
     }
@@ -187,8 +197,17 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     const now = Date.now();
     if (now - lastClickTimeRef.current < 300) {
       if (onDoubleClick) {
+        isDoubleClickRef.current = true;
         onDoubleClick();
-        clearTimeout(longPressTimeoutRef.current!);
+        
+        // Set a timeout to reset the double-click flag
+        setTimeout(() => {
+          isDoubleClickRef.current = false;
+        }, 300);
+        
+        if (longPressTimeoutRef.current) {
+          clearTimeout(longPressTimeoutRef.current);
+        }
         return;
       }
     }
@@ -217,7 +236,8 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       clearTimeout(longPressTimeoutRef.current);
     }
     
-    if (!isDraggingInternal) {
+    // Only trigger onClick if not dragging AND not double-clicking
+    if (!isDraggingInternal && !isDoubleClickRef.current) {
       onClick();
     }
   };
@@ -229,7 +249,14 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     const now = Date.now();
     if (now - lastClickTimeRef.current < 300) {
       if (onDoubleClick) {
+        isDoubleClickRef.current = true;
         onDoubleClick();
+        
+        // Set a timeout to reset the double-click flag
+        setTimeout(() => {
+          isDoubleClickRef.current = false;
+        }, 300);
+        
         if (longPressTimeoutRef.current) {
           clearTimeout(longPressTimeoutRef.current);
         }
@@ -261,7 +288,8 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       clearTimeout(longPressTimeoutRef.current);
     }
     
-    if (!isDraggingInternal) {
+    // Only trigger onClick if not dragging AND not double-tapping
+    if (!isDraggingInternal && !isDoubleClickRef.current) {
       onClick();
     }
   };
@@ -304,6 +332,6 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       </span>
     </button>
   );
-};
+}
 
 export default FloatingActionButton;

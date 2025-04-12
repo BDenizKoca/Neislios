@@ -1,11 +1,21 @@
-import React, { useState, useEffect, ReactNode, useRef } from 'react'; // Import useRef
+import React, { useState, useEffect, ReactNode, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import SideMenu from './SideMenu';
-import { Bars3Icon, XMarkIcon, PlusIcon, SparklesIcon, HomeIcon, ArrowLeftIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { 
+  Bars3Icon, 
+  XMarkIcon, 
+  PlusIcon, 
+  SparklesIcon, 
+  HomeIcon, 
+  ArrowLeftIcon, 
+  MagnifyingGlassIcon
+} from '@heroicons/react/24/outline';
 import FloatingActionButton from '../common/FloatingActionButton';
 import CreateWatchlistModal from '../watchlists/CreateWatchlistModal';
-import { useLayoutActions } from '../../hooks/useLayoutActions'; // Updated import path
-import { useHeader } from '../../hooks/useHeader'; // Updated import path
+import MovieRecommendationModal from '../recommendations/MovieRecommendationModal';
+import { useLayoutActions } from '../../hooks/useLayoutActions';
+import { useHeader } from '../../hooks/useHeader';
+import { useWatchlistAI } from '../../hooks/useWatchlistAI';
 
 interface MainLayoutProps {
   children?: ReactNode;
@@ -20,12 +30,31 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return savedPosition ? JSON.parse(savedPosition) : { right: 24, bottom: 24 };
   });
   const [isDragging, setIsDragging] = useState(false);
+  const [showAIRecommendModal, setShowAIRecommendModal] = useState(false);
+  const [, setIsAIEnabled] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
-  const { triggerRandomPick } = useLayoutActions();
-  const { headerTitle, setHeaderTitle } = useHeader();
-  const mainContentRef = useRef<HTMLElement>(null); // Ref for the main content area
+  const { headerTitle, setHeaderTitle } = useHeader(); // Correctly extract headerTitle
+  const mainContentRef = useRef<HTMLElement>(null);
+  // Get necessary context values
+  const { 
+    triggerRandomPick, 
+    isRandomPickModalOpen 
+  } = useLayoutActions();
+    // Extract watchlistId (needed for AI Modal, not FAB)
+  const getWatchlistIdFromPath = (pathname: string): string | undefined => {
+    if (pathname.startsWith('/watchlist/') && 
+        !pathname.includes('/manage') && 
+        !pathname.includes('/collaborators')) {
+      return pathname.split('/').pop();
+    }
+    return undefined;
+  };
+  const currentWatchlistId = getWatchlistIdFromPath(location.pathname);
+  
+  // Use the useWatchlistAI hook with the watchlistId
+  const { checkListEligibleForAI } = useWatchlistAI(currentWatchlistId);
 
   // Determine if back button should be shown
   const showBackButton = location.pathname !== '/';
@@ -43,25 +72,51 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     // Watchlist detail, manage, collaborators pages will set their own titles dynamically
     setHeaderTitle(title);
   }, [location.pathname, setHeaderTitle]);
+  
+  // Check if current path is a watchlist that's eligible for AI
+  useEffect(() => {
+    // Reset AI state initially
+    setIsAIEnabled(false);
+    
+    // If we are on a watchlist detail page, check eligibility
+    if (currentWatchlistId) {
+      // Check if list is eligible for AI recommendations (10+ movies)
+      checkListEligibleForAI().then((isEligible: boolean) => {
+        setIsAIEnabled(isEligible);
+      }).catch((err: Error) => {
+        console.error("Error checking AI eligibility:", err);
+        setIsAIEnabled(false); // Ensure it's false on error
+      });
+    }
+  }, [currentWatchlistId]); // Remove checkListEligibleForAI from dependencies
+  
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
-  
-  // --- FAB Logic ---
+
+    // --- FAB Logic ---  
   let fabIcon: React.ReactNode = <HomeIcon className="h-6 w-6" />;
   let fabAction: () => void = () => navigate('/');
   let fabLabel = "Go to Home";
+  // Disable FAB if any relevant modal is open - use showAIRecommendModal directly
+  let isFabDisabled = isCreateModalOpen || showAIRecommendModal || isRandomPickModalOpen;
 
   if (location.pathname === '/') {
     fabIcon = <PlusIcon className="h-6 w-6" />;
     fabAction = () => setIsCreateModalOpen(true);
     fabLabel = "Create new watchlist";
   }
+  // On watchlist detail page (excluding manage/collaborators)
   else if (location.pathname.startsWith('/watchlist/') && !location.pathname.includes('/manage') && !location.pathname.includes('/collaborators')) {
-    if (triggerRandomPick) {
+     // Use the trigger function directly from the context for Random Pick
+     if (triggerRandomPick) {
         fabIcon = <SparklesIcon className="h-6 w-6" />;
-        fabAction = triggerRandomPick;
+        fabAction = isFabDisabled ? () => {} : triggerRandomPick; // Use updated isFabDisabled
         fabLabel = "Pick random item";
-    }
+     } 
+     // **REMOVED AI recommendation logic from here**
+     // If triggerRandomPick is null (e.g., on initial load or error), 
+     // the FAB will keep its default Home icon/action unless explicitly changed.
+     // You might want a different fallback behavior here if needed.
   }
 
   const handleCloseCreateModal = () => setIsCreateModalOpen(false);
@@ -70,6 +125,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     // Subscription should handle refresh
     console.log("New list created, HomePage might need refresh if not using subscriptions effectively.");
   };
+  
   const handleTitleClick = () => {
     if (mainContentRef.current) {
       const scrollElement = mainContentRef.current;
@@ -121,7 +177,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const handleDragEnd = () => {
     setIsDragging(false);
   };
-  
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
@@ -130,10 +185,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar - Restore original structure */}
         <header className="bg-primary text-white shadow-md z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Restore original padding */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative flex justify-between items-center h-16">
               {/* Left Section (Back or Burger) */}
-              <div className="absolute left-0 flex items-center pl-1 sm:pl-0"> {/* Adjust padding for mobile */}
+              <div className="absolute left-0 flex items-center pl-1 sm:pl-0">
                 {showBackButton ? (
                   <button
                     onClick={() => navigate(-1)}
@@ -154,19 +209,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </div>
 
               {/* Center Section (Title) */}
-              <div className="flex-1 flex justify-center items-center px-4"> {/* Reduced padding to give title more space */}
+              <div className="flex-1 flex justify-center items-center px-4">
                  {/* Apply manual truncation */}
                  <h1
-                    className="text-lg font-semibold text-white cursor-pointer" // Add cursor-pointer
-                    onClick={handleTitleClick} // Add onClick handler
-                    title={headerTitle} // Show full title on hover
+                    className="text-lg font-semibold text-white cursor-pointer"
+                    onClick={handleTitleClick}
+                    title={headerTitle}
                  >
                     {headerTitle.length > 26 ? `${headerTitle.substring(0, 26)}...` : headerTitle}
                  </h1>
               </div>
 
               {/* Right Section (Search) */}
-              <div className="absolute right-0 flex items-center pr-1 sm:pr-0"> {/* Adjust padding for mobile */}
+              <div className="absolute right-0 flex items-center pr-1 sm:pr-0">
                  <Link
                     to="/search"
                     className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded focus:outline-none"
@@ -175,45 +230,55 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     <MagnifyingGlassIcon className="h-6 w-6" />
                  </Link>
               </div>
-            </div>          </div>
-        </header>         {/* Page Content */}
-        <main ref={mainContentRef} className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 scroll-smooth"> {/* Keep scroll-smooth */}
-           {/* Removed invisible top element */}
+            </div>
+          </div>
+        </header>
+          {/* Page Content */}
+        <main ref={mainContentRef} className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 scroll-smooth">
            {children || <Outlet />}
         </main>
 
-         {/* Context-Aware Floating Action Button - Hide on manage items page */}
-         {!location.pathname.includes('/manage') && (
-           <FloatingActionButton
-              onClick={fabAction}
-              icon={fabIcon}
-              ariaLabel={fabLabel}
-              position={fabPosition}
-              onPositionChange={(newPosition) => {
-                setFabPosition(newPosition);
-                localStorage.setItem('fabPosition', JSON.stringify(newPosition));
-              }}
-              isDraggable={true}
-              onDoubleClick={handleFabDoubleClick}
-              onLongPress={handleFabLongPress}
-              onDragEnd={handleDragEnd}
-              isDragging={isDragging}
-              style={{
-                transition: isDragging ? 'none' : 'all 0.3s ease',
-                cursor: isDragging ? 'grabbing' : 'pointer',
-                opacity: isDragging ? 0.8 : 1,
-                boxShadow: isDragging ? '0 0 15px rgba(0,0,0,0.3)' : undefined
-              }}
-           />
-         )}
+        {/* Context-Aware Floating Action Button - Use updated isFabDisabled */}
+        {!location.pathname.includes('/manage') && !isFabDisabled && (
+          <FloatingActionButton
+            onClick={fabAction}
+            icon={fabIcon}
+            ariaLabel={fabLabel}
+            position={fabPosition}
+            onPositionChange={(newPosition) => {
+              setFabPosition(newPosition);
+              localStorage.setItem('fabPosition', JSON.stringify(newPosition));
+            }}
+            isDraggable={true}
+            onDoubleClick={handleFabDoubleClick}
+            onLongPress={handleFabLongPress}
+            onDragEnd={handleDragEnd}
+            isDragging={isDragging}
+            style={{
+              transition: isDragging ? 'none' : 'all 0.3s ease',
+              cursor: isDragging ? 'grabbing' : (isFabDisabled ? 'not-allowed' : 'pointer'), // Use updated isFabDisabled
+              opacity: isDragging ? 0.8 : (isFabDisabled ? 0.5 : 1), // Use updated isFabDisabled
+              boxShadow: isDragging ? '0 0 15px rgba(0,0,0,0.3)' : undefined
+            }}
+          />
+        )}
 
-         {/* Create Watchlist Modal */}
-         <CreateWatchlistModal
-            isOpen={isCreateModalOpen}
-            onClose={handleCloseCreateModal}
-            onWatchlistCreated={handleWatchlistCreated}
-         />
+        {/* Create Watchlist Modal */}
+        <CreateWatchlistModal
+          isOpen={isCreateModalOpen}
+          onClose={handleCloseCreateModal}
+          onWatchlistCreated={handleWatchlistCreated}
+        />
 
+        {/* AI Recommendation Modal - Remove the onVisibilityChange prop */}
+        {showAIRecommendModal && currentWatchlistId && (
+          <MovieRecommendationModal
+            isOpen={showAIRecommendModal}
+            onClose={() => setShowAIRecommendModal(false)}
+            watchlistId={currentWatchlistId}
+          />
+        )}
+        {/* RandomItemPickerModal is rendered in WatchlistDetailPage, controlled by context */}
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
 import { TmdbMediaDetails } from '../services/tmdbService'; // Removed getMediaDetails
@@ -14,7 +13,11 @@ import { useHeader } from '../hooks/useHeader'; // Updated import path
 import { useWatchlistDetails } from '../hooks/useWatchlistDetails'; // Import hook
 import { useWatchlistItems, WatchlistItemWithDetails } from '../hooks/useWatchlistItems'; // Import hook
 import { useWatchlistMembers } from '../hooks/useWatchlistMembers'; // Import hook
-import { RandomItemPickerModal } from '../components/watchlists/RandomItemPickerModal'; // Import the modal component
+import { RandomItemPickerModal } from '../components/watchlists/RandomItemPickerModal';
+import { useWatchlistAI } from '../hooks/useWatchlistAI'; // Import AI hook
+import MovieRecommendationModal from '../components/recommendations/MovieRecommendationModal'; // Import AI modal
+import { LightBulbIcon } from '@heroicons/react/24/outline'; // Import icon
+
 function WatchlistDetailPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -45,13 +48,28 @@ function WatchlistDetailPage() {
     // refetch: refetchMembers // If needed later
   } = useWatchlistMembers(watchlistId);
 
+  const { loading: checkingAIEligibility, error: errorAIEligibility, checkListEligibleForAI } = useWatchlistAI(watchlistId); // Use AI hook
+
   // --- Local UI State ---
   const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set()); // User's watched status
   const [hideWatched, setHideWatched] = useState(false);
   const [sortBy, setSortBy] = useState<string>('item_order');
-  const [showRandomPickModal, setShowRandomPickModal] = useState(false); // State to control modal visibility
+  const [showRandomPickModal, setShowRandomPickModal] = useState(false);
   const [sortedAndFilteredItems, setSortedAndFilteredItems] = useState<WatchlistItemWithDetails[]>([]);
-  // Removed state related to picker internals: randomPick, isSpinning, showPickerContent, setSpinningTitle, spinProgress, availableTitles, spinDuration
+  const [isAIEligible, setIsAIEligible] = useState(false); // State for AI eligibility
+  const [showAIRecommendModal, setShowAIRecommendModal] = useState(false); // State for AI modal
+
+  // --- Check AI Eligibility ---
+  useEffect(() => {
+    if (watchlistId) {
+      checkListEligibleForAI().then(eligible => {
+        setIsAIEligible(eligible);
+      }).catch(err => {
+        console.error("Error checking AI eligibility:", err);
+        setIsAIEligible(false);
+      });
+    }
+  }, [watchlistId, checkListEligibleForAI]);
 
   // --- Sorting Logic ---
   const sortAndFilterItems = useCallback(() => {
@@ -208,80 +226,108 @@ function WatchlistDetailPage() {
   // --- Combined Loading and Error Handling ---
   const isLoading = loadingDetails || loadingItems || loadingMembers;
   // Prioritize details error, then items, then members
-  const overallError = errorDetails || errorItems || errorMembers;
+  const overallError = errorDetails || errorItems || errorMembers || errorAIEligibility;
 
   // --- Render ---
-  if (isLoading && watchlistItems.length === 0) { // Show skeleton only on initial load
-      return (
-          <div className="p-4">
-              <Skeleton height={30} width={200} className="mb-1"/>
-              <Skeleton height={20} width={150} className="mb-4"/>
-              <div className="mb-4 flex flex-wrap gap-2">
-                  <Skeleton height={36} width={140} />
-                  <Skeleton height={36} width={180} />
-              </div>
-              <Skeleton height={24} width={100} className="mb-3"/>
-              <div className="space-y-3">
-                  {[...Array(8)].map((_, i) => <MovieListItemSkeleton key={i} />)}
-              </div>
-          </div>
-      );
+  if (isLoading && !watchlist) { // Show skeleton only on initial load
+    return (
+      <div className="container mx-auto p-4">
+        <Skeleton height={30} width={200} className="mb-4" />
+        <Skeleton height={20} width={150} className="mb-4" />
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Skeleton height={36} width={140} />
+          <Skeleton height={36} width={180} />
+        </div>
+        <Skeleton height={24} width={100} className="mb-3" />
+        <div className="space-y-3">
+          {[...Array(8)].map((_, i) => <MovieListItemSkeleton key={i} />)}
+        </div>
+      </div>
+    );
   }
 
-  if (overallError && !watchlist) { // Show error if details failed and we have no watchlist
-      return <div className="text-center p-4 text-red-600">Error: {overallError}</div>;
+  if (overallError) {
+    return <div className="text-red-500 p-4">Error loading watchlist: {overallError}</div>;
   }
 
-  if (!watchlist && !isLoading) { // Handle case where watchlist is null after loading (not found or access denied)
-      return <div className="text-center p-4">Watchlist not found or access denied.</div>;
+  if (!watchlist) {
+    return <div className="p-4">Watchlist not found.</div>;
   }
 
-  // If watchlist exists but other parts failed, we might still render partial data
-  // Or show specific error messages for items/members if needed.
-  // For now, we proceed if watchlist is available.
-  if (!watchlist) return null; // Should not happen if logic above is correct, but acts as a safeguard
+  // Determine if the current user can manage the list
+  const canManage = userRole === 'owner' || userRole === 'editor';
 
   return (
-    <div className="p-4">
-      {/* Header Info */}
-      {/* Removed redundant h2 title */}
-      <p className="mb-4 text-gray-600 dark:text-gray-400">{watchlist.description || 'No description.'}</p>
-      <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        <p>Owner: {watchlist.owner?.display_name || 'Unknown'}</p>
-        {userRole && <p>Your Role: <span className="font-medium capitalize">{userRole}</span></p>}
+    <div className="container mx-auto p-4">
+      {/* Watchlist Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">
+          {watchlist.title}
+        </h1>
+        <p className="mb-4 text-gray-600 dark:text-gray-400">{watchlist.description || 'No description.'}</p>
+        
+        {/* Action Buttons - Centered and below description */}
+        <div className="flex flex-wrap justify-center gap-2 mb-4">
+          {/* AI Recommendation Button - Conditionally Rendered */}
+          {isAIEligible && (
+            <button
+              onClick={() => setShowAIRecommendModal(true)}
+              className="flex items-center px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition duration-150 ease-in-out text-sm"
+              disabled={checkingAIEligibility} // Disable while checking
+              title="Get AI Recommendations"
+            >
+              <LightBulbIcon className="h-5 w-5 mr-1" />
+              {checkingAIEligibility ? 'Checking...' : 'AI Recs'}
+            </button>
+          )}
+          {/* Manage Buttons - Conditionally Rendered */}
+          {canManage && (
+            <>
+              <Link
+                to={`/watchlist/${watchlistId}/manage`}
+                className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+              >
+                Manage Items
+              </Link>
+              {userRole === 'owner' && (
+                <Link
+                  to={`/watchlist/${watchlistId}/collaborators`}
+                  className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                >
+                  Collaborators
+                </Link>
+              )}
+            </>
+          )}
+        </div>
+        
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <p>Owner: {watchlist.owner?.display_name || 'Unknown'}</p>
+          {userRole && <p>Your Role: <span className="font-medium capitalize">{userRole}</span></p>}
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="mb-4 flex flex-wrap gap-2">
-          {(userRole === 'owner' || userRole === 'editor') && (
-            <Link to={`/watchlist/${watchlistId}/manage`} className="inline-block bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white py-2 px-4 rounded shadow text-sm">Manage Items</Link>
-          )}
-          {userRole === 'owner' && (
-            <Link to={`/watchlist/${watchlistId}/collaborators`} className="inline-block bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded shadow text-sm">Manage Collaborators</Link>
-          )}
-      </div>
+      {/* Controls (Sort, Filter) */}
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+          <div className="flex items-center">
+              <input id="hideWatchedToggle" type="checkbox" checked={hideWatched} onChange={(e) => setHideWatched(e.target.checked)} className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"/>
+              <label htmlFor="hideWatchedToggle" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">Hide Watched</label>
+          </div>
+          <div className="flex items-center">
+               <label htmlFor="sortOrder" className="mr-2 text-sm text-gray-900 dark:text-gray-300">Sort by:</label>
+               <select id="sortOrder" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="text-sm p-1 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-primary" aria-label="Sort movies by">
+                  <option value="item_order">Manual Order</option>
+                  <option value="added_at_asc">Added Date (Oldest)</option>
+                  <option value="added_at_desc">Added Date (Newest)</option>
+                  <option value="title_asc">Title (A-Z)</option>
+                  <option value="title_desc">Title (Z-A)</option>
+                  <option value="rating_desc">Rating (High-Low)</option>
+                  <option value="rating_asc">Rating (Low-High)</option>
+               </select>
+          </div>
+     </div>
 
-       {/* Filters and Sorting */}
-       <div className="flex flex-wrap justify-between items-center gap-4 mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
-            <div className="flex items-center">
-                <input id="hideWatchedToggle" type="checkbox" checked={hideWatched} onChange={(e) => setHideWatched(e.target.checked)} className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"/>
-                <label htmlFor="hideWatchedToggle" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">Hide Watched</label>
-            </div>
-            <div className="flex items-center">
-                 <label htmlFor="sortOrder" className="mr-2 text-sm text-gray-900 dark:text-gray-300">Sort by:</label>
-                 <select id="sortOrder" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="text-sm p-1 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-primary" aria-label="Sort movies by">
-                    <option value="item_order">Manual Order</option>
-                    <option value="added_at_asc">Added Date (Oldest)</option>
-                    <option value="added_at_desc">Added Date (Newest)</option>
-                    <option value="title_asc">Title (A-Z)</option>
-                    <option value="title_desc">Title (Z-A)</option>
-                    <option value="rating_desc">Rating (High-Low)</option>
-                    <option value="rating_asc">Rating (Low-High)</option>
-                 </select>
-            </div>
-       </div>
-
-      {/* Item List */}
+      {/* Watchlist Items */}
       <h3 className="text-xl font-semibold mb-3">Items ({sortedAndFilteredItems.length})</h3>
       {/* Display item/member specific errors if needed, separate from the main loading/error state */}
       {errorItems && <p className="text-center p-2 text-orange-600">Could not load all item details.</p>}
@@ -318,12 +364,20 @@ function WatchlistDetailPage() {
         </div>
       )}
 
-      {/* Render the Random Item Picker Modal */}
+      {/* Modals */}
       <RandomItemPickerModal
         isOpen={showRandomPickModal}
         onClose={closeRandomPickModal}
         items={sortedAndFilteredItems} // Pass the items to be picked from
       />
+      {/* AI Recommendation Modal */}
+      {watchlistId && (
+        <MovieRecommendationModal
+          isOpen={showAIRecommendModal}
+          onClose={() => setShowAIRecommendModal(false)}
+          watchlistId={watchlistId}
+        />
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ interface TmdbMediaBase {
   overview: string;
   backdrop_path: string | null;
   genre_ids?: number[];
+  popularity?: number; // Add popularity field
 }
 
 export interface TmdbMovieSearchResult extends TmdbMediaBase {
@@ -168,4 +169,21 @@ export const getMoviePosterUrl = (path: string | null | undefined, size: string 
 export const getProfilePictureUrl = (path: string | null | undefined, size: string = "w185"): string | null => {
     if (!path) return null;
     return `${TMDB_IMAGE_BASE_URL}${size}${path}`;
+};
+
+// Add movie keyword retrieval functionality
+export const getMovieKeywords = async (movieId: number): Promise<{keywords: {id: number, name: string}[]}> => {
+  return fetchTmdb<{keywords: {id: number, name: string}[]}>(`movie/${movieId}/keywords`);
+};
+
+// Add movie recommendations functionality
+export const getMovieRecommendations = async (movieId: number): Promise<{results: TmdbMovieSearchResult[]}> => {
+  const data = await fetchTmdb<{results: any[]}>(`movie/${movieId}/recommendations`);
+  // Ensure all results have media_type set to 'movie'
+  return {
+    results: data.results.map(movie => ({
+      ...movie,
+      media_type: 'movie' as const
+    }))
+  };
 };
