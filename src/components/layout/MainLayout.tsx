@@ -14,12 +14,18 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [fabPosition, setFabPosition] = useState(() => {
+    // Load saved position from localStorage or use default
+    const savedPosition = localStorage.getItem('fabPosition');
+    return savedPosition ? JSON.parse(savedPosition) : { right: 24, bottom: 24 };
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  
   const location = useLocation();
   const navigate = useNavigate();
   const { triggerRandomPick } = useLayoutActions();
   const { headerTitle, setHeaderTitle } = useHeader();
   const mainContentRef = useRef<HTMLElement>(null); // Ref for the main content area
-  // Removed topOfPageRef
 
   // Determine if back button should be shown
   const showBackButton = location.pathname !== '/';
@@ -95,6 +101,28 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }
   };
 
+  const resetFabPosition = () => {
+    const defaultPosition = { right: 24, bottom: 24 };
+    setFabPosition(defaultPosition);
+    localStorage.setItem('fabPosition', JSON.stringify(defaultPosition));
+  };
+  
+  // Double-tap handler for resetting position
+  const handleFabDoubleClick = () => {
+    resetFabPosition();
+  };
+  
+  // Handler for long press to enable drag mode
+  const handleFabLongPress = () => {
+    setIsDragging(true);
+  };
+  
+  // Handler for drag end
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+  
+
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
       <SideMenu isOpen={isMenuOpen} onClose={closeMenu} />
@@ -147,20 +175,37 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     <MagnifyingGlassIcon className="h-6 w-6" />
                  </Link>
               </div>
-            </div>
-          </div>
-        </header>        {/* Page Content */}
+            </div>          </div>
+        </header>         {/* Page Content */}
         <main ref={mainContentRef} className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 scroll-smooth"> {/* Keep scroll-smooth */}
            {/* Removed invisible top element */}
            {children || <Outlet />}
         </main>
 
-         {/* Context-Aware Floating Action Button */}
-         <FloatingActionButton
-            onClick={fabAction}
-            icon={fabIcon}
-            ariaLabel={fabLabel}
-         />
+         {/* Context-Aware Floating Action Button - Hide on manage items page */}
+         {!location.pathname.includes('/manage') && (
+           <FloatingActionButton
+              onClick={fabAction}
+              icon={fabIcon}
+              ariaLabel={fabLabel}
+              position={fabPosition}
+              onPositionChange={(newPosition) => {
+                setFabPosition(newPosition);
+                localStorage.setItem('fabPosition', JSON.stringify(newPosition));
+              }}
+              isDraggable={true}
+              onDoubleClick={handleFabDoubleClick}
+              onLongPress={handleFabLongPress}
+              onDragEnd={handleDragEnd}
+              isDragging={isDragging}
+              style={{
+                transition: isDragging ? 'none' : 'all 0.3s ease',
+                cursor: isDragging ? 'grabbing' : 'pointer',
+                opacity: isDragging ? 0.8 : 1,
+                boxShadow: isDragging ? '0 0 15px rgba(0,0,0,0.3)' : undefined
+              }}
+           />
+         )}
 
          {/* Create Watchlist Modal */}
          <CreateWatchlistModal

@@ -17,9 +17,7 @@ import { PlusIcon } from '@heroicons/react/24/outline'; // Removed unused ArrowU
 
 // CSS to hide FAB on this page
 const hideFabStyle = `
-  .manage-items-page + div button[aria-label="Go to Home"],
-  .manage-items-page + div button[aria-label="Create new watchlist"],
-  .manage-items-page + div button[aria-label="Pick random item"] {
+  .manage-items-page ~ button[aria-label] {
     display: none !important;
   }
 `;
@@ -54,6 +52,19 @@ function ManageItemsPage() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Inject FAB hiding CSS
+  useEffect(() => {
+    // Create style element
+    const style = document.createElement('style');
+    style.innerHTML = hideFabStyle;
+    document.head.appendChild(style);
+
+    // Cleanup on unmount
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // --- Data Fetching ---
   const fetchWatchlistAndItems = useCallback(async () => {
@@ -329,8 +340,6 @@ function ManageItemsPage() {
 
   return (
     <div className="p-4 overflow-hidden manage-items-page"> {/* Added manage-items-page class */}
-      {/* Add style tag to hide FAB */}
-      <style>{hideFabStyle}</style>
       
       {/* Removed redundant Back to Watchlist link */}
       <h2 className="text-2xl font-bold mb-1">Manage Items</h2>
