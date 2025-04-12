@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'; // Removed unused React
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 // Removed FloatingActionButton import
-import { useSwipeable } from 'react-swipeable'; // Import for swipe gestures
 import CreateWatchlistModal from '../components/watchlists/CreateWatchlistModal';
 import EditWatchlistModal from '../components/watchlists/EditWatchlistModal'; // Import Edit Modal
 import WatchlistCard from '../components/watchlists/WatchlistCard';
@@ -225,29 +224,57 @@ function HomePage() {
     setActiveTab(tab);
   };
 
-  // --- Setup Swipe Handlers ---
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: (eventData) => {
-      // Check if swipe originated from a card
-      if (eventData.event.target instanceof Element && eventData.event.target.closest('[data-no-swipe-navigate="true"]')) {
-        return; // Ignore swipe if it started on a card
+  // Touch handling state
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Required minimum distance between touch start and end to be detected as swipe
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    // Always capture the touch start position
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    
+    // Don't prevent default to allow scrolling
+    // But stop propagation to prevent other handlers from interfering
+    e.stopPropagation();
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+    setTouchEnd(e.targetTouches[0].clientX);
+    // Stop propagation but don't prevent default (allows scrolling)
+    e.stopPropagation();
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart || !touchEnd) return;
+
+    // Calculate distance
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    // Only handle swipe if it's on a non-card element
+    const target = e.target as Element;
+    if (!target.closest('[data-no-swipe-navigate="true"]')) {
+      // Handle left swipe
+      if (isLeftSwipe) {
+        if (activeTab === 'favorites') handleTabChange('yourLists');
+        else if (activeTab === 'yourLists') handleTabChange('sharedLists');
       }
-      // Move to next tab when swiping left
-      if (activeTab === 'favorites') handleTabChange('yourLists');
-      else if (activeTab === 'yourLists') handleTabChange('sharedLists');
-    },
-    onSwipedRight: (eventData) => {
-      // Check if swipe originated from a card
-      if (eventData.event.target instanceof Element && eventData.event.target.closest('[data-no-swipe-navigate="true"]')) {
-        return; // Ignore swipe if it started on a card
+      
+      // Handle right swipe
+      if (isRightSwipe) {
+        if (activeTab === 'sharedLists') handleTabChange('yourLists');
+        else if (activeTab === 'yourLists') handleTabChange('favorites');
       }
-      // Move to previous tab when swiping right
-      if (activeTab === 'sharedLists') handleTabChange('yourLists');
-      else if (activeTab === 'yourLists') handleTabChange('favorites');
-    },
-    touchEventOptions: { passive: false },
-    trackMouse: false
-  });
+    }
+    
+    // Stop event propagation
+    e.stopPropagation();
+  };
 
   // --- Placeholder Action Handlers ---
   const handleCloseCreateModal = () => setIsCreateModalOpen(false); // Close modal
@@ -331,7 +358,9 @@ function HomePage() {
     // Use a vertical list instead of a grid
     // Use a responsive grid layout
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1"> {/* Add padding and gap */}
+      <div 
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1 touch-pan-y"
+      > 
         {lists.map(list => {
             const onDeleteHandler = (activeTab === 'yourLists' && list.owner_id === user?.id)
                 ? handleDeleteWatchlist
@@ -400,9 +429,15 @@ function HomePage() {
   };
 
   return (
-    <div {...swipeHandlers}>
+    <div 
+      id="swipeable-home-container"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      className="flex flex-col flex-1 overflow-hidden h-full touch-pan-y"
+    >
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex justify-center space-x-8" aria-label="Tabs">
           <button onClick={() => setActiveTab('favorites')} className={getTabClass('favorites')}>Favorites</button>
           <button onClick={() => setActiveTab('yourLists')} className={getTabClass('yourLists')}>Your Lists</button>
@@ -410,8 +445,8 @@ function HomePage() {
         </nav>
       </div>
 
-      {/* Tab Content Area */}
-      <div>
+      {/* Tab Content Area - With proper flex and overflow settings */}
+      <div className="flex-1 overflow-auto">
         {renderTabContent()}
       </div>
 

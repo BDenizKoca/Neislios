@@ -74,30 +74,46 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
   // Swipe Handlers
   const handlers = useSwipeable({
     onSwipedRight: (eventData) => {
-        console.log("Swiped Right!", eventData);
-        setSwipeFeedback('favorite');
-        onToggleFavorite(watchlist.id, watchlist.is_favorite ?? false);
-        setTimeout(() => setSwipeFeedback(null), 600); // Increase timeout slightly
-    },
-    onSwipedLeft: (eventData) => {
-        // Only trigger delete if the onDelete prop is provided (e.g., on 'Your Lists' tab)
-        if (onDelete) {
-            console.log("Swiped Left!", eventData);
-            setSwipeFeedback('delete');
-            // Add confirmation before deleting
-            if (window.confirm(`Delete watchlist "${watchlist.title}"? This cannot be undone.`)) {
-                 onDelete(watchlist.id);
-            } else {
-                setSwipeFeedback(null); // Reset if cancelled
-            }
-            // Note: Feedback might disappear instantly if component unmounts on delete
-            setTimeout(() => setSwipeFeedback(null), 600); // Increase timeout slightly
+        // Only handle swipes that start from the left edge of the card
+        const touchStartX = eventData.initial[0];
+        const cardRect = (eventData.event.target as Element).getBoundingClientRect();
+        const isFromLeftEdge = touchStartX - cardRect.left < 50; // 50px from left edge
+
+        if (isFromLeftEdge) {
+            console.log("Swiped Right from edge!", eventData);
+            setSwipeFeedback('favorite');
+            onToggleFavorite(watchlist.id, watchlist.is_favorite ?? false);
+            setTimeout(() => setSwipeFeedback(null), 600);
+            // Stop event propagation
+            eventData.event.stopPropagation();
         }
     },
-    onSwiping: () => setIsSwiping(true), // Set swiping state
-    onSwiped: () => setTimeout(() => setIsSwiping(false), 100), // Reset after a short delay
-    preventScrollOnSwipe: true,
-    trackMouse: true // Allow swiping with mouse too
+    onSwipedLeft: (eventData) => {
+        if (!onDelete) return;
+
+        // Only handle swipes that start from the right edge of the card
+        const touchStartX = eventData.initial[0];
+        const cardRect = (eventData.event.target as Element).getBoundingClientRect();
+        const isFromRightEdge = cardRect.right - touchStartX < 50; // 50px from right edge
+
+        if (isFromRightEdge) {
+            console.log("Swiped Left from edge!", eventData);
+            setSwipeFeedback('delete');
+            if (window.confirm(`Delete watchlist "${watchlist.title}"? This cannot be undone.`)) {
+                onDelete(watchlist.id);
+            } else {
+                setSwipeFeedback(null);
+            }
+            setTimeout(() => setSwipeFeedback(null), 600);
+            // Stop event propagation
+            eventData.event.stopPropagation();
+        }
+    },
+    onSwiping: () => setIsSwiping(true),
+    onSwiped: () => setTimeout(() => setIsSwiping(false), 100),
+    preventScrollOnSwipe: false, // Allow swipes to propagate
+    trackMouse: false, // Only handle touch events
+    delta: 50 // Minimum swipe distance
   });
 
   return (

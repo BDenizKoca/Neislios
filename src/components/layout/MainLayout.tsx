@@ -37,11 +37,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     // Watchlist detail, manage, collaborators pages will set their own titles dynamically
     setHeaderTitle(title);
   }, [location.pathname, setHeaderTitle]);
-
-
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
-
+  
   // --- FAB Logic ---
   let fabIcon: React.ReactNode = <HomeIcon className="h-6 w-6" />;
   let fabAction: () => void = () => navigate('/');
@@ -151,9 +149,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </div>
             </div>
           </div>
-        </header>
-
-        {/* Page Content */}
+        </header>        {/* Page Content */}
         <main ref={mainContentRef} className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 scroll-smooth"> {/* Keep scroll-smooth */}
            {/* Removed invisible top element */}
            {children || <Outlet />}

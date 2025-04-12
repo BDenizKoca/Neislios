@@ -15,6 +15,15 @@ import Skeleton from 'react-loading-skeleton';
 import toast from 'react-hot-toast';
 import { PlusIcon } from '@heroicons/react/24/outline'; // Removed unused ArrowUturnLeftIcon
 
+// CSS to hide FAB on this page
+const hideFabStyle = `
+  .manage-items-page + div button[aria-label="Go to Home"],
+  .manage-items-page + div button[aria-label="Create new watchlist"],
+  .manage-items-page + div button[aria-label="Pick random item"] {
+    display: none !important;
+  }
+`;
+
 function ManageItemsPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -319,7 +328,10 @@ function ManageItemsPage() {
   if (!watchlist) return <div className="p-4 text-center">Watchlist not found or permission denied.</div>;
 
   return (
-    <div className="p-4 overflow-hidden"> {/* Add overflow hidden to main container */}
+    <div className="p-4 overflow-hidden manage-items-page"> {/* Added manage-items-page class */}
+      {/* Add style tag to hide FAB */}
+      <style>{hideFabStyle}</style>
+      
       {/* Removed redundant Back to Watchlist link */}
       <h2 className="text-2xl font-bold mb-1">Manage Items</h2>
       <h3 className="text-lg text-gray-600 dark:text-gray-400 mb-4">{watchlist.title}</h3>
