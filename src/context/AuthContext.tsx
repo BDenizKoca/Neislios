@@ -93,13 +93,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     }
   };
-
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        // options: { redirectTo: window.location.origin } // Optional: Redirect URL after login
+        options: {
+          redirectTo: `${window.location.origin}/auth-callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
       });
       if (error) throw error;
       return { data, error }; // Return the full response object

@@ -14,6 +14,8 @@ import ManageItemsPage from './pages/ManageItemsPage'; // Import the renamed pag
 import ManageCollaboratorsPage from './pages/ManageCollaboratorsPage';
 import MediaDetailsPage from './pages/MovieDetailsPage'; // Import the renamed component
 import UserProfilePage from './pages/UserProfilePage'; // Import User Profile Page
+import AuthCallbackPage from './pages/AuthCallbackPage'; // Import Auth Callback Page
+import GoogleOnboardingPage from './pages/GoogleOnboardingPage'; // Import Google Onboarding Page
 
 // Simple Protected Route Component
 const ProtectedRoute = () => {
@@ -40,13 +42,13 @@ function App() {
   // Show a global loading indicator while the initial auth state is determined
   if (authLoading) {
     return <div className="flex justify-center items-center min-h-screen">Loading Application...</div>;
-  }
-
-  return (
+  }  return (
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/auth-callback" element={<AuthCallbackPage />} />
+      <Route path="/google-onboarding" element={<GoogleOnboardingPage />} />
 
       {/* Protected Routes using MainLayout */}
       <Route element={<ProtectedRoute />}>
