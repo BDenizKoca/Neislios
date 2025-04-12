@@ -35,8 +35,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   
   const location = useLocation();
   const navigate = useNavigate();
-  const { headerTitle, setHeaderTitle } = useHeader(); // Correctly extract headerTitle
+  const { headerTitle, setHeaderTitle } = useHeader(); 
   const mainContentRef = useRef<HTMLElement>(null);
+  const currentPathRef = useRef(location.pathname); // Ref to store current path
+
   // Get necessary context values
   const { 
     triggerRandomPick, 
@@ -56,7 +58,32 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // Use the useWatchlistAI hook with the watchlistId
   const { checkListEligibleForAI } = useWatchlistAI(currentWatchlistId);
 
-  // Determine if back button should be shown
+  // Update current path ref after each render
+  useEffect(() => {
+    currentPathRef.current = location.pathname;
+  }); // No dependency array, runs after every render
+
+  // Effect to handle browser back navigation from home screen
+  useEffect(() => {
+    const handlePopState = () => { // Remove 'event: PopStateEvent'
+      // Check if the path *before* the popstate event was '/'
+      if (currentPathRef.current === '/') {
+        console.log("Back navigation attempt from '/' detected. Preventing.");
+        // Force navigation back to home screen, replacing the current history entry
+        navigate('/', { replace: true });
+      }
+    };
+
+    // Add listener
+    window.addEventListener('popstate', handlePopState);
+
+    // Cleanup listener on component unmount
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]); // Depend on navigate
+
+  // Determine if back button should be shown (App's own button)
   const showBackButton = location.pathname !== '/';
 
   // Set header title based on route
@@ -183,7 +210,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <SideMenu isOpen={isMenuOpen} onClose={closeMenu} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar - Restore original structure */}
+        {/* Top Bar */}
         <header className="bg-primary text-white shadow-md z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative flex justify-between items-center h-16">
@@ -191,7 +218,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <div className="absolute left-0 flex items-center pl-1 sm:pl-0">
                 {showBackButton ? (
                   <button
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate(-1)} // Standard back navigation for app button
                     className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded focus:outline-none"
                     aria-label="Go back"
                   >
@@ -238,7 +265,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
            {children || <Outlet />}
         </main>
 
-        {/* Context-Aware Floating Action Button - Use updated isFabDisabled */}
+        {/* Floating Action Button */}
         {!location.pathname.includes('/manage') && !isFabDisabled && (
           <FloatingActionButton
             onClick={fabAction}
@@ -263,7 +290,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           />
         )}
 
-        {/* Create Watchlist Modal */}
+        {/* Modals */}
         <CreateWatchlistModal
           isOpen={isCreateModalOpen}
           onClose={handleCloseCreateModal}
