@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode, useRef } from 'react';
+import React, { useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import SideMenu from './SideMenu';
 import { 
@@ -8,7 +8,8 @@ import {
   SparklesIcon, 
   HomeIcon, 
   ArrowLeftIcon, 
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  LightBulbIcon // Add the light bulb icon for AI recommendations
 } from '@heroicons/react/24/outline';
 import FloatingActionButton from '../common/FloatingActionButton';
 import CreateWatchlistModal from '../watchlists/CreateWatchlistModal';
@@ -31,8 +32,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   });
   const [isDragging, setIsDragging] = useState(false);
   const [showAIRecommendModal, setShowAIRecommendModal] = useState(false);
-  const [, setIsAIEnabled] = useState(false);
-  
   const location = useLocation();
   const navigate = useNavigate();
   const { headerTitle, setHeaderTitle } = useHeader(); 
@@ -44,19 +43,44 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     triggerRandomPick, 
     isRandomPickModalOpen 
   } = useLayoutActions();
-    // Extract watchlistId (needed for AI Modal, not FAB)
-  const getWatchlistIdFromPath = (pathname: string): string | undefined => {
+  // Extract watchlistId from URL path (needed for AI recommendations modal)
+  const getWatchlistIdFromPath = useCallback((pathname: string): string | undefined => {
     if (pathname.startsWith('/watchlist/') && 
         !pathname.includes('/manage') && 
         !pathname.includes('/collaborators')) {
       return pathname.split('/').pop();
     }
     return undefined;
-  };
+  }, []);
   const currentWatchlistId = getWatchlistIdFromPath(location.pathname);
-  
-  // Use the useWatchlistAI hook with the watchlistId
+    // Use the useWatchlistAI hook with the watchlistId
   const { checkListEligibleForAI } = useWatchlistAI(currentWatchlistId);
+
+  // Listen for watchlist update events
+  useEffect(() => {
+    const handleWatchlistUpdate = (event: CustomEvent) => {
+      const { watchlistId } = event.detail;
+      if (watchlistId === currentWatchlistId) {
+        console.log('Watchlist updated event detected, refreshing data...');
+        // This will force the useWatchlistAI hook to re-check eligibility and refetch data
+        // You might need to add a refetch function to the hook if it doesn't already have one
+      }
+    };
+
+    window.addEventListener('watchlist-updated', handleWatchlistUpdate as EventListener);
+    return () => {
+      window.removeEventListener('watchlist-updated', handleWatchlistUpdate as EventListener);
+    };
+  }, [currentWatchlistId]);
+
+  // Check for saved modal state when component mounts or route changes
+  useEffect(() => {
+    // Check if we're returning to a watchlist that had the recommendation modal open
+    const savedModalState = sessionStorage.getItem('recommendation-modal-open');
+    if (savedModalState && savedModalState === currentWatchlistId) {
+      setShowAIRecommendModal(true);
+    }
+  }, [location.pathname, currentWatchlistId]);
 
   // Update current path ref after each render
   useEffect(() => {
@@ -85,75 +109,110 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   // Determine if back button should be shown (App's own button)
   const showBackButton = location.pathname !== '/';
-
   // Set header title based on route
   useEffect(() => {
+    // Map of routes to their respective titles
+    const routeTitles: Record<string, string> = {
+      '/profile': 'Your Profile',
+      '/friends': 'Friends',
+      '/settings': 'Settings',
+      '/search': 'Search'
+    };
+    
     // Default title
-    let title = 'Neislios';
-    // You might need more specific logic here if titles depend on fetched data
-    // For now, set based on static paths
-    if (location.pathname === '/profile') title = 'Your Profile';
-    else if (location.pathname === '/friends') title = 'Friends';
-    else if (location.pathname === '/settings') title = 'Settings';
-    else if (location.pathname === '/search') title = 'Search';
-    // Watchlist detail, manage, collaborators pages will set their own titles dynamically
+    const title = routeTitles[location.pathname] || 'Neislios';
+    
+    // Set the header title
     setHeaderTitle(title);
+    // Note: Watchlist detail, manage, collaborators pages set their own titles dynamically
   }, [location.pathname, setHeaderTitle]);
-  
   // Check if current path is a watchlist that's eligible for AI
   useEffect(() => {
-    // Reset AI state initially
-    setIsAIEnabled(false);
+    // Reset AI modal visibility initially
+    setShowAIRecommendModal(false);
     
     // If we are on a watchlist detail page, check eligibility
     if (currentWatchlistId) {
       // Check if list is eligible for AI recommendations (10+ movies)
       checkListEligibleForAI().then((isEligible: boolean) => {
-        setIsAIEnabled(isEligible);
+        // Store the eligibility state if needed for further actions
+        console.log(`Watchlist AI eligibility: ${isEligible}`);
       }).catch((err: Error) => {
         console.error("Error checking AI eligibility:", err);
-        setIsAIEnabled(false); // Ensure it's false on error
       });
     }
-  }, [currentWatchlistId]); // Remove checkListEligibleForAI from dependencies
+  }, [currentWatchlistId, checkListEligibleForAI]);
   
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
+  // --- FAB Logic ---  
+  const getFabConfig = useCallback(() => {
+    // Default configuration (Home)
+    let config = {
+      icon: <HomeIcon className="h-6 w-6" />,
+      action: () => navigate('/'),
+      label: "Go to Home"
+    };
+    
+    // Home page configuration
+    if (location.pathname === '/') {
+      config = {
+        icon: <PlusIcon className="h-6 w-6" />,
+        action: () => setIsCreateModalOpen(true),
+        label: "Create new watchlist"
+      };
+    }    // Watchlist detail page configuration
+    else if (
+      location.pathname.startsWith('/watchlist/') && 
+      !location.pathname.includes('/manage') && 
+      !location.pathname.includes('/collaborators')
+    ) {
+      // AI recommendations FAB action
+      const showAIOption = () => {
+        checkListEligibleForAI().then((isEligible: boolean) => {
+          if (isEligible) {
+            setShowAIRecommendModal(true);
+          } else {
+            console.log("List not eligible for AI recommendations");
+            // You could add a toast notification here
+          }
+        }).catch((error) => {
+          console.error("Error checking AI eligibility:", error);
+        });
+      };
 
-    // --- FAB Logic ---  
-  let fabIcon: React.ReactNode = <HomeIcon className="h-6 w-6" />;
-  let fabAction: () => void = () => navigate('/');
-  let fabLabel = "Go to Home";
-  // Disable FAB if any relevant modal is open - use showAIRecommendModal directly
-  let isFabDisabled = isCreateModalOpen || showAIRecommendModal || isRandomPickModalOpen;
+      // For watchlists with enough items, show AI recommendation button
+      config = {
+        icon: <LightBulbIcon className="h-6 w-6" />,
+        action: showAIOption,
+        label: "Get AI recommendations"
+      };
 
-  if (location.pathname === '/') {
-    fabIcon = <PlusIcon className="h-6 w-6" />;
-    fabAction = () => setIsCreateModalOpen(true);
-    fabLabel = "Create new watchlist";
-  }
-  // On watchlist detail page (excluding manage/collaborators)
-  else if (location.pathname.startsWith('/watchlist/') && !location.pathname.includes('/manage') && !location.pathname.includes('/collaborators')) {
-     // Use the trigger function directly from the context for Random Pick
-     if (triggerRandomPick) {
-        fabIcon = <SparklesIcon className="h-6 w-6" />;
-        fabAction = isFabDisabled ? () => {} : triggerRandomPick; // Use updated isFabDisabled
-        fabLabel = "Pick random item";
-     } 
-     // **REMOVED AI recommendation logic from here**
-     // If triggerRandomPick is null (e.g., on initial load or error), 
-     // the FAB will keep its default Home icon/action unless explicitly changed.
-     // You might want a different fallback behavior here if needed.
-  }
-
-  const handleCloseCreateModal = () => setIsCreateModalOpen(false);
-  const handleWatchlistCreated = () => {
+      // If random pick is available, prioritize that feature
+      if (triggerRandomPick) {
+        config = {
+          icon: <SparklesIcon className="h-6 w-6" />,
+          action: triggerRandomPick,
+          label: "Pick random item"
+        };
+      }
+    }
+    
+    return config;
+  }, [location.pathname, navigate, triggerRandomPick, checkListEligibleForAI]);
+  
+  const { icon: fabIcon, action: fabAction, label: fabLabel } = getFabConfig();
+  
+  // Disable FAB if any relevant modal is open
+  const isFabDisabled = isCreateModalOpen || showAIRecommendModal || isRandomPickModalOpen;
+  const handleCloseCreateModal = useCallback(() => setIsCreateModalOpen(false), []);
+  
+  const handleWatchlistCreated = useCallback(() => {
     handleCloseCreateModal();
     // Subscription should handle refresh
     console.log("New list created, HomePage might need refresh if not using subscriptions effectively.");
-  };
-  
-  const handleTitleClick = () => {
+  }, [handleCloseCreateModal]);
+    const handleTitleClick = useCallback(() => {
     if (mainContentRef.current) {
       const scrollElement = mainContentRef.current;
       const currentPosition = scrollElement.scrollTop;
@@ -161,7 +220,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       // Only perform scroll if we're not already at the top
       if (currentPosition <= 0) return;
       
-      // Better smooth scroll implementation using animation frames
+      // Smooth scroll implementation using animation frames
       let start: number | null = null;
       const duration = 500; // ms - duration of scroll animation
       
@@ -182,28 +241,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       
       window.requestAnimationFrame(animateScroll);
     }
-  };
-
-  const resetFabPosition = () => {
+  }, []);
+  const resetFabPosition = useCallback(() => {
     const defaultPosition = { right: 24, bottom: 24 };
     setFabPosition(defaultPosition);
     localStorage.setItem('fabPosition', JSON.stringify(defaultPosition));
-  };
+  }, []);
   
   // Double-tap handler for resetting position
-  const handleFabDoubleClick = () => {
+  const handleFabDoubleClick = useCallback(() => {
     resetFabPosition();
-  };
+  }, [resetFabPosition]);
   
   // Handler for long press to enable drag mode
-  const handleFabLongPress = () => {
+  const handleFabLongPress = useCallback(() => {
     setIsDragging(true);
-  };
+  }, []);
   
   // Handler for drag end
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">

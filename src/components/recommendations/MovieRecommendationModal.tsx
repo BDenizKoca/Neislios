@@ -66,24 +66,46 @@ const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
         added_by_user_id: user.id,
         // item_order will likely be set by a trigger or needs manual handling
       });
-
+      
       if (error) throw error;
 
       toast.success('Movie added successfully!', { id: toastId });
-      refetchWatchlistItems(); // Refetch items to update the existingMovieIds set
+      // Refetch items to update the existingMovieIds set and ensure real-time updates
+      await refetchWatchlistItems();
+      
+      // Emit an event to notify parent components that the watchlist has been updated
+      const watchlistUpdateEvent = new CustomEvent('watchlist-updated', { 
+        detail: { watchlistId, mediaId }
+      });
+      window.dispatchEvent(watchlistUpdateEvent);
     } catch (err: unknown) {
       console.error("Error adding item to watchlist:", err);
       toast.error(err instanceof Error ? err.message : 'Failed to add movie.', { id: toastId });
     } finally {
       setAddingItemId(null); // Clear loading state for this button
     }
-  }, [user, watchlistId, existingMovieIds, refetchWatchlistItems]); // Add dependencies
+  }, [user, watchlistId, existingMovieIds, refetchWatchlistItems]);
 
   const handleNavigateToDetails = (movieId: number) => {
     // We keep the modal open, user can use back button or close modal manually
     navigate(`/movie/${movieId}`);
   };
 
+  // Add CSS to hide FAB when modal is open
+  useEffect(() => {
+    // Add a class to the body when modal is open
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+      // Save state to session storage to restore on navigation back
+      sessionStorage.setItem('recommendation-modal-open', watchlistId);
+    }
+    
+    // Clean up when modal closes
+    return () => {
+      document.body.classList.remove('modal-open');
+      sessionStorage.removeItem('recommendation-modal-open');
+    };
+  }, [isOpen, watchlistId]);
 
   if (!isOpen) return null;
 

@@ -17,6 +17,11 @@ body {
   --bg-color: #202020; /* Neutral dark gray hex value */
 }
 
+/* Hide FAB when modals are open */
+body.modal-open .floating-action-button {
+  display: none !important;
+}
+
 .dark body,
 .dark .bg-gray-100,
 .dark main,

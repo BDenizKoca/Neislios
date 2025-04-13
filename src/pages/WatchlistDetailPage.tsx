@@ -37,7 +37,7 @@ function WatchlistDetailPage() {
     items: watchlistItems,
     loading: loadingItems,
     error: errorItems,
-    // refetch: refetchItems // If needed later
+    refetch: refetchItems // Uncommented to enable real-time updates
   } = useWatchlistItems(watchlistId);
 
   const {
@@ -49,6 +49,25 @@ function WatchlistDetailPage() {
   } = useWatchlistMembers(watchlistId);
 
   const { loading: checkingAIEligibility, error: errorAIEligibility, checkListEligibleForAI } = useWatchlistAI(watchlistId); // Use AI hook
+
+  // Listen for watchlist update events to refresh data
+  useEffect(() => {
+    const handleWatchlistUpdate = (event: CustomEvent) => {
+      const { watchlistId: updatedWatchlistId } = event.detail;
+      if (updatedWatchlistId === watchlistId) {
+        console.log('Watchlist update detected, refreshing watchlist items...');
+        // Force a refresh of the watchlist items
+        if (typeof refetchItems === 'function') {
+          refetchItems();
+        }
+      }
+    };
+
+    window.addEventListener('watchlist-updated', handleWatchlistUpdate as EventListener);
+    return () => {
+      window.removeEventListener('watchlist-updated', handleWatchlistUpdate as EventListener);
+    };
+  }, [watchlistId, refetchItems]);
 
   // --- Local UI State ---
   const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set()); // User's watched status
