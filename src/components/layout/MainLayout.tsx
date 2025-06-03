@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import FloatingActionButton from '../common/FloatingActionButton';
 import CreateWatchlistModal from '../watchlists/CreateWatchlistModal';
-import MovieRecommendationModal from '../recommendations/MovieRecommendationModal';
+import MediaRecommendationModal from '../recommendations/MediaRecommendationModal';
 import { useLayoutActions } from '../../hooks/useLayoutActions';
 import { useHeader } from '../../hooks/useHeader';
 import { useWatchlistAI } from '../../hooks/useWatchlistAI';
@@ -357,7 +357,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
         {/* AI Recommendation Modal - Remove the onVisibilityChange prop */}
         {showAIRecommendModal && currentWatchlistId && (
-          <MovieRecommendationModal
+          <MediaRecommendationModal
             isOpen={showAIRecommendModal}
             onClose={() => setShowAIRecommendModal(false)}
             watchlistId={currentWatchlistId}

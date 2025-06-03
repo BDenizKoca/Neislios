@@ -24,6 +24,7 @@ interface MediaListItemProps {
   showDragHandle?: boolean;
   attributes?: DraggableAttributes;
   listeners?: SyntheticListenerMap | undefined;
+  watchlistId?: string; // Optional watchlist context
 }
 
 const MediaListItem: React.FC<MediaListItemProps> = ({
@@ -36,6 +37,7 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   showDragHandle,
   attributes,
   listeners,
+  watchlistId,
 }) => {
   const posterUrl = getMoviePosterUrl(mediaItem.poster_path, 'w185');
 
@@ -74,7 +76,9 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   };
 
 
-  const detailLink = `/${mediaItem.media_type}/${mediaItem.id}`;
+  const detailLink = watchlistId 
+    ? `/${mediaItem.media_type}/${mediaItem.id}?from=watchlist&watchlistId=${watchlistId}`
+    : `/${mediaItem.media_type}/${mediaItem.id}`;
 
   return (
     <div className="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 space-x-2">

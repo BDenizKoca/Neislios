@@ -41,8 +41,8 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   onDragEnd,
   isDragging = false,
   style = {}
-}) => {
-  const [isDraggingInternal, setIsDraggingInternal] = useState(false);
+}) => {  const [isDraggingInternal, setIsDraggingInternal] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dragStartRef = useRef<DragCoordinates | null>(null);
   const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -299,10 +299,40 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     };
   }, []);
 
+  // Track when modals are open by observing body class changes
+  useEffect(() => {
+    const checkModalState = () => {
+      setIsModalOpen(document.body.classList.contains('modal-open'));
+    };
+
+    // Initial check
+    checkModalState();
+
+    // Create a MutationObserver to watch for class changes on body
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          checkModalState();
+        }
+      });
+    });
+
+    // Start observing
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
   return (
     <button
       ref={buttonRef}
-      className="fixed rounded-full bg-primary text-white p-4 shadow-lg z-50"
+      className={`fixed rounded-full bg-primary text-white p-4 shadow-lg z-50 transition-opacity duration-200 ${
+        isModalOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
       style={{
         ...position,
         ...style,

@@ -398,8 +398,7 @@ function ManageItemsPage() {
             {items.map(item => (
               <SortableItem key={item.id} id={item.id}>
                 {({ attributes, listeners, ref, style }) => (
-                  <div ref={ref} style={style}>
-                    {item.tmdbDetails ? (
+                  <div ref={ref} style={style}>                    {item.tmdbDetails ? (
                       <MediaListItem
                         mediaItem={item.tmdbDetails}
                         isWatched={user ? watchedMedia.has(item.media_id) : false}
@@ -409,6 +408,7 @@ function ManageItemsPage() {
                         showDragHandle={true}
                         attributes={attributes}
                         listeners={listeners}
+                        watchlistId={watchlistId}
                       />
                     ) : (
                       <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 flex items-center space-x-4">

@@ -65,12 +65,11 @@ const MediaCard: React.FC<MediaCardProps> = ({
           {posterUrl ? (
             <img src={posterUrl} alt={`${title} poster`} className="w-full h-full object-cover" loading="lazy" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500">No Poster</div>
-          )}
-          {/* Watched Overlay */}
+            <div className="w-full h-full flex items-center justify-center text-gray-500">No Poster</div>          )}
+          {/* Watched Indicator */}
           {isWatched && (
-            <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-              <EyeIcon className="h-12 w-12 text-white opacity-80" />
+            <div className="absolute bottom-2 right-2 bg-purple-600 border-2 border-white rounded-full p-2 shadow-lg">
+              <EyeIcon className="h-5 w-5 text-white" />
             </div>
           )}
         </div>

@@ -8,13 +8,13 @@ import { useAIRecommendations } from '../../hooks/useAIRecommendations';
 import { getMoviePosterUrl } from '../../services/tmdbService';
 import { useWatchlistItems } from '../../hooks/useWatchlistItems';
 
-interface MovieRecommendationModalProps {
+interface MediaRecommendationModalProps {
   isOpen: boolean;
   onClose: () => void;
   watchlistId: string;
 }
 
-const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
+const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
   isOpen,
   onClose,
   watchlistId
@@ -25,13 +25,17 @@ const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
   const [addingItemId, setAddingItemId] = useState<number | null>(null); // State to track adding item
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  // Create a set of existing movie IDs for quick lookup
-  const existingMovieIds = React.useMemo(() => new Set(
+  // Create a set of existing media IDs for quick lookup
+  const existingMediaIds = React.useMemo(() => new Set(
     items
-      .map(item => item.media_id?.split(':')[2]) // Extract TMDB ID from media_id (e.g., tmdb:movie:123)
-      .filter(Boolean) // Filter out any undefined IDs
-      .map(id => parseInt(id!, 10)) // Convert to number
+      .map(item => {
+        const parts = item.media_id?.split(':'); // Extract from media_id (e.g., tmdb:movie:123 or tmdb:tv:456)
+        if (parts && parts.length >= 3) {
+          return `${parts[1]}:${parts[2]}`; // Return "movie:123" or "tv:456"
+        }
+        return null;
+      })
+      .filter(Boolean) // Filter out any null IDs
   ), [items]);
 
   useEffect(() => {
@@ -44,51 +48,58 @@ const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
     }
     // Ensure effect runs when isOpen changes
   }, [isOpen, items, itemsLoading, generateRecommendations]); // Remove onVisibilityChange dependency
-
-  const handleAddToList = useCallback(async (movieId: number) => {
+  const handleAddToList = useCallback(async (mediaId: number, mediaType: 'movie' | 'tv') => {
     if (!user) {
       toast.error("You must be logged in to add items.");
       return;
     }
-    if (existingMovieIds.has(movieId)) {
-      toast.error("This movie is already in your watchlist.");
+    const mediaKey = `${mediaType}:${mediaId}`;
+    if (existingMediaIds.has(mediaKey)) {
+      const itemType = mediaType === 'movie' ? 'movie' : 'TV series';
+      toast.error(`This ${itemType} is already in your watchlist.`);
       return;
     }
 
-    setAddingItemId(movieId); // Indicate loading state for this specific button
-    const mediaId = `tmdb:movie:${movieId}`;
-    const toastId = toast.loading('Adding movie to watchlist...');
+    setAddingItemId(mediaId); // Indicate loading state for this specific button
+    const fullMediaId = `tmdb:${mediaType}:${mediaId}`;
+    const itemType = mediaType === 'movie' ? 'movie' : 'TV series';
+    const toastId = toast.loading(`Adding ${itemType} to watchlist...`);
 
     try {
       const { error } = await supabase.from('watchlist_items').insert({
         watchlist_id: watchlistId,
-        media_id: mediaId,
+        media_id: fullMediaId,
         added_by_user_id: user.id,
         // item_order will likely be set by a trigger or needs manual handling
       });
       
       if (error) throw error;
 
-      toast.success('Movie added successfully!', { id: toastId });
-      // Refetch items to update the existingMovieIds set and ensure real-time updates
+      toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} added successfully!`, { id: toastId });
+      // Refetch items to update the existingMediaIds set and ensure real-time updates
       await refetchWatchlistItems();
       
       // Emit an event to notify parent components that the watchlist has been updated
       const watchlistUpdateEvent = new CustomEvent('watchlist-updated', { 
-        detail: { watchlistId, mediaId }
+        detail: { watchlistId, mediaId: fullMediaId }
       });
       window.dispatchEvent(watchlistUpdateEvent);
     } catch (err: unknown) {
       console.error("Error adding item to watchlist:", err);
-      toast.error(err instanceof Error ? err.message : 'Failed to add movie.', { id: toastId });
+      toast.error(err instanceof Error ? err.message : `Failed to add ${itemType}.`, { id: toastId });
     } finally {
       setAddingItemId(null); // Clear loading state for this button
     }
-  }, [user, watchlistId, existingMovieIds, refetchWatchlistItems]);
-
-  const handleNavigateToDetails = (movieId: number) => {
+  }, [user, watchlistId, existingMediaIds, refetchWatchlistItems]);
+  const handleNavigateToDetails = (mediaId: number, mediaType: 'movie' | 'tv') => {
     // We keep the modal open, user can use back button or close modal manually
-    navigate(`/movie/${movieId}`);
+    if (mediaType === 'movie') {
+      navigate(`/movie/${mediaId}`);
+    } else {
+      // For TV series, we might need to implement a TV details page or use the movie page
+      // For now, let's use the movie page structure but note this might need updating
+      navigate(`/movie/${mediaId}?type=tv`);
+    }
   };
 
   // Add CSS to hide FAB when modal is open
@@ -115,10 +126,9 @@ const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 backdrop-blur-sm"> {/* Added backdrop blur */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* ... existing header ... */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        {/* ... existing header ... */}        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            AI Movie Recommendations
+            AI Media Recommendations
           </h2>
           <button
             onClick={onClose}
@@ -151,26 +161,26 @@ const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
             // ... not eligible message ...
              <div className="text-gray-600 dark:text-gray-300 p-4 text-center">
                Add at least 10 items to this watchlist to get AI recommendations.
-             </div>
-          ) : (
+             </div>          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {recommendations.map(movie => {
-                const isAlreadyAdded = existingMovieIds.has(movie.id);
-                const isCurrentlyAdding = addingItemId === movie.id;
+              {recommendations.map(media => {
+                const mediaKey = `${media.media_type}:${media.id}`;
+                const isAlreadyAdded = existingMediaIds.has(mediaKey);
+                const isCurrentlyAdding = addingItemId === media.id;
                 return (
                   <div
-                    key={movie.id}
+                    key={`${media.media_type}-${media.id}`}
                     className="flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200" // Added shadow
                   >
                     <div
                       className="flex cursor-pointer" // Make main content area clickable
-                      onClick={() => handleNavigateToDetails(movie.id)}
+                      onClick={() => handleNavigateToDetails(media.id, media.media_type)}
                     >
                       <div className="w-1/3 flex-shrink-0"> {/* Adjusted width */}
-                        {movie.poster_path ? (
+                        {media.poster_path ? (
                           <img
-                            src={getMoviePosterUrl(movie.poster_path, 'w185') ?? undefined} // Smaller image size
-                            alt={movie.title}
+                            src={getMoviePosterUrl(media.poster_path, 'w185') ?? undefined} // Smaller image size
+                            alt={media.title}
                             className="w-full h-auto object-cover" // Removed rounded
                           />
                         ) : (
@@ -182,19 +192,22 @@ const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
                       <div className="w-2/3 p-3 flex flex-col justify-between"> {/* Adjusted width */}
                         <div>
                           <h3 className="font-semibold mb-1 text-gray-900 dark:text-white line-clamp-2"> {/* Allow two lines */}
-                            {movie.title}
+                            {media.title}
                           </h3>
                           <div className="flex items-center mb-2 text-xs"> {/* Smaller text */}
                             <span className="text-yellow-500 mr-1">★</span>
                             <span className="text-gray-600 dark:text-gray-300">
-                              {movie.vote_average.toFixed(1)}
+                              {media.vote_average.toFixed(1)}
                             </span>
                             <span className="text-gray-500 dark:text-gray-400 ml-2">
-                              {movie.release_date?.substring(0, 4) || 'N/A'}
+                              {media.release_date?.substring(0, 4) || 'N/A'}
+                            </span>
+                            <span className="text-blue-600 dark:text-blue-400 ml-2 text-xs">
+                              {media.media_type === 'movie' ? 'Movie' : 'TV Series'}
                             </span>
                           </div>
                           <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
-                            {movie.overview || 'No description available.'}
+                            {media.overview || 'No description available.'}
                           </p>
                         </div>
                       </div>
@@ -202,7 +215,7 @@ const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
                      {/* Add Button Area */}
                      <div className="p-2 border-t border-gray-200 dark:border-gray-700 mt-auto">
                        <button
-                         onClick={() => handleAddToList(movie.id)}
+                         onClick={() => handleAddToList(media.id, media.media_type)}
                          disabled={isAlreadyAdded || isCurrentlyAdding}
                          className={`w-full flex items-center justify-center px-3 py-1.5 text-sm rounded transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${ 
                            isAlreadyAdded
@@ -257,4 +270,4 @@ const MovieRecommendationModal: React.FC<MovieRecommendationModalProps> = ({
   );
 };
 
-export default MovieRecommendationModal;
+export default MediaRecommendationModal;

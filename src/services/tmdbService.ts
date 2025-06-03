@@ -176,6 +176,11 @@ export const getMovieKeywords = async (movieId: number): Promise<{keywords: {id:
   return fetchTmdb<{keywords: {id: number, name: string}[]}>(`movie/${movieId}/keywords`);
 };
 
+// Add TV keywords functionality
+export const getTvKeywords = async (tvId: number): Promise<{results: {id: number, name: string}[]}> => {
+  return fetchTmdb<{results: {id: number, name: string}[]}>(`tv/${tvId}/keywords`);
+};
+
 // Add movie recommendations functionality
 export const getMovieRecommendations = async (movieId: number): Promise<{results: TmdbMovieSearchResult[]}> => {
   const data = await fetchTmdb<{results: TmdbMovieSearchResult[]}>(`movie/${movieId}/recommendations`);
@@ -184,6 +189,18 @@ export const getMovieRecommendations = async (movieId: number): Promise<{results
     results: data.results.map(movie => ({
       ...movie,
       media_type: 'movie' as const
+    }))
+  };
+};
+
+// Add TV recommendations functionality
+export const getTvRecommendations = async (tvId: number): Promise<{results: TmdbTvSearchResult[]}> => {
+  const data = await fetchTmdb<{results: TmdbTvSearchResult[]}>(`tv/${tvId}/recommendations`);
+  // Ensure all results have media_type set to 'tv'
+  return {
+    results: data.results.map(tv => ({
+      ...tv,
+      media_type: 'tv' as const
     }))
   };
 };

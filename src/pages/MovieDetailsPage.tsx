@@ -37,6 +37,11 @@ function MovieDetailsPage() {
   const mediaId = mediaIdParam ? parseInt(mediaIdParam, 10) : null;
   const fullMediaId = mediaType && mediaId ? `tmdb:${mediaType}:${mediaId}` : null;
 
+  // Parse query parameters to detect watchlist context
+  const urlParams = new URLSearchParams(location.search);
+  const isFromWatchlist = urlParams.get('from') === 'watchlist';
+  const contextWatchlistId = urlParams.get('watchlistId');
+
   const fetchDetails = useCallback(async () => {
     if (!mediaType || !mediaId || !fullMediaId) {
       setError("Invalid media type or ID in URL.");
@@ -300,10 +305,9 @@ function MovieDetailsPage() {
              <button onClick={handleToggleWatched} className={`py-2.5 px-4 rounded-lg shadow flex items-center justify-center text-sm font-medium ${isWatched ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'}`}>
                 {isWatched ? <EyeIcon className="h-5 w-5 mr-2"/> : <EyeSlashIcon className="h-5 w-5 mr-2"/>}
                 {isWatched ? 'Watched' : 'Mark Watched'}
-            </button>
-            {/* Contextual Add/Remove Button */}
-            {!loadingEditableLists && containingEditableLists.length > 0 ? (
-                 <button onClick={() => handleRemoveFromList(containingEditableLists[0])} className="py-2.5 px-4 rounded-lg shadow flex items-center justify-center text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200">
+            </button>            {/* Contextual Add/Remove Button */}
+            {!loadingEditableLists && isFromWatchlist && contextWatchlistId && containingEditableLists.includes(contextWatchlistId) ? (
+                 <button onClick={() => handleRemoveFromList(contextWatchlistId)} className="py-2.5 px-4 rounded-lg shadow flex items-center justify-center text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200">
                     <ListBulletIcon className="h-5 w-5 mr-2"/> Remove from List
                  </button>
             ) : (

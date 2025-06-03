@@ -15,7 +15,7 @@ import { useWatchlistItems, WatchlistItemWithDetails } from '../hooks/useWatchli
 import { useWatchlistMembers } from '../hooks/useWatchlistMembers'; // Import hook
 import { RandomItemPickerModal } from '../components/watchlists/RandomItemPickerModal';
 import { useWatchlistAI } from '../hooks/useWatchlistAI'; // Import AI hook
-import MovieRecommendationModal from '../components/recommendations/MovieRecommendationModal'; // Import AI modal
+import MediaRecommendationModal from '../components/recommendations/MediaRecommendationModal'; // Import AI modal
 import { LightBulbIcon } from '@heroicons/react/24/outline'; // Import icon
 
 function WatchlistDetailPage() {
@@ -360,9 +360,7 @@ function WatchlistDetailPage() {
           {sortedAndFilteredItems.map(item => {
                 const addedByUser = members.find(m => m.id === item.added_by_user_id);
                 const memberWatcherIds = membersWatchedMediaMap.get(item.media_id) || new Set<string>();
-                const membersWhoWatched = members.filter(m => memberWatcherIds.has(m.id));
-
-                return (
+                const membersWhoWatched = members.filter(m => memberWatcherIds.has(m.id));                return (
                  item.tmdbDetails ? (
                     <MediaListItem
                         key={item.id}
@@ -371,6 +369,7 @@ function WatchlistDetailPage() {
                         onToggleWatched={handleToggleWatched}
                         addedBy={addedByUser}
                         watchedByMembers={membersWhoWatched}
+                        watchlistId={watchlistId}
                     />
                  ) : (
                     <div key={item.id} className="p-3 border rounded dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-500 flex items-center space-x-2">
@@ -391,7 +390,7 @@ function WatchlistDetailPage() {
       />
       {/* AI Recommendation Modal */}
       {watchlistId && (
-        <MovieRecommendationModal
+        <MediaRecommendationModal
           isOpen={showAIRecommendModal}
           onClose={() => setShowAIRecommendModal(false)}
           watchlistId={watchlistId}
