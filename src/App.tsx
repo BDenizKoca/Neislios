@@ -1,21 +1,25 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import './App.css';
-import { useAuth } from './hooks/useAuth'; // Updated import path
-import MainLayout from './components/layout/MainLayout'; // Import MainLayout
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import ProfilePage from './pages/ProfilePage';
-import FriendsPage from './pages/FriendsPage';
-import SettingsPage from './pages/SettingsPage';
-import WatchlistDetailPage from './pages/WatchlistDetailPage';
-import MovieSearchPage from './pages/MovieSearchPage';
-import ManageItemsPage from './pages/ManageItemsPage'; // Import the renamed page
-import ManageCollaboratorsPage from './pages/ManageCollaboratorsPage';
-import MediaDetailsPage from './pages/MovieDetailsPage'; // Import the renamed component
-import UserProfilePage from './pages/UserProfilePage'; // Import User Profile Page
-import AuthCallbackPage from './pages/AuthCallbackPage'; // Import Auth Callback Page
-import GoogleOnboardingPage from './pages/GoogleOnboardingPage'; // Import Google Onboarding Page
+import { useAuth } from './hooks/useAuth';
+import MainLayout from './components/layout/MainLayout';
+import ErrorBoundary from './components/common/ErrorBoundary';
+
+// Lazy load page components for better code splitting
+const HomePage = lazy(() => import('./pages/HomePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignupPage = lazy(() => import('./pages/SignupPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const FriendsPage = lazy(() => import('./pages/FriendsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const WatchlistDetailPage = lazy(() => import('./pages/WatchlistDetailPage'));
+const MovieSearchPage = lazy(() => import('./pages/MovieSearchPage'));
+const ManageItemsPage = lazy(() => import('./pages/ManageItemsPage'));
+const ManageCollaboratorsPage = lazy(() => import('./pages/ManageCollaboratorsPage'));
+const MediaDetailsPage = lazy(() => import('./pages/MovieDetailsPage'));
+const UserProfilePage = lazy(() => import('./pages/UserProfilePage'));
+const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'));
+const GoogleOnboardingPage = lazy(() => import('./pages/GoogleOnboardingPage'));
 
 // Simple Protected Route Component
 const ProtectedRoute = () => {
@@ -38,38 +42,45 @@ const ProtectedRoute = () => {
 
 function App() {
   const { loading: authLoading } = useAuth(); // Use a different name to avoid conflict
-
   // Show a global loading indicator while the initial auth state is determined
   if (authLoading) {
     return <div className="flex justify-center items-center min-h-screen">Loading Application...</div>;
-  }  return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/auth-callback" element={<AuthCallbackPage />} />
-      <Route path="/google-onboarding" element={<GoogleOnboardingPage />} />
+  }
 
-      {/* Protected Routes using MainLayout */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/friends" element={<FriendsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/watchlist/:id" element={<WatchlistDetailPage />} /> {/* Add route for watchlist detail */}
-        <Route path="/search" element={<MovieSearchPage />} /> {/* Add route for movie search */}
-        <Route path="/watchlist/:id/manage" element={<ManageItemsPage />} /> {/* Use the renamed page */}
-        <Route path="/watchlist/:id/collaborators" element={<ManageCollaboratorsPage />} /> {/* Add route for managing collaborators */}
-        <Route path="/movie/:tmdbId" element={<MediaDetailsPage />} /> {/* Render MediaDetailsPage */}
-        <Route path="/tv/:tmdbId" element={<MediaDetailsPage />} /> {/* Add route for TV details */}
-        <Route path="/user/:userId" element={<UserProfilePage />} /> {/* Add route for user profiles */}
-        {/* Add other protected routes here */}
-      </Route>
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      }>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/auth-callback" element={<AuthCallbackPage />} />
+          <Route path="/google-onboarding" element={<GoogleOnboardingPage />} />
 
-      {/* Handle 404 or redirect for unmatched routes if needed */}
-      <Route path="*" element={<Navigate to="/" replace />} /> {/* Basic fallback */}
+          {/* Protected Routes using MainLayout */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/watchlist/:id" element={<WatchlistDetailPage />} />
+            <Route path="/search" element={<MovieSearchPage />} />
+            <Route path="/watchlist/:id/manage" element={<ManageItemsPage />} />
+            <Route path="/watchlist/:id/collaborators" element={<ManageCollaboratorsPage />} />
+            <Route path="/movie/:tmdbId" element={<MediaDetailsPage />} />
+            <Route path="/tv/:tmdbId" element={<MediaDetailsPage />} />
+            <Route path="/user/:userId" element={<UserProfilePage />} />
+          </Route>
 
-    </Routes>
+          {/* Handle 404 or redirect for unmatched routes */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

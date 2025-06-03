@@ -61,7 +61,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const handleWatchlistUpdate = (event: CustomEvent) => {
       const { watchlistId } = event.detail;
       if (watchlistId === currentWatchlistId) {
-        console.log('Watchlist updated event detected, refreshing data...');
+        // Watchlist updated event detected, refreshing data
         // This will force the useWatchlistAI hook to re-check eligibility and refetch data
         // You might need to add a refetch function to the hook if it doesn't already have one
       }

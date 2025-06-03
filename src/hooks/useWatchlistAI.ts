@@ -29,34 +29,25 @@ export const useWatchlistAI = (watchlistId: string | undefined) => {
   const checkListEligibleForAI = useCallback(async (): Promise<boolean> => {
     // No separate fetching needed here, use the items state from the hook
     setLoadingCheck(true); // Indicate check is in progress
-    setErrorCheck(null);
-
-    // Wait for initial loading of items if necessary, or rely on the hook's loading state
+    setErrorCheck(null);    // Wait for initial loading of items if necessary, or rely on the hook's loading state
     // This check might be simplified depending on how the component uses the hook
     if (itemsLoading) {
       // Optionally wait or handle loading state
-      console.log("Waiting for items to load before checking AI eligibility...");
       // This might need a more robust way to handle async dependency if called before items load
-    }
-
-    if (itemsError) {
-      console.error('Error checking AI eligibility because items failed to load:', itemsError);
+    }    if (itemsError) {
       setErrorCheck(`Cannot check eligibility: ${itemsError}`);
       setLoadingCheck(false);
       return false;
     }
 
-    try {
-       // Ensure items are loaded before checking length
+    try {       // Ensure items are loaded before checking length
        if (!itemsLoading && items) {
          const eligible = items.length >= 10;
-         console.log(`Watchlist ${watchlistId} eligibility check: ${items.length} items -> ${eligible}`);
          setLoadingCheck(false);
          return eligible;
        } else {
          // Handle case where items are still loading or haven't been fetched
          // This might indicate the check was called too early
-         console.warn("Attempted to check AI eligibility while items were loading or not available.");
          setLoadingCheck(false);
          return false; // Or throw an error, depending on desired behavior
        }
@@ -67,7 +58,7 @@ export const useWatchlistAI = (watchlistId: string | undefined) => {
       setLoadingCheck(false);
       return false;
     }
-  }, [watchlistId, items, itemsLoading, itemsError]); // Dependencies include items state and loading/error status
+  }, [items, itemsLoading, itemsError]); // Dependencies include items state and loading/error status
 
   // Return loading/error states specific to the check, and the check function itself
   // Also return items data if the consuming component needs it directly from this hook

@@ -120,7 +120,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             if (spinningAudioRef.current) {
                 spinningAudioRef.current.volume = 0.5;
                 spinningAudioRef.current.currentTime = 0;
-                spinningAudioRef.current.play().catch(err => console.log('Audio play error:', err));
+                spinningAudioRef.current.play().catch(() => {});
             }
         } else {
             setRandomPick(null);
@@ -143,7 +143,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                     if (winAudioRef.current) {
                         winAudioRef.current.volume = 0.6;
                         winAudioRef.current.currentTime = 0;
-                        winAudioRef.current.play().catch(err => console.log('Audio play error:', err));
+                        winAudioRef.current.play().catch(() => {});
                     }
                 }, 200);
             }

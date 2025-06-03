@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth'; // Updated import path
+import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'; // Import type for payload
 import toast from 'react-hot-toast';
-import { useHeader } from '../hooks/useHeader'; // Updated import path
+import { useHeader } from '../hooks/useHeader';
 
 // Define types for clarity
 interface Profile {
@@ -77,12 +76,9 @@ function FriendsPage() {
         .eq('sender_id', user.id).eq('status', 'pending');
       if (outgoingError) throw outgoingError;
       const mappedOutgoing = outgoing?.map(req => ({ ...req, receiver: Array.isArray(req.receiver) ? req.receiver[0] : req.receiver })) || [];
-      setOutgoingRequests(mappedOutgoing);
-
-    } catch (err: unknown) { // Use unknown
-      console.error("Error fetching friends data:", err);
-      toast.error(err instanceof Error ? err.message : 'Failed to load friends data.'); // Check error type
-      setFriends([]); setIncomingRequests([]); setOutgoingRequests([]); // Clear data on error
+      setOutgoingRequests(mappedOutgoing);    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load friends data.');
+      setFriends([]); setIncomingRequests([]); setOutgoingRequests([]);
     } finally {
       setLoading(false);
     }
@@ -99,9 +95,7 @@ function FriendsPage() {
 
   // Realtime subscription setup for friends and requests
   useEffect(() => {
-    if (!user) return;
-    const handleDbChange = (payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>) => { // Use unknown instead of any
-        console.log('DB change detected on FriendsPage:', payload);
+    if (!user) return;    const handleDbChange = () => {
         fetchData(); // Simple refetch on any relevant change
     };
     const requestChannel = supabase.channel('friend-requests-changes')
@@ -111,10 +105,7 @@ function FriendsPage() {
     const friendshipChannel = supabase.channel('friendship-changes')
        .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `user_id_1=eq.${user.id}` }, handleDbChange)
        .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `user_id_2=eq.${user.id}` }, handleDbChange)
-       .subscribe((status, err) => { if (status === 'CHANNEL_ERROR') console.error(`Friendship Subscription error: ${err?.message}`); });
-
-    return () => {
-      console.log('Unsubscribing from friends page changes');
+       .subscribe((status, err) => { if (status === 'CHANNEL_ERROR') console.error(`Friendship Subscription error: ${err?.message}`); });    return () => {
       supabase.removeChannel(requestChannel);
       supabase.removeChannel(friendshipChannel);
     };

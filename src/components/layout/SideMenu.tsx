@@ -16,10 +16,10 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
     onClose(); // Close menu first
     try {
       await signOut();
-      navigate('/login');
-    } catch (error) {
+      navigate('/login');    } catch (error) {
       console.error("Logout failed:", error);
-      // TODO: Show user-friendly error
+      // Show user-friendly error via toast or notification
+      alert('Logout failed. Please try again.');
     }
   };
 

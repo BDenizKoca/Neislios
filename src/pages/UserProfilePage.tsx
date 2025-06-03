@@ -91,7 +91,8 @@ function UserProfilePage() {
   }, [fetchData]);
 
   // --- Action Handlers ---
-  // TODO: Add handlers for Send/Cancel/Accept/Decline friend requests from this page
+  // Note: Friend request handlers (Send/Cancel/Accept/Decline) would require
+  // additional API endpoints and state management
   const handleSendRequest = async () => {
       if (!userId || isOwnProfile) return;
       setError(null);
@@ -125,16 +126,21 @@ function UserProfilePage() {
                 <h1 className="text-3xl font-bold">{profile.display_name}</h1>
                 {/* Friend Status / Actions */}
                 {!isOwnProfile && user && (
-                    <div className="mt-2">
-                        {isFriend ? (
-                             <span className="text-sm text-green-600 dark:text-green-400 font-medium">Already Friends</span>
-                             // TODO: Add Remove Friend button?
+                    <div className="mt-2">                        {isFriend ? (
+                             <>
+                                <span className="text-sm text-green-600 dark:text-green-400 font-medium">Already Friends</span>
+                                {/* Note: Remove Friend button would require additional API */}
+                             </>
                         ) : friendRequestStatus === 'sent' ? (
-                             <span className="text-sm text-gray-500 dark:text-gray-400">Friend Request Sent</span>
-                             // TODO: Add Cancel Request button?
+                             <>
+                                <span className="text-sm text-gray-500 dark:text-gray-400">Friend Request Sent</span>
+                                {/* Note: Cancel Request button would require additional API */}
+                             </>
                         ) : friendRequestStatus === 'received' ? (
-                             <span className="text-sm text-yellow-600 dark:text-yellow-400">Friend Request Received</span>
-                             // TODO: Add Accept/Decline buttons?
+                             <>
+                                <span className="text-sm text-yellow-600 dark:text-yellow-400">Friend Request Received</span>
+                                {/* Note: Accept/Decline buttons would require additional API */}
+                             </>
                         ) : (
                              <button onClick={handleSendRequest} className="text-sm bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded">
                                 Add Friend

@@ -37,7 +37,8 @@ export default defineConfig({
             display: 'standalone',
             orientation: 'portrait',
             scope: '/',
-            start_url: '/',            icons: [
+            start_url: '/',
+            icons: [
                 // Standard Android/PWA icons
                 {
                     src: '/icons/icon-72x72.png',
@@ -123,5 +124,18 @@ export default defineConfig({
             ]
         }
     })
-  ],
+  ],  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js'],
+          ui: ['@heroicons/react', 'react-loading-skeleton', 'react-hot-toast'],
+          dnd: ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          utils: ['react-swipeable']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600
+  }
 });

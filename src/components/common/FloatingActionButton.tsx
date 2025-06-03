@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, CSSProperties } from 'react';
+import React, { useState, useEffect, useRef, useCallback, CSSProperties } from 'react';
 
 interface Position {
   right?: number;
@@ -52,9 +52,8 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   useEffect(() => {
     setIsDraggingInternal(isDragging);
   }, [isDragging]);
-
   // Fixed: Use correct DOM event type for touch move
-  const handleTouchMove = (e: globalThis.TouchEvent) => {
+  const handleTouchMove = useCallback((e: globalThis.TouchEvent) => {
     if (!isDraggingInternal || !dragStartRef.current || !e.touches[0]) return;
     
     e.preventDefault();
@@ -70,7 +69,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     const buttonWidth = buttonRef.current?.offsetWidth || 56;
     const buttonHeight = buttonRef.current?.offsetHeight || 56;
 
-    let newPosition: Position = {};
+    const newPosition: Position = {};
 
     // Calculate right or left position
     if (buttonX + buttonWidth / 2 > viewportWidth / 2) {
@@ -101,11 +100,10 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       newPosition.top = viewportHeight - buttonHeight - 16;
     }
     if (newPosition.bottom && newPosition.bottom > viewportHeight - buttonHeight - 16) {
-      newPosition.bottom = viewportHeight - buttonHeight - 16;
-    }
+      newPosition.bottom = viewportHeight - buttonHeight - 16;    }
 
     onPositionChange?.(newPosition);
-  };
+  }, [isDraggingInternal, onPositionChange]);
 
   useEffect(() => {
     if (!isDraggable) return;
@@ -118,15 +116,13 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       
       const { x: startX, y: startY, buttonX, buttonY } = dragStartRef.current;
       const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
-
-      // Calculate new position
+      const deltaY = e.clientY - startY;      // Calculate new position
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const buttonWidth = buttonRef.current?.offsetWidth || 56;
       const buttonHeight = buttonRef.current?.offsetHeight || 56;
 
-      let newPosition: Position = {};
+      const newPosition: Position = {};
 
       // Calculate right or left position
       if (buttonX + buttonWidth / 2 > viewportWidth / 2) {
@@ -186,7 +182,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleMouseUp);
     };
-  }, [isDraggingInternal, onPositionChange, isDraggable, onDragEnd]);
+  }, [isDraggingInternal, onPositionChange, isDraggable, onDragEnd, handleTouchMove]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isDraggable) return;

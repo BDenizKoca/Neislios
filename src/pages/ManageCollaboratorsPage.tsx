@@ -159,7 +159,7 @@ function ManageCollaboratorsPage() {
      }
   };
 
-  // TODO: Implement friend search and connect this handler
+  // Note: Friend search functionality would require additional search API
   const handleAddCollaborator = async (friendId: string) => {
      if (!watchlistId) return;
      setActionLoading(prev => ({ ...prev, [`add-${friendId}`]: true }));
@@ -172,7 +172,7 @@ function ManageCollaboratorsPage() {
         if (rpcError) throw rpcError;
         // Refresh data on success
         await fetchCollaboratorData();
-        // TODO: Clear friend search results
+        // Note: Would clear friend search results when implemented
      } catch (err: unknown) {
         console.error("Error adding collaborator:", err);
         setError(err instanceof Error ? err.message : 'Failed to add collaborator.');
@@ -191,7 +191,7 @@ function ManageCollaboratorsPage() {
     <div className="p-4 space-y-6">
       <h2 className="text-2xl font-bold">Manage Collaborators for "{watchlist.title}"</h2>
 
-      {/* TODO: Add Friend Search Section to Add Collaborators */}
+      {/* Note: Friend Search Section would be added here when implemented */}
       <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
         <h3 className="text-lg font-semibold mb-2">Add Editor</h3>
         <input

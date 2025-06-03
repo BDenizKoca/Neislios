@@ -34,15 +34,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     setLoading(true); // Start loading
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false); // Finish loading after getting session
-    }).catch((error) => {
-      console.error("Error getting session:", error);
+      setLoading(false); // Finish loading after getting session    }).catch(() => {
       setLoading(false); // Finish loading even on error
     });
 
@@ -66,10 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword(credentials);
       if (error) throw error;
-      return { data, error }; // Return the full response object
-    } catch (error) {
-      console.error('Error signing in:', error);
-      // Consider more specific error handling/feedback
+      return { data, error }; // Return the full response object    } catch (error) {
       throw error; // Re-throw error for the component to handle
     } finally {
       setLoading(false);
@@ -85,9 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) throw error;
       // Note: Supabase might require email confirmation by default.
       // The user object might be null until confirmation.
-      return { data, error }; // Return the full response object
-    } catch (error) {
-      console.error('Error signing up:', error);
+      return { data, error }; // Return the full response object    } catch (error) {
       throw error;
     } finally {
       setLoading(false);
@@ -107,9 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       });
       if (error) throw error;
-      return { data, error }; // Return the full response object
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
+      return { data, error }; // Return the full response object    } catch (error) {
       throw error;
     } finally {
       // Loading might need different handling for OAuth redirects
@@ -123,9 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       return { error }; // Return the error object as per type
-      // State updates (session, user) are handled by onAuthStateChange listener
-    } catch (error) {
-      console.error('Error signing out:', error);
+      // State updates (session, user) are handled by onAuthStateChange listener    } catch (error) {
       throw error;
     } finally {
       setLoading(false);

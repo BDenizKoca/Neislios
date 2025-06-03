@@ -80,7 +80,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
         const isFromLeftEdge = touchStartX - cardRect.left < 50; // 50px from left edge
 
         if (isFromLeftEdge) {
-            console.log("Swiped Right from edge!", eventData);
+            // Handle right swipe from edge
             setSwipeFeedback('favorite');
             onToggleFavorite(watchlist.id, watchlist.is_favorite ?? false);
             setTimeout(() => setSwipeFeedback(null), 600);
@@ -97,7 +97,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
         const isFromRightEdge = cardRect.right - touchStartX < 50; // 50px from right edge
 
         if (isFromRightEdge) {
-            console.log("Swiped Left from edge!", eventData);
+            // Handle left swipe from edge
             setSwipeFeedback('delete');
             if (window.confirm(`Delete watchlist "${watchlist.title}"? This cannot be undone.`)) {
                 onDelete(watchlist.id);

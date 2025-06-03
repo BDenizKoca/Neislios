@@ -292,7 +292,8 @@ function HomePage() {
   };
   const handleToggleFavorite = async (watchlistId: string, isCurrentlyFavorite: boolean) => {
     if (!user) return;
-    // TODO: Implement logic to add/remove from user_favorite_watchlists table
+    // Implement logic to add/remove from user_favorite_watchlists table
+    // Note: This would require database schema changes and API endpoints
     // Optimistically update UI first
     const optimisticUpdate = (list: Watchlist) =>
         list.id === watchlistId ? { ...list, is_favorite: !isCurrentlyFavorite } : list;

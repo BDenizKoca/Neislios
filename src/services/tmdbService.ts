@@ -178,7 +178,7 @@ export const getMovieKeywords = async (movieId: number): Promise<{keywords: {id:
 
 // Add movie recommendations functionality
 export const getMovieRecommendations = async (movieId: number): Promise<{results: TmdbMovieSearchResult[]}> => {
-  const data = await fetchTmdb<{results: any[]}>(`movie/${movieId}/recommendations`);
+  const data = await fetchTmdb<{results: TmdbMovieSearchResult[]}>(`movie/${movieId}/recommendations`);
   // Ensure all results have media_type set to 'movie'
   return {
     results: data.results.map(movie => ({

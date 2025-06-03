@@ -1,25 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
 const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Handle the auth redirect process
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // Check if the user metadata exists in the profile table
-        checkAndCreateUserProfile(session.user.id);
-      }
-    });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, [navigate]);
   // Function to check if user profile exists and create it if not
-  const checkAndCreateUserProfile = async (userId: string) => {
+  const checkAndCreateUserProfile = useCallback(async (userId: string) => {
     try {
       // Check if user has a profile in the profiles table
       const { data: profile, error: profileError } = await supabase
@@ -44,14 +31,26 @@ const AuthCallbackPage: React.FC = () => {
           return;
         }
       }
-      
-      // If profile exists with display name, continue to home page
+        // If profile exists with display name, continue to home page
       navigate('/');
-    } catch (error) {
-      console.error('Error in profile setup:', error);
+    } catch {
       navigate('/login'); // Redirect back to login on error
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    // Handle the auth redirect process
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Check if the user metadata exists in the profile table
+        checkAndCreateUserProfile(session.user.id);
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [navigate, checkAndCreateUserProfile]);
 
   return (
     <div className="flex justify-center items-center h-screen">
