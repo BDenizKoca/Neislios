@@ -70,8 +70,7 @@ function App() {
             <Route path="/watchlist/:id" element={<WatchlistDetailPage />} />
             <Route path="/search" element={<MovieSearchPage />} />
             <Route path="/watchlist/:id/manage" element={<ManageItemsPage />} />
-            <Route path="/watchlist/:id/collaborators" element={<ManageCollaboratorsPage />} />
-            <Route path="/movie/:tmdbId" element={<MediaDetailsPage />} />
+            <Route path="/watchlist/:id/collaborators" element={<ManageCollaboratorsPage />} />            <Route path="/movie/:tmdbId" element={<MediaDetailsPage />} />
             <Route path="/tv/:tmdbId" element={<MediaDetailsPage />} />
             <Route path="/user/:userId" element={<UserProfilePage />} />
           </Route>

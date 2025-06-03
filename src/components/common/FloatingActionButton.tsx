@@ -300,8 +300,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   }, []);
 
   // Track when modals are open by observing body class changes
-  useEffect(() => {
-    const checkModalState = () => {
+  useEffect(() => {    const checkModalState = () => {
       setIsModalOpen(document.body.classList.contains('modal-open'));
     };
 
@@ -326,16 +325,15 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     return () => {
       observer.disconnect();
     };
-  }, []);
-  return (
+  }, []);  return (
     <button
-      ref={buttonRef}
-      className={`fixed rounded-full bg-primary text-white p-4 shadow-lg z-50 transition-opacity duration-200 ${
-        isModalOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      ref={buttonRef}      className={`fixed rounded-full bg-primary text-white p-4 shadow-lg z-40 transition-opacity duration-200 ${
+        isModalOpen ? 'opacity-0 pointer-events-none hidden' : 'opacity-100'
       }`}
       style={{
         ...position,
         ...style,
+        display: isModalOpen ? 'none' : 'block'
       }}
       onClick={(e) => e.preventDefault()} // Prevent immediate click
       onMouseDown={handleMouseDown}

@@ -19,7 +19,7 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
   onClose,
   watchlistId
 }) => {
-  const { loading: recommendationsLoading, recommendations, error: recommendationsError, generateRecommendations } = useAIRecommendations();
+  const { loading: recommendationsLoading, recommendations, error: recommendationsError, generateRecommendations, restoreRecommendations } = useAIRecommendations();
   const { items, loading: itemsLoading, error: itemsError, refetch: refetchWatchlistItems } = useWatchlistItems(watchlistId); // Add refetch
   const [isGenerating, setIsGenerating] = useState(false);
   const [addingItemId, setAddingItemId] = useState<number | null>(null); // State to track adding item
@@ -36,10 +36,26 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
         return null;
       })
       .filter(Boolean) // Filter out any null IDs
-  ), [items]);
-
-  useEffect(() => {
+  ), [items]);  useEffect(() => {
     if (isOpen && !itemsLoading && items && items.length >= 10) {
+      // Check if we have saved recommendations to restore
+      const savedState = sessionStorage.getItem('recommendation-modal-state');
+      if (savedState) {
+        try {
+          const parsed = JSON.parse(savedState);
+          // Only restore if it's for the same watchlist and not too old (5 minutes)
+          if (parsed.watchlistId === watchlistId && 
+              parsed.recommendations && 
+              parsed.recommendations.length > 0 &&
+              Date.now() - parsed.timestamp < 300000) {
+            console.log('Restoring previous recommendations');
+            restoreRecommendations(parsed.recommendations);
+            return;
+          }        } catch {
+          console.warn('Failed to parse saved recommendation state');
+        }
+      }
+      
       setIsGenerating(true);
       generateRecommendations(items)
         .finally(() => setIsGenerating(false));
@@ -47,7 +63,7 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
       console.warn("Watchlist no longer eligible for recommendations.");
     }
     // Ensure effect runs when isOpen changes
-  }, [isOpen, items, itemsLoading, generateRecommendations]); // Remove onVisibilityChange dependency
+  }, [isOpen, items, itemsLoading, generateRecommendations, restoreRecommendations, watchlistId]);
   const handleAddToList = useCallback(async (mediaId: number, mediaType: 'movie' | 'tv') => {
     if (!user) {
       toast.error("You must be logged in to add items.");
@@ -90,28 +106,38 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
     } finally {
       setAddingItemId(null); // Clear loading state for this button
     }
-  }, [user, watchlistId, existingMediaIds, refetchWatchlistItems]);
-  const handleNavigateToDetails = (mediaId: number, mediaType: 'movie' | 'tv') => {
-    // We keep the modal open, user can use back button or close modal manually
+  }, [user, watchlistId, existingMediaIds, refetchWatchlistItems]);  const handleNavigateToDetails = (mediaId: number, mediaType: 'movie' | 'tv') => {
+    // Save current modal state and recommendations before navigation
+    sessionStorage.setItem('recommendation-modal-state', JSON.stringify({
+      watchlistId,
+      recommendations,
+      timestamp: Date.now()
+    }));
+    
+    // Navigate to appropriate details page
     if (mediaType === 'movie') {
       navigate(`/movie/${mediaId}`);
     } else {
-      // For TV series, we might need to implement a TV details page or use the movie page
-      // For now, let's use the movie page structure but note this might need updating
-      navigate(`/movie/${mediaId}?type=tv`);
+      // For TV series, navigate to TV details page
+      navigate(`/tv/${mediaId}`);
     }
   };
-
   // Add CSS to hide FAB when modal is open
   useEffect(() => {
     // Add a class to the body when modal is open
     if (isOpen) {
       document.body.classList.add('modal-open');
-      // Save state to session storage to restore on navigation back
+      // Save state to session storage to indicate modal is open
       sessionStorage.setItem('recommendation-modal-open', watchlistId);
+    } else {
+      // Clean up when modal closes
+      document.body.classList.remove('modal-open');
+      sessionStorage.removeItem('recommendation-modal-open');
+      // Clean up saved recommendations state when modal is explicitly closed
+      sessionStorage.removeItem('recommendation-modal-state');
     }
     
-    // Clean up when modal closes
+    // Clean up when component unmounts
     return () => {
       document.body.classList.remove('modal-open');
       sessionStorage.removeItem('recommendation-modal-open');
@@ -124,7 +150,7 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
   const error = recommendationsError || itemsError;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 backdrop-blur-sm"> {/* Added backdrop blur */}
+    <div className="fixed inset-0 bg-black bg-opacity-75 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm"> {/* Increased z-index to maximum */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* ... existing header ... */}        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">

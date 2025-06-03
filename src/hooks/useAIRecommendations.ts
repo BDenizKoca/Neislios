@@ -18,6 +18,13 @@ export const useAIRecommendations = () => {
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<MediaRecommendation[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  // Method to restore recommendations from saved state
+  const restoreRecommendations = useCallback((savedRecommendations: MediaRecommendation[]) => {
+    setRecommendations(savedRecommendations);
+    setError(null);
+    setLoading(false);
+  }, []);
   // Generate recommendations based on a list of WatchlistItemWithDetails
   const generateRecommendations = useCallback(async (items: WatchlistItemWithDetails[]) => {
     // Filter out items without TMDB details and separate movies and TV series
@@ -229,11 +236,11 @@ export const useAIRecommendations = () => {
     
     return [...guaranteed, ...randomSelection];
   };
-
   return {
     loading,
     recommendations,
     error,
-    generateRecommendations
+    generateRecommendations,
+    restoreRecommendations
   };
 };
