@@ -122,25 +122,23 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
       navigate(`/tv/${mediaId}`);
     }
   };
-  // Add CSS to hide FAB when modal is open
+  // Manage body class and persisted state based on modal visibility
   useEffect(() => {
-    // Add a class to the body when modal is open
     if (isOpen) {
       document.body.classList.add('modal-open');
-      // Save state to session storage to indicate modal is open
+      // Persist open state so navigating away and back reopens the modal
       sessionStorage.setItem('recommendation-modal-open', watchlistId);
     } else {
-      // Clean up when modal closes
       document.body.classList.remove('modal-open');
+      // Remove saved state when modal is intentionally closed
       sessionStorage.removeItem('recommendation-modal-open');
-      // Clean up saved recommendations state when modal is explicitly closed
       sessionStorage.removeItem('recommendation-modal-state');
     }
-    
-    // Clean up when component unmounts
+
+    // On unmount, only clean up the body class so the saved state remains when
+    // navigating to a movie page and returning via the browser back button.
     return () => {
       document.body.classList.remove('modal-open');
-      sessionStorage.removeItem('recommendation-modal-open');
     };
   }, [isOpen, watchlistId]);
 
