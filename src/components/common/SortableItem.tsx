@@ -8,7 +8,8 @@ interface SortableItemProps {
     attributes: ReturnType<typeof useSortable>['attributes'];
     listeners: ReturnType<typeof useSortable>['listeners'];
     ref: (node: HTMLElement | null) => void;
-    style: React.CSSProperties;
+    className: string;
+    setCSSVars: (element: HTMLElement) => void;
   }) => React.ReactNode; // Use render prop pattern
 }
 
@@ -22,13 +23,17 @@ export function SortableItem(props: SortableItemProps) {
     isDragging,
   } = useSortable({ id: props.id });
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 'auto', // Ensure dragging item is on top
+  // Function to set CSS custom properties
+  const setCSSVars = (element: HTMLElement) => {
+    if (element) {
+      element.style.setProperty('--sortable-transform', CSS.Transform.toString(transform) || 'none');
+      element.style.setProperty('--sortable-transition', transition || 'none');
+    }
   };
 
+  // Use CSS classes for static styles
+  const className = `sortable-item ${isDragging ? 'dragging' : 'not-dragging'}`;
+
   // Pass down necessary props via render prop
-  return props.children({ attributes, listeners, ref: setNodeRef, style });
+  return props.children({ attributes, listeners, ref: setNodeRef, className, setCSSVars });
 }

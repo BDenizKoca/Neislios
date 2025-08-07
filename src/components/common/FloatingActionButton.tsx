@@ -325,16 +325,33 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     return () => {
       observer.disconnect();
     };
-  }, []);  return (
+  }, []);
+
+  // Set CSS custom properties for positioning
+  useEffect(() => {
+    if (buttonRef.current) {
+      const button = buttonRef.current;
+      
+      // Reset all position properties
+      button.style.setProperty('--fab-right', position.right !== undefined ? `${position.right}px` : 'initial');
+      button.style.setProperty('--fab-bottom', position.bottom !== undefined ? `${position.bottom}px` : 'initial');
+      button.style.setProperty('--fab-left', position.left !== undefined ? `${position.left}px` : 'initial');
+      button.style.setProperty('--fab-top', position.top !== undefined ? `${position.top}px` : 'initial');
+      
+      // Apply any additional custom styles
+      Object.entries(style).forEach(([key, value]) => {
+        if (typeof value === 'string' || typeof value === 'number') {
+          button.style.setProperty(key, String(value));
+        }
+      });
+    }
+  }, [position, style]);
+
+  return (
     <button
-      ref={buttonRef}      className={`fixed rounded-full bg-primary text-white p-4 shadow-lg z-40 transition-opacity duration-200 ${
-        isModalOpen ? 'opacity-0 pointer-events-none hidden' : 'opacity-100'
+      ref={buttonRef}      className={`floating-action-button positioned fixed rounded-full bg-primary text-white p-4 shadow-lg z-40 transition-opacity duration-200 ${
+        isModalOpen ? 'opacity-0 pointer-events-none hidden fab-hidden' : 'opacity-100 fab-visible'
       }`}
-      style={{
-        ...position,
-        ...style,
-        display: isModalOpen ? 'none' : 'block'
-      }}
       onClick={(e) => e.preventDefault()} // Prevent immediate click
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}

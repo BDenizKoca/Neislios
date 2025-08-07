@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom'; // Removed unused Link
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'; // Import modifier
@@ -7,30 +7,42 @@ import { SortableItem } from '../components/common/SortableItem';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { TmdbSearchResult, getMediaDetails, searchMulti, TmdbMediaDetails } from '../services/tmdbService';
-import { Watchlist, WatchlistItem } from '../types/watchlist';
+import { Watchlist, WatchlistItem, WatchlistRole } from '../types/watchlist';
 import { Profile } from '../types/profile';
 import MediaListItem from '../components/movies/MovieListItem';
 import MovieListItemSkeleton from '../components/movies/MovieListItemSkeleton';
 import Skeleton from 'react-loading-skeleton';
 import toast from 'react-hot-toast';
-import { PlusIcon } from '@heroicons/react/24/outline'; // Removed unused ArrowUturnLeftIcon
+import { PlusIcon, UserMinusIcon, UserGroupIcon } from '@heroicons/react/24/outline'; // Added new icons
 
 // CSS to hide FAB on this page
 const hideFabStyle = `
-  .manage-items-page ~ button[aria-label] {
+  .manage-list-page ~ button[aria-label] {
     display: none !important;
   }
 `;
+
+// Storage keys for state persistence
+const SCROLL_STORAGE_KEY = 'manageListScrollPosition';
+const SEARCH_TERM_STORAGE_KEY = 'manageListSearchTerm';
 
 function ManageItemsPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const pageRef = useRef<HTMLDivElement>(null);
   const [watchlist, setWatchlist] = useState<Watchlist | null>(null);
+  const [userRole, setUserRole] = useState<WatchlistRole | null>(null);
   const [items, setItems] = useState<(WatchlistItem & { tmdbDetails?: TmdbMediaDetails })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Initialize search term from sessionStorage
+  const [searchTerm, setSearchTerm] = useState<string>(() => {
+    const saved = sessionStorage.getItem(SEARCH_TERM_STORAGE_KEY);
+    return saved || '';
+  });
+  
   const [searchResults, setSearchResults] = useState<TmdbSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -75,13 +87,14 @@ function ManageItemsPage() {
       const { data: listData, error: listError } = await supabase
         .from('watchlists').select('*').eq('id', watchlistId).single();
       if (listError) throw listError;
-      // Basic permission check
+      // Basic permission check - allow owners, editors, and viewers
       const { data: memberData, error: memberError } = await supabase
         .from('watchlist_members').select('role').eq('watchlist_id', watchlistId).eq('user_id', user.id).maybeSingle();
       if (memberError) throw memberError;
-      if (!memberData || !['owner', 'editor'].includes(memberData.role)) {
-          throw new Error("You don't have permission to manage this list.");
+      if (!memberData || !['owner', 'editor', 'viewer'].includes(memberData.role)) {
+          throw new Error("You don't have access to this list.");
       }
+      setUserRole(memberData.role as WatchlistRole);
       setWatchlist(listData);
 
       // Fetch items
@@ -174,6 +187,64 @@ function ManageItemsPage() {
     const delayDebounceFn = setTimeout(() => { handleSearch(); }, 500);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, items]);
+
+  // --- Save Search Term to Session Storage ---
+  useEffect(() => {
+    sessionStorage.setItem(SEARCH_TERM_STORAGE_KEY, searchTerm);
+  }, [searchTerm]);
+
+  // --- Scroll Position Tracking ---
+  useEffect(() => {
+    const handleScroll = () => {
+      if (pageRef.current) {
+        const newPosition = pageRef.current.scrollTop;
+        sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
+      }
+    };
+
+    const containerElement = pageRef.current;
+    if (containerElement) {
+      containerElement.addEventListener('scroll', handleScroll, { passive: true });
+      return () => containerElement.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  // --- Restore Scroll Position ---
+  useEffect(() => {
+    if (!loading && items.length > 0) {
+      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      if (savedPosition && pageRef.current) {
+        const position = parseInt(savedPosition, 10);
+        if (position > 0) {
+          setTimeout(() => {
+            if (pageRef.current) {
+              pageRef.current.scrollTop = position;
+            }
+          }, 300);
+        }
+      }
+    }
+  }, [loading, items.length]);
+
+  // --- Handle Browser Back/Forward ---
+  useEffect(() => {
+    const handlePopState = () => {
+      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      if (savedPosition && pageRef.current) {
+        const position = parseInt(savedPosition, 10);
+        if (position > 0) {
+          setTimeout(() => {
+            if (pageRef.current) {
+              pageRef.current.scrollTop = position;
+            }
+          }, 300);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // --- Add Item ---
   const handleAddItem = async (itemToAdd: TmdbSearchResult) => {
@@ -288,6 +359,103 @@ function ManageItemsPage() {
         }
    };
 
+  // --- Unfollow List Handler ---
+  const handleUnfollowList = async () => {
+    if (!watchlistId || !user || userRole === 'owner') return;
+    
+    const confirmMessage = userRole === 'editor' 
+      ? 'Are you sure you want to stop editing this list? You will lose access to modify it.'
+      : 'Are you sure you want to unfollow this list? You will lose access to view it.';
+    
+    if (!confirm(confirmMessage)) return;
+    
+    const toastId = toast.loading('Leaving list...');
+    try {
+      const { error } = await supabase
+        .from('watchlist_members')
+        .delete()
+        .eq('watchlist_id', watchlistId)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      toast.success('Left list successfully.', { id: toastId });
+      navigate('/'); // Navigate back to home
+    } catch (err: unknown) {
+      console.error('Error leaving list:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to leave list.', { id: toastId });
+    }
+  };
+
+  // --- Transfer Ownership Handler ---
+  const handleTransferOwnership = async () => {
+    if (!watchlistId || !user || userRole !== 'owner') return;
+    
+    // Get other members who could receive ownership
+    const otherMembers = members.filter(member => member.id !== user.id);
+    
+    if (otherMembers.length === 0) {
+      toast.error('No other members available to transfer ownership to.');
+      return;
+    }
+    
+    // Create a simple prompt for now - in a real app you'd want a proper modal
+    const memberNames = otherMembers.map((m, i) => `${i + 1}. ${m.display_name}`).join('\n');
+    const selection = prompt(`Transfer ownership to which member?\n\n${memberNames}\n\nEnter the number:`);
+    
+    if (!selection) return;
+    
+    const selectedIndex = parseInt(selection) - 1;
+    if (selectedIndex < 0 || selectedIndex >= otherMembers.length) {
+      toast.error('Invalid selection.');
+      return;
+    }
+    
+    const newOwner = otherMembers[selectedIndex];
+    
+    if (!confirm(`Are you sure you want to transfer ownership to ${newOwner.display_name}? This action cannot be undone.`)) {
+      return;
+    }
+    
+    const toastId = toast.loading('Transferring ownership...');
+    try {
+      // Update the new owner's role to 'owner'
+      const { error: updateError } = await supabase
+        .from('watchlist_members')
+        .update({ role: 'owner' })
+        .eq('watchlist_id', watchlistId)
+        .eq('user_id', newOwner.id);
+      
+      if (updateError) throw updateError;
+      
+      // Update current owner's role to 'editor'
+      const { error: demoteError } = await supabase
+        .from('watchlist_members')
+        .update({ role: 'editor' })
+        .eq('watchlist_id', watchlistId)
+        .eq('user_id', user.id);
+      
+      if (demoteError) throw demoteError;
+      
+      // Update the watchlist owner_id
+      const { error: ownerError } = await supabase
+        .from('watchlists')
+        .update({ owner_id: newOwner.id })
+        .eq('id', watchlistId);
+      
+      if (ownerError) throw ownerError;
+      
+      toast.success(`Ownership transferred to ${newOwner.display_name}.`, { id: toastId });
+      
+      // Refresh the page data
+      setUserRole('editor');
+      fetchWatchlistAndItems();
+    } catch (err: unknown) {
+      console.error('Error transferring ownership:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to transfer ownership.', { id: toastId });
+    }
+  };
+
 
   // --- Drag and Drop Handler ---
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -339,90 +507,157 @@ function ManageItemsPage() {
   if (!watchlist) return <div className="p-4 text-center">Watchlist not found or permission denied.</div>;
 
   return (
-    <div className="p-4 overflow-hidden manage-items-page"> {/* Added manage-items-page class */}
+    <div ref={pageRef} className="p-4 h-full manage-list-page"> {/* Added pageRef, removed duplicate scroll */}
       
       {/* Removed redundant Back to Watchlist link */}
-      <h2 className="text-2xl font-bold mb-1">Manage Items</h2>
+      <h2 className="text-2xl font-bold mb-1">
+        {userRole === 'viewer' ? 'View List' : 'Manage List'}
+      </h2>
       <h3 className="text-lg text-gray-600 dark:text-gray-400 mb-4">{watchlist.title}</h3>
+
+      {/* List Management Actions */}
+      <div className="mb-6 flex flex-wrap gap-3">
+        {userRole === 'owner' && (
+          <button
+            onClick={handleTransferOwnership}
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md flex items-center gap-2 text-sm"
+          >
+            <UserGroupIcon className="h-4 w-4" />
+            Transfer Ownership
+          </button>
+        )}
+        {(userRole === 'editor' || userRole === 'viewer') && (
+          <button
+            onClick={handleUnfollowList}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center gap-2 text-sm"
+          >
+            <UserMinusIcon className="h-4 w-4" />
+            {userRole === 'editor' ? 'Stop Editing' : 'Unfollow'} List
+          </button>
+        )}
+      </div>
 
       {error && !loading && <p className="text-red-500 mb-4">{error}</p>}
 
-      {/* Add Items Section */}
-      <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded shadow">
-        <h4 className="text-lg font-semibold mb-2 dark:text-gray-100">Add Movies or TV Shows</h4>
-        <input
-          type="text"
-          placeholder="Search TMDB..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 mb-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
-        />
-        <div className="max-h-48 overflow-y-auto space-y-1 pr-2">
-          {searchLoading && <p className="text-sm text-gray-500">Searching...</p>}
-          {searchError && !searchLoading && <p className="text-sm text-red-500">{searchError}</p>}
-          {searchResults.map(item => {
-            const mediaId = `${item.media_type === 'movie' ? 'tmdb:movie' : 'tmdb:tv'}:${item.id}`;
-            const title = item.media_type === 'movie' ? item.title : item.name;
-            const year = item.media_type === 'movie'
-              ? (item.release_date ? `(${new Date(item.release_date).getFullYear()})` : '')
-              : (item.first_air_date ? `(${new Date(item.first_air_date).getFullYear()})` : '');
-            return (
-              <div key={mediaId} className="flex items-center justify-between text-sm p-1.5 bg-white dark:bg-gray-700 rounded">
-                <span className="dark:text-gray-200 truncate pr-2" title={`${title} ${year}`}>{title} {year}</span>
-                <button
-                  onClick={() => handleAddItem(item)}
-                  disabled={isAdding[mediaId]}
-                  className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50 flex-shrink-0"
-                  title="Add to list"
-                >
-                  {isAdding[mediaId] ? '...' : <PlusIcon className="h-5 w-5"/>}
-                </button>
-              </div>
-            );
-          })}
+      {/* Add Items Section - Only for owners and editors */}
+      {(userRole === 'owner' || userRole === 'editor') && (
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded shadow">
+          <h4 className="text-lg font-semibold mb-2 dark:text-gray-100">Add Movies or TV Shows</h4>
+          <input
+            type="text"
+            placeholder="Search TMDB..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-2 mb-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
+          />
+          <div className="max-h-48 overflow-y-auto space-y-1 pr-2">
+            {searchLoading && <p className="text-sm text-gray-500">Searching...</p>}
+            {searchError && !searchLoading && <p className="text-sm text-red-500">{searchError}</p>}
+            {searchResults.map(item => {
+              const mediaId = `${item.media_type === 'movie' ? 'tmdb:movie' : 'tmdb:tv'}:${item.id}`;
+              const title = item.media_type === 'movie' ? item.title : item.name;
+              const year = item.media_type === 'movie'
+                ? (item.release_date ? `(${new Date(item.release_date).getFullYear()})` : '')
+                : (item.first_air_date ? `(${new Date(item.first_air_date).getFullYear()})` : '');
+              return (
+                <div key={mediaId} className="flex items-center justify-between text-sm p-1.5 bg-white dark:bg-gray-700 rounded">
+                  <span className="dark:text-gray-200 truncate pr-2" title={`${title} ${year}`}>{title} {year}</span>
+                  <button
+                    onClick={() => handleAddItem(item)}
+                    disabled={isAdding[mediaId]}
+                    className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50 flex-shrink-0"
+                    title="Add to list"
+                  >
+                    {isAdding[mediaId] ? '...' : <PlusIcon className="h-5 w-5"/>}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Current Items List */}
-      <h4 className="text-lg font-semibold mb-2 dark:text-gray-100">Current Items ({items.length})</h4>
+      {/* List Items */}
+      <h4 className="text-lg font-semibold mb-2 dark:text-gray-100">
+        List Items ({items.length})
+        {userRole === 'viewer' && (
+          <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">(View Only)</span>
+        )}
+      </h4>
       {!loading && items.length === 0 && <p className="text-gray-500 dark:text-gray-400">No items in this list yet.</p>}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis]} // Add modifier to restrict movement
-      >
-        <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3 overflow-x-hidden"> {/* Prevent horizontal overflow */}
-            {items.map(item => (
-              <SortableItem key={item.id} id={item.id}>
-                {({ attributes, listeners, ref, style }) => (
-                  <div ref={ref} style={style}>                    {item.tmdbDetails ? (
-                      <MediaListItem
-                        mediaItem={item.tmdbDetails}
-                        isWatched={user ? watchedMedia.has(item.media_id) : false}
-                        onToggleWatched={handleToggleWatched}
-                        addedBy={members.find(m => m.id === item.added_by_user_id)}
-                        onRemoveClick={() => handleRemoveItem(item.id)}
-                        showDragHandle={true}
-                        attributes={attributes}
-                        listeners={listeners}
-                        watchlistId={watchlistId}
-                      />
-                    ) : (
-                      <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 flex items-center space-x-4">
+      {/* Conditional DndContext - only enable for owners and editors */}
+      {(userRole === 'owner' || userRole === 'editor') ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          modifiers={[restrictToVerticalAxis]} // Add modifier to restrict movement
+        >
+          <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3 overflow-x-hidden"> {/* Prevent horizontal overflow */}
+              {items.map(item => (
+                <SortableItem key={item.id} id={item.id}>
+                  {({ attributes, listeners, ref, className, setCSSVars }) => (
+                    <div 
+                      ref={(node) => {
+                        ref(node);
+                        if (node) setCSSVars(node);
+                      }} 
+                      className={className}
+                    >
+                      {item.tmdbDetails ? (
+                        <MediaListItem
+                          mediaItem={item.tmdbDetails}
+                          isWatched={user ? watchedMedia.has(item.media_id) : false}
+                          onToggleWatched={handleToggleWatched}
+                          addedBy={members.find(m => m.id === item.added_by_user_id)}
+                          onRemoveClick={() => handleRemoveItem(item.id)}
+                          showDragHandle={true}
+                          attributes={attributes}
+                          listeners={listeners}
+                          watchlistId={watchlistId}
+                        />
+                      ) : (
+                        <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 flex items-center space-x-4">
                           <Skeleton circle height={24} width={24} />
                           <span>Loading details for {item.media_id}...</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </SortableItem>
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </SortableItem>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        /* Viewer mode - no drag and drop, no remove buttons */
+        <div className="space-y-3">
+          {items.map(item => (
+            <div key={item.id}>
+              {item.tmdbDetails ? (
+                <MediaListItem
+                  mediaItem={item.tmdbDetails}
+                  isWatched={user ? watchedMedia.has(item.media_id) : false}
+                  onToggleWatched={handleToggleWatched}
+                  addedBy={members.find(m => m.id === item.added_by_user_id)}
+                  onRemoveClick={undefined} // No remove for viewers
+                  showDragHandle={false} // No drag handle for viewers
+                  attributes={undefined}
+                  listeners={undefined}
+                  watchlistId={watchlistId}
+                />
+              ) : (
+                <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 flex items-center space-x-4">
+                  <Skeleton circle height={24} width={24} />
+                  <span>Loading details for {item.media_id}...</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
     </div>
   );

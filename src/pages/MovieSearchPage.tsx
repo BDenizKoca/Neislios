@@ -293,9 +293,8 @@ function MovieSearchPage() {
 
   return (
     <div 
-      className="p-4 h-[calc(100vh-64px)] overflow-y-auto" 
+      className="p-4 h-full relative" 
       ref={pageRef}
-      style={{ position: 'relative' }}
     >
       {/* Removed redundant h2 title */}
 

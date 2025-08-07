@@ -22,6 +22,54 @@ body.modal-open .floating-action-button {
   display: none !important;
 }
 
+/* Floating Action Button positioning */
+.floating-action-button {
+  --fab-right: initial;
+  --fab-bottom: initial;
+  --fab-left: initial;
+  --fab-top: initial;
+}
+
+.floating-action-button.positioned {
+  right: var(--fab-right);
+  bottom: var(--fab-bottom);
+  left: var(--fab-left);
+  top: var(--fab-top);
+}
+
+.floating-action-button.fab-hidden {
+  display: none;
+}
+
+.floating-action-button.fab-visible {
+  display: block;
+}
+
+/* Drag handle styles */
+.drag-handle {
+  touch-action: none;
+}
+
+/* Sortable item styles */
+.sortable-item {
+  /* Base styles for sortable items */
+  transition-property: transform, opacity;
+  --sortable-transform: none;
+  --sortable-transition: none;
+  transform: var(--sortable-transform);
+  transition: var(--sortable-transition);
+}
+
+.sortable-item.dragging {
+  opacity: 0.5;
+  z-index: 10;
+}
+
+.sortable-item.not-dragging {
+  opacity: 1;
+  z-index: auto;
+}
+
 .dark body,
 .dark .bg-gray-100,
 .dark main,
@@ -45,8 +93,8 @@ body.modal-open .floating-action-button {
   position: relative;
   /* height: 60px; */ /* Remove fixed height, rely on Tailwind class in component */
   overflow: hidden;
-  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
 }
 
 .slot-reel {

@@ -85,9 +85,8 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
         {/* Drag Handle (receives listeners) */}
         {showDragHandle && (
             <div
-                className="flex-shrink-0 cursor-grab text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                className="drag-handle flex-shrink-0 cursor-grab text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
                 title="Drag to reorder"
-                style={{ touchAction: 'none' }} // Explicitly set touch-action for the handle
                 {...attributes}
                 {...listeners}
             >

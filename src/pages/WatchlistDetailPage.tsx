@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
 import { TmdbMediaDetails } from '../services/tmdbService'; // Removed getMediaDetails
@@ -18,11 +18,26 @@ import { useWatchlistAI } from '../hooks/useWatchlistAI'; // Import AI hook
 import MediaRecommendationModal from '../components/recommendations/MediaRecommendationModal'; // Import AI modal
 import { LightBulbIcon } from '@heroicons/react/24/outline'; // Import icon
 
+// Storage keys for state persistence
+const SCROLL_STORAGE_KEY = 'watchlistDetailScrollPosition';
+
 function WatchlistDetailPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const pageRef = useRef<HTMLDivElement>(null);
   const { registerRandomPickTrigger } = useLayoutActions();
   const { setHeaderTitle } = useHeader();
+
+  // Custom navigation function that saves scroll position before navigating
+  const navigateWithScrollSave = useCallback((to: string) => {
+    // Save scroll position directly from the container ref
+    if (pageRef.current) {
+      const currentScroll = pageRef.current.scrollTop;
+      sessionStorage.setItem(SCROLL_STORAGE_KEY, currentScroll.toString());
+    }
+    navigate(to);
+  }, [navigate]);
 
   // --- Use Custom Hooks for Data Fetching ---
   const {
@@ -241,11 +256,64 @@ function WatchlistDetailPage() {
     };
   }, [registerRandomPickTrigger, handlePickRandom]);
 
-
   // --- Combined Loading and Error Handling ---
   const isLoading = loadingDetails || loadingItems || loadingMembers;
   // Prioritize details error, then items, then members
   const overallError = errorDetails || errorItems || errorMembers || errorAIEligibility;
+
+  // --- Scroll Position Tracking ---
+  useEffect(() => {
+    const handleScroll = () => {
+      if (pageRef.current) {
+        const newPosition = pageRef.current.scrollTop;
+        sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
+      }
+    };
+
+    const containerElement = pageRef.current;
+    if (containerElement) {
+      containerElement.addEventListener('scroll', handleScroll, { passive: true });
+      return () => containerElement.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  // --- Restore Scroll Position ---
+  useEffect(() => {
+    if (!isLoading && sortedAndFilteredItems.length > 0) {
+      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      if (savedPosition && pageRef.current) {
+        const position = parseInt(savedPosition, 10);
+        if (position > 0) {
+          setTimeout(() => {
+            if (pageRef.current) {
+              pageRef.current.scrollTop = position;
+            }
+          }, 300);
+        }
+      }
+    }
+  }, [isLoading, sortedAndFilteredItems.length]);
+
+  // --- Handle Browser Back/Forward ---
+  useEffect(() => {
+    const handlePopState = () => {
+      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      if (savedPosition && pageRef.current) {
+        const position = parseInt(savedPosition, 10);
+        if (position > 0) {
+          setTimeout(() => {
+            if (pageRef.current) {
+              pageRef.current.scrollTop = position;
+            }
+          }, 300);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
 
   // --- Render ---
   if (isLoading && !watchlist) { // Show skeleton only on initial load
@@ -273,11 +341,11 @@ function WatchlistDetailPage() {
     return <div className="p-4">Watchlist not found.</div>;
   }
 
-  // Determine if the current user can manage the list
-  const canManage = userRole === 'owner' || userRole === 'editor';
+  // Determine if the current user can access the manage page
+  const canAccess = userRole === 'owner' || userRole === 'editor' || userRole === 'viewer';
 
   return (
-    <div className="container mx-auto p-4">
+    <div ref={pageRef} className="container mx-auto p-4 h-full">
       {/* Watchlist Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">
@@ -299,22 +367,22 @@ function WatchlistDetailPage() {
               {checkingAIEligibility ? 'Checking...' : 'AI Recs'}
             </button>
           )}
-          {/* Manage Buttons - Conditionally Rendered */}
-          {canManage && (
+          {/* Manage/View Buttons - Conditionally Rendered */}
+          {canAccess && (
             <>
-              <Link
-                to={`/watchlist/${watchlistId}/manage`}
+              <button
+                onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/manage`)}
                 className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
               >
-                Manage Items
-              </Link>
+                {userRole === 'viewer' ? 'View List' : 'Manage List'}
+              </button>
               {userRole === 'owner' && (
-                <Link
-                  to={`/watchlist/${watchlistId}/collaborators`}
+                <button
+                  onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/collaborators`)}
                   className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                 >
                   Collaborators
-                </Link>
+                </button>
               )}
             </>
           )}
