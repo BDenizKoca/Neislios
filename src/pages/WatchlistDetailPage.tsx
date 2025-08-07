@@ -31,9 +31,10 @@ function WatchlistDetailPage() {
 
   // Custom navigation function that saves scroll position before navigating
   const navigateWithScrollSave = useCallback((to: string) => {
-    // Save scroll position directly from the container ref
-    if (pageRef.current) {
-      const currentScroll = pageRef.current.scrollTop;
+    // Save scroll position from the main layout's scroll container
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      const currentScroll = mainElement.scrollTop;
       sessionStorage.setItem(SCROLL_STORAGE_KEY, currentScroll.toString());
     }
     navigate(to);
@@ -104,6 +105,18 @@ function WatchlistDetailPage() {
       });
     }
   }, [watchlistId, checkListEligibleForAI]);
+
+  // --- Restore Recommendation Modal State ---
+  useEffect(() => {
+    if (watchlistId) {
+      // Check if we should restore the recommendation modal state
+      const savedModalState = sessionStorage.getItem('recommendation-modal-open');
+      if (savedModalState === watchlistId) {
+        console.log('Restoring recommendation modal state for watchlist:', watchlistId);
+        setShowAIRecommendModal(true);
+      }
+    }
+  }, [watchlistId]);
 
   // --- Sorting Logic ---
   const sortAndFilterItems = useCallback(() => {
@@ -264,16 +277,17 @@ function WatchlistDetailPage() {
   // --- Scroll Position Tracking ---
   useEffect(() => {
     const handleScroll = () => {
-      if (pageRef.current) {
-        const newPosition = pageRef.current.scrollTop;
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        const newPosition = mainElement.scrollTop;
         sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
       }
     };
 
-    const containerElement = pageRef.current;
-    if (containerElement) {
-      containerElement.addEventListener('scroll', handleScroll, { passive: true });
-      return () => containerElement.removeEventListener('scroll', handleScroll);
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.addEventListener('scroll', handleScroll, { passive: true });
+      return () => mainElement.removeEventListener('scroll', handleScroll);
     }
   }, []);
 
@@ -281,12 +295,13 @@ function WatchlistDetailPage() {
   useEffect(() => {
     if (!isLoading && sortedAndFilteredItems.length > 0) {
       const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (savedPosition && pageRef.current) {
+      if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {
           setTimeout(() => {
-            if (pageRef.current) {
-              pageRef.current.scrollTop = position;
+            const mainElement = document.querySelector('main');
+            if (mainElement) {
+              mainElement.scrollTop = position;
             }
           }, 300);
         }
@@ -298,12 +313,13 @@ function WatchlistDetailPage() {
   useEffect(() => {
     const handlePopState = () => {
       const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (savedPosition && pageRef.current) {
+      if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {
           setTimeout(() => {
-            if (pageRef.current) {
-              pageRef.current.scrollTop = position;
+            const mainElement = document.querySelector('main');
+            if (mainElement) {
+              mainElement.scrollTop = position;
             }
           }, 300);
         }

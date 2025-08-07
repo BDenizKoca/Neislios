@@ -14,6 +14,7 @@ import MovieListItemSkeleton from '../components/movies/MovieListItemSkeleton';
 import Skeleton from 'react-loading-skeleton';
 import toast from 'react-hot-toast';
 import { PlusIcon, UserMinusIcon, UserGroupIcon } from '@heroicons/react/24/outline'; // Added new icons
+import TransferOwnershipModal from '../components/watchlists/TransferOwnershipModal';
 
 // CSS to hide FAB on this page
 const hideFabStyle = `
@@ -49,6 +50,7 @@ function ManageItemsPage() {
   const [isAdding, setIsAdding] = useState<Record<string, boolean>>({});
   const [members, setMembers] = useState<Profile[]>([]);
   const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set());
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   // --- Drag and Drop Sensors ---
   const sensors = useSensors(
@@ -196,16 +198,17 @@ function ManageItemsPage() {
   // --- Scroll Position Tracking ---
   useEffect(() => {
     const handleScroll = () => {
-      if (pageRef.current) {
-        const newPosition = pageRef.current.scrollTop;
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        const newPosition = mainElement.scrollTop;
         sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
       }
     };
 
-    const containerElement = pageRef.current;
-    if (containerElement) {
-      containerElement.addEventListener('scroll', handleScroll, { passive: true });
-      return () => containerElement.removeEventListener('scroll', handleScroll);
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.addEventListener('scroll', handleScroll, { passive: true });
+      return () => mainElement.removeEventListener('scroll', handleScroll);
     }
   }, []);
 
@@ -213,12 +216,13 @@ function ManageItemsPage() {
   useEffect(() => {
     if (!loading && items.length > 0) {
       const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (savedPosition && pageRef.current) {
+      if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {
           setTimeout(() => {
-            if (pageRef.current) {
-              pageRef.current.scrollTop = position;
+            const mainElement = document.querySelector('main');
+            if (mainElement) {
+              mainElement.scrollTop = position;
             }
           }, 300);
         }
@@ -230,12 +234,13 @@ function ManageItemsPage() {
   useEffect(() => {
     const handlePopState = () => {
       const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (savedPosition && pageRef.current) {
+      if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {
           setTimeout(() => {
-            if (pageRef.current) {
-              pageRef.current.scrollTop = position;
+            const mainElement = document.querySelector('main');
+            if (mainElement) {
+              mainElement.scrollTop = position;
             }
           }, 300);
         }
@@ -388,7 +393,7 @@ function ManageItemsPage() {
   };
 
   // --- Transfer Ownership Handler ---
-  const handleTransferOwnership = async () => {
+  const handleTransferOwnership = () => {
     if (!watchlistId || !user || userRole !== 'owner') return;
     
     // Get other members who could receive ownership
@@ -399,23 +404,14 @@ function ManageItemsPage() {
       return;
     }
     
-    // Create a simple prompt for now - in a real app you'd want a proper modal
-    const memberNames = otherMembers.map((m, i) => `${i + 1}. ${m.display_name}`).join('\n');
-    const selection = prompt(`Transfer ownership to which member?\n\n${memberNames}\n\nEnter the number:`);
+    setShowTransferModal(true);
+  };
+
+  const handleConfirmTransfer = async (newOwnerId: string) => {
+    if (!watchlistId || !user) return;
     
-    if (!selection) return;
-    
-    const selectedIndex = parseInt(selection) - 1;
-    if (selectedIndex < 0 || selectedIndex >= otherMembers.length) {
-      toast.error('Invalid selection.');
-      return;
-    }
-    
-    const newOwner = otherMembers[selectedIndex];
-    
-    if (!confirm(`Are you sure you want to transfer ownership to ${newOwner.display_name}? This action cannot be undone.`)) {
-      return;
-    }
+    const newOwner = members.find(member => member.id === newOwnerId);
+    if (!newOwner) return;
     
     const toastId = toast.loading('Transferring ownership...');
     try {
@@ -658,6 +654,15 @@ function ManageItemsPage() {
           ))}
         </div>
       )}
+
+      <TransferOwnershipModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        onTransfer={handleConfirmTransfer}
+        members={members}
+        currentOwnerId={user?.id || ''}
+        watchlistTitle={watchlist?.title || ''}
+      />
 
     </div>
   );

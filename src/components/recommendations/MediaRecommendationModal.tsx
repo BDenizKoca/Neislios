@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react'; // Add useCallback
-import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline'; // Add PlusIcon
+import { XMarkIcon, PlusIcon, ArrowLeftIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'; // Add more icons
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import toast from 'react-hot-toast'; // Import toast
 import { supabase } from '../../lib/supabaseClient'; // Import supabase
 import { useAuth } from '../../hooks/useAuth'; // Import useAuth
 import { useAIRecommendations } from '../../hooks/useAIRecommendations';
-import { getMoviePosterUrl } from '../../services/tmdbService';
+import { getMoviePosterUrl, getMediaDetails, TmdbMediaDetails } from '../../services/tmdbService';
+import { isMovieDetails } from '../../utils/tmdbUtils';
 import { useWatchlistItems } from '../../hooks/useWatchlistItems';
 
 interface MediaRecommendationModalProps {
@@ -23,6 +24,8 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
   const { items, loading: itemsLoading, error: itemsError, refetch: refetchWatchlistItems } = useWatchlistItems(watchlistId); // Add refetch
   const [isGenerating, setIsGenerating] = useState(false);
   const [addingItemId, setAddingItemId] = useState<number | null>(null); // State to track adding item
+  const [previewMedia, setPreviewMedia] = useState<{id: number, media_type: 'movie' | 'tv', details?: TmdbMediaDetails} | null>(null); // State for inline preview
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   // Create a set of existing media IDs for quick lookup
@@ -122,6 +125,24 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
       navigate(`/tv/${mediaId}`);
     }
   };
+
+  const handlePreviewMedia = async (mediaId: number, mediaType: 'movie' | 'tv') => {
+    setLoadingPreview(true);
+    try {
+      const fullMediaId = `tmdb:${mediaType}:${mediaId}`;
+      const details = await getMediaDetails(fullMediaId);
+      setPreviewMedia({
+        id: mediaId,
+        media_type: mediaType,
+        details: details || undefined
+      });
+    } catch (error) {
+      console.error('Failed to load media details:', error);
+      toast.error('Failed to load preview');
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
   // Manage body class and persisted state based on modal visibility
   useEffect(() => {
     if (isOpen) {
@@ -151,9 +172,20 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-75 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm"> {/* Increased z-index to maximum */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* ... existing header ... */}        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            AI Media Recommendations
-          </h2>
+          <div className="flex items-center">
+            {previewMedia && (
+              <button
+                onClick={() => setPreviewMedia(null)}
+                className="mr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                aria-label="Back to recommendations"
+              >
+                <ArrowLeftIcon className="h-5 w-5" />
+              </button>
+            )}
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {previewMedia ? 'Media Preview' : 'AI Media Recommendations'}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -164,7 +196,130 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
         </div>
 
         <div className="p-4 flex-1 overflow-y-auto">
-          {isLoading ? (
+          {previewMedia ? (
+            // Preview mode
+            <div className="space-y-4">
+              {loadingPreview ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <div className="w-12 h-12 border-4 border-t-primary rounded-full animate-spin mb-4"></div>
+                  <p className="text-gray-600 dark:text-gray-300">Loading preview...</p>
+                </div>
+              ) : previewMedia.details ? (
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* Poster */}
+                  <div className="lg:w-1/3 flex-shrink-0">
+                    {previewMedia.details.poster_path ? (
+                      <img
+                        src={getMoviePosterUrl(previewMedia.details.poster_path, 'w500') ?? undefined}
+                        alt={isMovieDetails(previewMedia.details) ? previewMedia.details.title : previewMedia.details.name}
+                        className="w-full rounded-lg shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-full aspect-[2/3] bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-500 dark:text-gray-400">No image</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Details */}
+                  <div className="lg:w-2/3 space-y-4">
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        {isMovieDetails(previewMedia.details) ? previewMedia.details.title : previewMedia.details.name}
+                      </h3>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
+                        <span className="flex items-center">
+                          <span className="text-yellow-500 mr-1">★</span>
+                          {previewMedia.details.vote_average.toFixed(1)}
+                        </span>
+                        <span>
+                          {isMovieDetails(previewMedia.details) 
+                            ? previewMedia.details.release_date?.substring(0, 4)
+                            : previewMedia.details.first_air_date?.substring(0, 4)
+                          }
+                        </span>
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
+                          {previewMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {previewMedia.details.genres && previewMedia.details.genres.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Genres</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {previewMedia.details.genres.map(genre => (
+                            <span key={genre.id} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm">
+                              {genre.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Overview</h4>
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {previewMedia.details.overview || 'No description available.'}
+                      </p>
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex space-x-3 pt-4">
+                      <button
+                        onClick={() => {
+                          const mediaKey = `${previewMedia.media_type}:${previewMedia.id}`;
+                          if (!existingMediaIds.has(mediaKey)) {
+                            handleAddToList(previewMedia.id, previewMedia.media_type);
+                          }
+                        }}
+                        disabled={existingMediaIds.has(`${previewMedia.media_type}:${previewMedia.id}`) || addingItemId === previewMedia.id}
+                        className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
+                          existingMediaIds.has(`${previewMedia.media_type}:${previewMedia.id}`)
+                            ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                            : addingItemId === previewMedia.id
+                            ? 'bg-blue-400 dark:bg-blue-700 text-white cursor-wait'
+                            : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white'
+                        }`}
+                      >
+                        {addingItemId === previewMedia.id ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Adding...
+                          </>
+                        ) : existingMediaIds.has(`${previewMedia.media_type}:${previewMedia.id}`) ? (
+                          <>
+                            <PlusIcon className="h-4 w-4 mr-2" />
+                            Added
+                          </>
+                        ) : (
+                          <>
+                            <PlusIcon className="h-4 w-4 mr-2" />
+                            Add to List
+                          </>
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => handleNavigateToDetails(previewMedia.id, previewMedia.media_type)}
+                        className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+                      >
+                        <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-2" />
+                        Full Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-red-500 p-4 text-center">
+                  Failed to load preview details.
+                </div>
+              )}
+            </div>
+          ) : isLoading ? (
             // ... loading indicator ...
             <div className="flex flex-col items-center justify-center p-8">
               <div className="w-12 h-12 border-4 border-t-primary rounded-full animate-spin mb-4"></div>
@@ -199,7 +354,7 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
                   >
                     <div
                       className="flex cursor-pointer" // Make main content area clickable
-                      onClick={() => handleNavigateToDetails(media.id, media.media_type)}
+                      onClick={() => handlePreviewMedia(media.id, media.media_type)}
                     >
                       <div className="w-1/3 flex-shrink-0"> {/* Adjusted width */}
                         {media.poster_path ? (

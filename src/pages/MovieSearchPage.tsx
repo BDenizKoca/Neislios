@@ -21,9 +21,10 @@ function MovieSearchPage() {
   
   // Custom navigation function that saves scroll position before navigating
   const navigateWithScrollSave = useCallback((to: string) => {
-    // Save scroll position directly from the container ref
-    if (pageRef.current) {
-      const currentScroll = pageRef.current.scrollTop;
+    // Save scroll position from the main layout's scroll container
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      const currentScroll = mainElement.scrollTop;
       sessionStorage.setItem(SCROLL_STORAGE_KEY, currentScroll.toString());
     }
     navigate(to);
@@ -171,21 +172,19 @@ function MovieSearchPage() {
     fetchFavoriteWatchlists();
   }, [user]);
 
-  // Set up scroll event listener on the container div
+  // Set up scroll event listener on the main layout's scroll container
   useEffect(() => {
-    const containerElement = pageRef.current;
-    if (!containerElement) return;
+    const mainElement = document.querySelector('main');
+    if (!mainElement) return;
     
     const handleScroll = () => {
-      const newPosition = containerElement.scrollTop;
+      const newPosition = mainElement.scrollTop;
       sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
     };
     
-    containerElement.addEventListener('scroll', handleScroll);
+    mainElement.addEventListener('scroll', handleScroll);
     return () => {
-      if (containerElement) {
-        containerElement.removeEventListener('scroll', handleScroll);
-      }
+      mainElement.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -193,12 +192,13 @@ function MovieSearchPage() {
   useEffect(() => {
     if (!loading && (results.length > 0 || watchlistResults.length > 0)) {
       const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (savedPosition && pageRef.current) {
+      if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {
           setTimeout(() => {
-            if (pageRef.current) {
-              pageRef.current.scrollTop = position;
+            const mainElement = document.querySelector('main');
+            if (mainElement) {
+              mainElement.scrollTop = position;
             }
           }, 300);
         }
@@ -210,12 +210,13 @@ function MovieSearchPage() {
   useEffect(() => {
     const handlePopState = () => {
       const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (savedPosition && pageRef.current) {
+      if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {
           setTimeout(() => {
-            if (pageRef.current) {
-              pageRef.current.scrollTop = position;
+            const mainElement = document.querySelector('main');
+            if (mainElement) {
+              mainElement.scrollTop = position;
             }
           }, 300);
         }
