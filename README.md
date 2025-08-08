@@ -1,7 +1,6 @@
 # Neislios - Collaborative Movie Watchlist PWA
 
-live test here;
-neislios.pages.dev
+🚀 **[Live Demo: neislios.pages.dev](https://neislios.pages.dev)**
 
 > **exploration into PWAs, React, and collaborative experiences.**
 
