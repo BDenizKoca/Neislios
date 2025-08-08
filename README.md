@@ -1,6 +1,6 @@
 # Neislios - Collaborative Movie Watchlist PWA
 
-🚀 **[Live Demo: neislios.pages.dev](https://neislios.pages.dev)**
+ **[Live Demo: neislios.pages.dev](https://neislios.pages.dev)**
 
 > **exploration into PWAs, React, and collaborative experiences.**
 
@@ -181,7 +181,7 @@ Touch-optimized interface with gesture support:
 - **Responsive Grid**: CSS Grid with intelligent breakpoints
 - **Touch Targets**: 44px minimum for accessibility compliance
 
-## 🌱 My Learning Journey
+##  My Learning Journey
 
 This project represents my exploration into:
 - **Progressive Web Apps** - Understanding offline capabilities and native-like experiences
@@ -194,22 +194,22 @@ This project represents my exploration into:
 
 I mostly consider this project done, as it accomplishes everything I've outlined in the original desing document. So currently, no active work is being done on this.
 
-## 📬 Connect With Me
+##  Connect With Me
 
 I'd love to hear your thoughts, suggestions, or just chat about code and creativity!
 
-📧 **Email:** [b.denizkoca@gmail.com](mailto:b.denizkoca@gmail.com)  
-🐙 **GitHub:** [@BDenizKoca](https://github.com/BDenizKoca)  
-📍 **Location:** İstanbul, Turkey
+ **Email:** [b.denizkoca@gmail.com](mailto:b.denizkoca@gmail.com)  
+ **GitHub:** [@BDenizKoca](https://github.com/BDenizKoca)  
+ **Location:** İstanbul, Turkey
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 **What this means:**
-- ✅ You can use this code for personal or commercial projects
-- ✅ You can modify and distribute it
-- ✅ You just need to include the license notice
-- ✅ No warranty provided (use at your own risk!)
+-  You can use this code for personal or commercial projects
+-  You can modify and distribute it
+-  You just need to include the license notice
+-  No warranty provided (use at your own risk!)
 
 Feel free to learn from the code, build upon it, or use it as inspiration for your own projects!
