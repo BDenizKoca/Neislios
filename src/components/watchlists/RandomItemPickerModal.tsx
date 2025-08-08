@@ -247,7 +247,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                             )
                         )}
                         <button onClick={onClose} className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-medium transform hover:scale-105 transition-all duration-200 shadow-lg">
-                            Awesome!
+                            Reroll
                         </button>
                     </div>
                 )}
