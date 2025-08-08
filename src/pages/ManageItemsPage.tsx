@@ -536,13 +536,26 @@ function ManageItemsPage() {
       {(userRole === 'owner' || userRole === 'editor') && (
         <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded shadow">
           <h4 className="text-lg font-semibold mb-2 dark:text-gray-100">Add Movies or TV Shows</h4>
-          <input
-            type="text"
-            placeholder="Search TMDB..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 mb-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
-          />
+          <div className="relative mb-2">
+            <input
+              type="text"
+              placeholder="Search TMDB..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 pr-9 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                aria-label="Clear search"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+          </div>
           <div className="max-h-48 overflow-y-auto space-y-1 pr-2">
             {searchLoading && <p className="text-sm text-gray-500">Searching...</p>}
             {searchError && !searchLoading && <p className="text-sm text-red-500">{searchError}</p>}
