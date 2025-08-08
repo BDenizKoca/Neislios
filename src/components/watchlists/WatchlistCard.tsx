@@ -6,7 +6,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Watchlist } from '../../types/watchlist';
 import { useAuth } from '../../hooks/useAuth';
 import { logger } from '../../utils/logger';
-import CollaboratorAvatars from './CollaboratorAvatars';
 
 interface WatchlistCardProps {
   watchlist: Watchlist;
@@ -185,18 +184,6 @@ const WatchlistCard = ({
             {watchlist.description || ''}
           </p>
           
-          {/* Collaborator Avatars */}
-          {watchlist.members && watchlist.members.length > 1 && (
-            <div className="mb-3">
-              <CollaboratorAvatars 
-                members={watchlist.members}
-                ownerId={watchlist.owner_id}
-                maxVisible={3}
-                size="sm"
-                textColor={cardTextColorClass === 'text-white' ? 'text-gray-300' : 'text-gray-500'}
-              />
-            </div>
-          )}
       </div>
       {/* Bottom section for owner/role */}
       {/* Apply primary contrasting color to owner/role text */}

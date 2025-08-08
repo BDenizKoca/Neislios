@@ -21,6 +21,7 @@ import { RandomItemPickerModal } from '../components/watchlists/RandomItemPicker
 import { useWatchlistAI } from '../hooks/useWatchlistAI'; // Import AI hook
 import MediaRecommendationModal from '../components/recommendations/MediaRecommendationModal'; // Import AI modal
 import { LightBulbIcon } from '@heroicons/react/24/outline'; // Import icon
+import CollaboratorAvatars from '../components/watchlists/CollaboratorAvatars'; // Import CollaboratorAvatars component
 
 // Storage keys for state persistence
 const SCROLL_STORAGE_KEY = 'watchlistDetailScrollPosition';
@@ -457,6 +458,19 @@ function WatchlistDetailPage() {
           {watchlist.title}
         </h1>
         <p className="mb-4 text-gray-600 dark:text-gray-400">{watchlist.description || 'No description.'}</p>
+        
+        {/* Collaborator Avatars */}
+        {members && members.length > 0 && (
+          <div className="mb-4">
+            <CollaboratorAvatars 
+              members={members}
+              ownerId={watchlist.owner_id}
+              maxVisible={5}
+              size="md"
+              textColor="text-gray-600 dark:text-gray-400"
+            />
+          </div>
+        )}
         
         {/* Action Buttons - Centered and below description */}
         <div className="flex flex-wrap justify-center gap-2 mb-4">

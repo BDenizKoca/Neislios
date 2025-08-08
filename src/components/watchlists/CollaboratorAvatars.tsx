@@ -29,9 +29,9 @@ export default function CollaboratorAvatars({
 
   // Determine size classes
   const sizeClasses = {
-    sm: 'w-5 h-5 text-xs',
-    md: 'w-6 h-6 text-sm', 
-    lg: 'w-8 h-8 text-base'
+    sm: 'w-6 h-6 text-xs',
+    md: 'w-8 h-8 text-sm', 
+    lg: 'w-10 h-10 text-base'
   };
 
   const avatarSize = sizeClasses[size];
@@ -51,12 +51,12 @@ export default function CollaboratorAvatars({
               <img
                 src={member.avatar_url}
                 alt={`${member.display_name}'s avatar`}
-                className={`${avatarSize} rounded-full border-2 border-white dark:border-gray-800 object-cover`}
+                className={`${avatarSize} rounded-full object-cover shadow-md`}
                 title={member.display_name}
               />
             ) : (
               <div
-                className={`${avatarSize} rounded-full border-2 border-white dark:border-gray-800 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center font-medium text-white`}
+                className={`${avatarSize} rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center font-medium text-white shadow-md`}
                 title={member.display_name}
               >
                 {member.display_name.charAt(0).toUpperCase()}
@@ -77,7 +77,7 @@ export default function CollaboratorAvatars({
             onMouseLeave={() => setShowTooltip(false)}
           >
             <div
-              className={`${avatarSize} rounded-full border-2 border-white dark:border-gray-800 bg-gray-400 dark:bg-gray-600 flex items-center justify-center font-medium text-white cursor-pointer`}
+              className={`${avatarSize} rounded-full bg-gray-400 dark:bg-gray-600 flex items-center justify-center font-medium text-white cursor-pointer shadow-md`}
               title={`+${remainingCount} more collaborators`}
             >
               +{remainingCount}
