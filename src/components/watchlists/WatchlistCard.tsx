@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import { StarIcon as StarIconSolid, PencilSquareIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline, GlobeAltIcon, LockClosedIcon } from '@heroicons/react/24/outline';
@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Watchlist } from '../../types/watchlist';
 import { useAuth } from '../../hooks/useAuth';
 import { logger } from '../../utils/logger';
+import CollaboratorAvatars from './CollaboratorAvatars';
 
 interface WatchlistCardProps {
   watchlist: Watchlist;
@@ -33,12 +34,12 @@ const getContrastingTextColor = (hexColor: string | null | undefined): 'text-bla
     }
 };
 
-const WatchlistCard: React.FC<WatchlistCardProps> = ({
+const WatchlistCard = ({
   watchlist,
   onToggleFavorite,
   onEdit,
   onDelete, // Destructure onDelete
-}) => {
+}: WatchlistCardProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isOwner = user?.id === watchlist.owner_id;
@@ -183,6 +184,19 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
           <p className={`text-sm mb-3 ${cardTextColorClass} break-words`}>
             {watchlist.description || ''}
           </p>
+          
+          {/* Collaborator Avatars */}
+          {watchlist.members && watchlist.members.length > 1 && (
+            <div className="mb-3">
+              <CollaboratorAvatars 
+                members={watchlist.members}
+                ownerId={watchlist.owner_id}
+                maxVisible={3}
+                size="sm"
+                textColor={cardTextColorClass === 'text-white' ? 'text-gray-300' : 'text-gray-500'}
+              />
+            </div>
+          )}
       </div>
       {/* Bottom section for owner/role */}
       {/* Apply primary contrasting color to owner/role text */}

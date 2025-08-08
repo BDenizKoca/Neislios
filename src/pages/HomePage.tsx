@@ -17,9 +17,11 @@ type Tab = 'favorites' | 'yourLists' | 'sharedLists';
 type RawOwnerData = {
     id: string;
     display_name: string | null;
+    avatar_url?: string | null;
 } | Array<{
     id: string;
     display_name: string | null;
+    avatar_url?: string | null;
 }> | null | undefined;
 
 // Type for the raw watchlist data structure from Supabase join
@@ -74,19 +76,58 @@ function HomePage() {
             is_public,
             created_at,
             updated_at,
-            owner:profiles!watchlists_owner_id_fkey ( id, display_name )
+            owner:profiles!watchlists_owner_id_fkey ( id, display_name, avatar_url )
           )
         `)
-        // Alternative syntax if the above doesn't work:
-        // .select(`
-        //   role,
-        //   watchlist:watchlists!inner (
-        //     *,
-        //     owner:profiles!inner(*)
-        //   )
-        // `)
-        // .eq('watchlist.owner_id', 'watchlist.owner.id') // This condition is usually implicit
         .eq('user_id', user.id);
+
+      if (memberError) throw memberError;
+
+      // Get all unique watchlist IDs to fetch their complete member lists
+      const watchlistIds = memberships?.map(m => {
+        const watchlistData = Array.isArray(m.watchlist) ? m.watchlist[0] : m.watchlist;
+        return watchlistData?.id;
+      }).filter(Boolean) || [];
+
+      // Fetch all members for these watchlists
+      interface MemberData {
+        watchlist_id: string;
+        profile: Profile | Profile[];
+      }
+      
+      let allMembersData: MemberData[] = [];
+      if (watchlistIds.length > 0) {
+        const { data: membersData, error: allMembersError } = await supabase
+          .from('watchlist_members')
+          .select(`
+            watchlist_id,
+            profile:profiles!inner ( id, display_name, avatar_url )
+          `)
+          .in('watchlist_id', watchlistIds);
+
+        if (allMembersError) {
+          logger.warn("Error fetching members data:", allMembersError);
+        } else {
+          allMembersData = membersData || [];
+        }
+      }
+
+      // Group members by watchlist_id
+      const membersByWatchlist = new Map<string, Profile[]>();
+      allMembersData.forEach(memberData => {
+        const profileData = Array.isArray(memberData.profile) ? memberData.profile[0] : memberData.profile;
+        if (profileData?.id && profileData.display_name) {
+          const watchlistId = memberData.watchlist_id;
+          if (!membersByWatchlist.has(watchlistId)) {
+            membersByWatchlist.set(watchlistId, []);
+          }
+          membersByWatchlist.get(watchlistId)?.push({
+            id: profileData.id,
+            display_name: profileData.display_name,
+            avatar_url: profileData.avatar_url
+          });
+        }
+      });
 
       if (memberError) throw memberError;
 
@@ -125,12 +166,16 @@ function HomePage() {
                  ownerProfile = {
                     id: ownerData.id,
                     display_name: ownerData.display_name,
+                    avatar_url: ownerData.avatar_url,
                     // avatar_url and updated_at are optional in Profile type
                  };
             } else {
                  logger.warn("Watchlist owner data is invalid or incomplete:", ownerData);
             }
           }
+
+          // Get members for this watchlist
+          const watchlistMembers = membersByWatchlist.get(rawWatchlistData.id) || [];
 
           // Construct the final Watchlist object, ensuring all required fields exist
           // and optional fields are handled correctly.
@@ -145,6 +190,7 @@ function HomePage() {
             // Provide fallback for updated_at to satisfy Watchlist type (which now allows null)
             updated_at: rawWatchlistData.updated_at,
             owner: ownerProfile, // Assign the processed owner profile
+            members: watchlistMembers, // Include all members
             member_role: m.role as WatchlistRole | undefined, // Cast role
             is_favorite: favoriteIds.has(rawWatchlistData.id), // Check favorite status
           };

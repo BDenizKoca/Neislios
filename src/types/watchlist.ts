@@ -14,6 +14,7 @@ export interface Watchlist {
   updated_at: string | null;
   // Optional fields populated by joins/queries
   owner?: Profile; // Populated owner profile
+  members?: Profile[]; // All members including owner
   member_role?: WatchlistRole; // Role of the current user viewing the list
   is_favorite?: boolean; // If the current user favorited this list
   // movie_count?: number; // Could be added later
