@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth'; // Updated import path
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -9,6 +9,15 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { signInWithEmail, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check for error messages from URL params
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'google_signup_disabled') {
+      setError('Google account creation is currently disabled. Existing Google users can still sign in. Please create an account using email and password.');
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +119,7 @@ function LoginPage() {
           >
             {/* Basic Google Icon Placeholder */}
             <svg className="w-5 h-5 mr-2" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 512 244 512 109.8 512 0 402.2 0 256S109.8 0 244 0c73 0 135.7 29.1 182.4 76.3l-66.3 66.3C314.6 100.7 282.7 80 244 80 149.9 80 72 158.3 72 256s77.9 176 172 176c61.8 0 104.1-25.8 132.1-53.1 21.9-21.1 33.9-51.4 37.9-86.4H244v-71.4h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>
-            Sign in with Google
+            Sign in with Google (existing users)
           </button>
         </div>
 

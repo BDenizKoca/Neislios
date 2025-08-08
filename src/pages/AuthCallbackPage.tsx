@@ -8,6 +8,12 @@ const AuthCallbackPage: React.FC = () => {
   // Function to check if user profile exists and create it if not
   const checkAndCreateUserProfile = useCallback(async (userId: string) => {
     try {
+      // Get the user data to check if this is a Google sign-in
+      const { data: userData } = await supabase.auth.getUser();
+      
+      // Check if this is a Google OAuth sign-in
+      const isGoogleAuth = userData?.user?.app_metadata?.provider === 'google';
+      
       // Check if user has a profile in the profiles table
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -15,19 +21,27 @@ const AuthCallbackPage: React.FC = () => {
         .eq('id', userId)
         .single();
 
-      // Get the user data to extract Google profile information
-      const { data: userData } = await supabase.auth.getUser();        if (userData && userData.user) {
-        /**
-         * We're not using user metadata directly here, but we'll check account status
-         * const user = userData.user;
-         * const userMetadata = user.user_metadata;
-         */
-          
-        // Check if this is a new Google account (no profile or empty display_name)
-        if (profileError || !profile || !profile.display_name) {
-          // Instead of auto-creating profile with Google name, redirect to onboarding
-          // to let user choose a custom display name
+      if (userData && userData.user) {
+        // If this is a Google sign-in and no profile exists, it's a new Google user - reject them
+        if (isGoogleAuth && (profileError || !profile)) {
+          console.log('Blocking new Google account creation');
+          // Sign out the user immediately
+          await supabase.auth.signOut();
+          // Redirect to login with an error message
+          navigate('/login?error=google_signup_disabled');
+          return;
+        }
+        
+        // Check if this is a new account (no profile or empty display_name) for non-Google users
+        if (!isGoogleAuth && (profileError || !profile || !profile.display_name)) {
+          // For email/password users, redirect to onboarding
           navigate('/google-onboarding');
+          return;
+        }
+        
+        // If this is an existing Google user with a profile, allow them through
+        if (isGoogleAuth && profile && profile.display_name) {
+          navigate('/');
           return;
         }
       }
