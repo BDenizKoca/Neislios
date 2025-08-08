@@ -39,6 +39,12 @@ I should add a huge disclamer here that this project is mainly for my personal u
   - Edge Functions for serverless computing
 - **TMDB API** - Comprehensive movie and TV show data
 
+**Deployment & Hosting:**
+- **Cloudflare Pages** - Lightning-fast global CDN hosting
+- **Automatic deployments** from GitHub integration
+- **Custom domain** with SSL/TLS certificates
+- **Edge caching** for optimal performance worldwide
+
 **Interactive Features:**
 - **@dnd-kit** - Modern drag-and-drop with touch support
 - **react-swipeable** - Gesture recognition for mobile interactions
