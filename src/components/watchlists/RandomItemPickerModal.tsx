@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { TmdbMediaDetails } from '../../services/tmdbService';
@@ -14,14 +14,25 @@ interface RandomItemPickerModalProps {
 const SPIN_DURATION = 2000;
 const ITEM_HEIGHT = 86;
 const PROGRESS_UPDATE_INTERVAL = 25;
-const WIN_SOUND_DELAY = 200;
+const WIN_VIBRATION_DELAY = 200;
 
-const playAudio = (audioRef: React.RefObject<HTMLAudioElement | null>, volume: number) => {
-    if (audioRef.current) {
-        audioRef.current.volume = volume;
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
+// Vibration utility functions
+const vibrate = (pattern: number | number[]) => {
+    if ('vibrate' in navigator) {
+        navigator.vibrate(pattern);
     }
+};
+
+const vibrateSpinStart = () => {
+    vibrate([50, 30, 50, 30, 100]); // Rapid bursts for excitement
+};
+
+const vibrateWin = () => {
+    vibrate([300, 100, 300, 100, 500]); // Strong celebration pattern
+};
+
+const vibrateProgressPulse = () => {
+    vibrate(25); // Quick pulse during spin
 };
 
 const extractTitles = (items: WatchlistItemWithDetails[]): string[] => {
@@ -38,9 +49,6 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
     const [availableTitles, setAvailableTitles] = useState<string[]>([]);
     const [reelTranslation, setReelTranslation] = useState<number>(0);
     const [isVisuallySpinning, setIsVisuallySpinning] = useState(false);
-    
-    const spinningAudioRef = useRef<HTMLAudioElement | null>(null);
-    const winAudioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         if (!isOpen) {
@@ -106,6 +114,12 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             const elapsedTime = Date.now() - startTime;
             const currentProgress = Math.min(elapsedTime, SPIN_DURATION);
             setSpinProgress(currentProgress);
+            
+            // Add progressive vibration pulses during spin
+            if (elapsedTime < SPIN_DURATION && elapsedTime % 400 < PROGRESS_UPDATE_INTERVAL) {
+                vibrateProgressPulse();
+            }
+            
             if (elapsedTime < SPIN_DURATION) {
                  progressInterval = setTimeout(updateProgress, PROGRESS_UPDATE_INTERVAL);
             }
@@ -132,7 +146,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             }
         }, SPIN_DURATION);
 
-        playAudio(spinningAudioRef, 0.5);
+        vibrateSpinStart(); // Start vibration when spin begins
 
         return () => {
             if (progressInterval) clearTimeout(progressInterval);
@@ -142,7 +156,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
     
     useEffect(() => {
         if (!isSpinning && randomPick && isOpen) {
-            setTimeout(() => playAudio(winAudioRef, 0.6), WIN_SOUND_DELAY);
+            setTimeout(() => vibrateWin(), WIN_VIBRATION_DELAY);
         }
     }, [isSpinning, randomPick, isOpen]);
 
@@ -155,20 +169,13 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             className={`fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             onClick={onClose}
         >
-            <audio ref={spinningAudioRef} preload="auto">
-                <source src="https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3" type="audio/mp3" />
-            </audio>
-            <audio ref={winAudioRef} preload="auto">
-                <source src="https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3" type="audio/mp3" />
-            </audio>
-            
             <div
                 className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center transform transition-all duration-300 ease-in-out ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} animate-hype`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {isSpinning || isVisuallySpinning ? (
                     <div className="flex flex-col items-center">
-                        <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Picking Random Item...</h3>
+                        <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white animate-pulse">Picking Random Item...</h3>
                         <div className="slot-machine-container h-48 mb-4 w-full">
                              <div className="slot-highlight-zone"></div>
                              <div
@@ -204,9 +211,9 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                                 ))}
                             </div>
                         </div>
-                        <div className="h-2 w-full bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
                             <div
-                                className="h-full bg-primary progress-bar-dynamic rounded-full"
+                                className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 progress-bar-dynamic rounded-full transition-all duration-100 shadow-lg animate-pulse"
                                 /* Inline style required for dynamic progress bar width */
                                 /* Width percentage changes continuously during spin animation */
                                 style={{ width: `${(spinProgress / SPIN_DURATION) * 100}%` }}
@@ -217,16 +224,16 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                     <div className={`transition-opacity duration-300 ease-in ${showPickerContent ? 'opacity-100' : 'opacity-0'}`}>
                         {randomPick ? (
                             <>
-                                <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Your Random Pick!</h3>
+                                <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Your Random Pick!</h3>
                                 <Link
                                     to={`/${randomPick.media_type}/${randomPick.id}`}
                                     onClick={onClose}
-                                    className="hover:underline win-reveal block p-3"
+                                    className="hover:underline win-reveal block p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-xl border-2 border-dashed border-blue-300 dark:border-purple-400 transform hover:scale-105 transition-all duration-200"
                                 >
-                                    <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                                    <p className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">
                                         {isMovieDetails(randomPick) ? randomPick.title : randomPick.name}
                                     </p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    <p className="text-base text-gray-600 dark:text-gray-300">
                                         {isMovieDetails(randomPick) ? randomPick.release_date?.substring(0, 4) : randomPick.first_air_date?.substring(0, 4)}
                                     </p>
                                 </Link>
@@ -239,8 +246,8 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                                 </>
                             )
                         )}
-                        <button onClick={onClose} className="mt-6 bg-primary hover:bg-opacity-80 text-white py-2 px-4 rounded">
-                            Close
+                        <button onClick={onClose} className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-medium transform hover:scale-105 transition-all duration-200 shadow-lg">
+                            Awesome!
                         </button>
                     </div>
                 )}
