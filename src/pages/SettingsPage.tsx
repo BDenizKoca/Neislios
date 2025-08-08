@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react'; // Removed unused state/effect for dark mode
-// Removed unused Link import
-import { useAuth } from '../hooks/useAuth'; // Updated import path
+import { useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { useHeader } from '../hooks/useHeader';
-import { useTheme } from '../hooks/useTheme'; // Import useTheme hook
+import { useTheme } from '../hooks/useTheme';
 function SettingsPage() {
   const { signOut, user } = useAuth();
   const { setHeaderTitle } = useHeader();
@@ -122,6 +121,9 @@ function SettingsPage() {
             <button
               onClick={toggleDarkMode}
               className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${isDarkMode ? 'bg-primary' : 'bg-gray-200'}`}
+              aria-label={`Toggle dark mode. Currently ${isDarkMode ? 'enabled' : 'disabled'}`}
+              title={`Toggle dark mode. Currently ${isDarkMode ? 'enabled' : 'disabled'}`}
+              type="button"
             >
               <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'}`}/>
             </button>

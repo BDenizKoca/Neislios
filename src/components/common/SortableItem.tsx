@@ -1,11 +1,12 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
 
 interface SortableItemProps {
   id: string;
   children: (props: {
-    attributes: ReturnType<typeof useSortable>['attributes'];
+    attributes: DraggableAttributes;
     listeners: ReturnType<typeof useSortable>['listeners'];
     ref: (node: HTMLElement | null) => void;
     className: string;

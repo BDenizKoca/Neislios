@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { WatchlistItem } from '../types/watchlist';
 import { TmdbMediaDetails, getMediaDetails } from '../services/tmdbService';
+import { logger } from '../utils/logger';
 
 export type WatchlistItemWithDetails = WatchlistItem & { tmdbDetails?: TmdbMediaDetails };
 
@@ -49,10 +50,10 @@ export function useWatchlistItems(watchlistId: string | undefined): UseWatchlist
                         if (item.media_id) {
                             tmdbDetails = await getMediaDetails(item.media_id);
                         } else {
-                            console.warn(`Item ${item.id} is missing media_id.`);
+                            logger.warn(`Item ${item.id} is missing media_id.`);
                         }
                     } catch (tmdbError) {
-                        console.error(`Failed fetch TMDB for ${item.media_id}:`, tmdbError);
+                        logger.error(`Failed fetch TMDB for ${item.media_id}:`, tmdbError);
                         // Keep the item in the list but without details
                     }
                     return { ...item, tmdbDetails: tmdbDetails || undefined };
@@ -61,7 +62,7 @@ export function useWatchlistItems(watchlistId: string | undefined): UseWatchlist
             setItems(itemsWithDetails);
 
         } catch (err: unknown) {
-            console.error("Error fetching watchlist items:", err);
+            logger.error("Error fetching watchlist items:", err);
             setError(err instanceof Error ? err.message : 'Failed to load watchlist items.');
             setItems([]); // Clear items on error
         } finally {

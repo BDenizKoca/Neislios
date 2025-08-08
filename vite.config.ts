@@ -76,9 +76,10 @@ export default defineConfig({
                     type: 'image/png',
                     purpose: 'any'
                 },
+                // Use available 348x348 icon instead of 384x384
                 {
-                    src: '/icons/icon-384x384.png',
-                    sizes: '384x384',
+                    src: '/icons/icon-348x348.png',
+                    sizes: '348x348',
                     type: 'image/png',
                     purpose: 'any'
                 },

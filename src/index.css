@@ -70,6 +70,14 @@ body.modal-open .floating-action-button {
   z-index: auto;
 }
 
+/* Sortable watchlist card styles */
+.sortable-watchlist-card {
+  transform: var(--transform);
+  transition: var(--transition);
+  opacity: var(--opacity);
+  z-index: var(--z-index);
+}
+
 .dark body,
 .dark .bg-gray-100,
 .dark main,

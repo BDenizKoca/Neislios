@@ -1,5 +1,42 @@
 /* Add application-specific styles here */
 
+/* Color picker button styles - using data attributes to avoid inline styles */
+.color-picker-button[data-color="#ffffff"] { background-color: #ffffff; }
+.color-picker-button[data-color="#ef4444"] { background-color: #ef4444; }
+.color-picker-button[data-color="#f97316"] { background-color: #f97316; }
+.color-picker-button[data-color="#eab308"] { background-color: #eab308; }
+.color-picker-button[data-color="#84cc16"] { background-color: #84cc16; }
+.color-picker-button[data-color="#22c55e"] { background-color: #22c55e; }
+.color-picker-button[data-color="#14b8a6"] { background-color: #14b8a6; }
+.color-picker-button[data-color="#06b6d4"] { background-color: #06b6d4; }
+.color-picker-button[data-color="#3b82f6"] { background-color: #3b82f6; }
+.color-picker-button[data-color="#6366f1"] { background-color: #6366f1; }
+.color-picker-button[data-color="#8b5cf6"] { background-color: #8b5cf6; }
+.color-picker-button[data-color="#d946ef"] { background-color: #d946ef; }
+.color-picker-button[data-color="#ec4899"] { background-color: #ec4899; }
+.color-picker-button[data-color="#78716c"] { background-color: #78716c; }
+.color-picker-button[data-color="#737373"] { background-color: #737373; }
+.color-picker-button[data-color="#1f2937"] { background-color: #1f2937; }
+
+/* Random picker modal styles */
+.slot-reel-container {
+  --reel-translation: 0px;
+  --blur-filter: none;
+  --transition-filter: filter 0.3s ease-out;
+}
+
+.slot-reel-spinning {
+  filter: blur(1px);
+}
+
+.slot-item-positioned {
+  font-size: 1.2rem;
+}
+
+.progress-bar-dynamic {
+  transition: all 0.1s ease-linear;
+}
+
 /* Slot machine styles */
 .slot-machine-container {
   position: relative;

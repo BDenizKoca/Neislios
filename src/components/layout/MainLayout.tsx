@@ -11,9 +11,10 @@ import {
   MagnifyingGlassIcon,
   LightBulbIcon // Add the light bulb icon for AI recommendations
 } from '@heroicons/react/24/outline';
-import FloatingActionButton from '../common/FloatingActionButton';
+import { FloatingActionButton, Position } from '../common/index';
 import CreateWatchlistModal from '../watchlists/CreateWatchlistModal';
 import MediaRecommendationModal from '../recommendations/MediaRecommendationModal';
+import { logger } from '../../utils/logger';
 import { useLayoutActions } from '../../hooks/useLayoutActions';
 import { useHeader } from '../../hooks/useHeader';
 import { useWatchlistAI } from '../../hooks/useWatchlistAI';
@@ -25,7 +26,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [fabPosition, setFabPosition] = useState(() => {
+  const [fabPosition, setFabPosition] = useState<Position>(() => {
     // Load saved position from localStorage or use default
     const savedPosition = localStorage.getItem('fabPosition');
     return savedPosition ? JSON.parse(savedPosition) : { right: 24, bottom: 24 };
@@ -92,7 +93,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const handlePopState = () => { // Remove 'event: PopStateEvent'
       // Check if the path *before* the popstate event was '/'
       if (currentPathRef.current === '/') {
-        console.log("Back navigation attempt from '/' detected. Preventing.");
+        logger.info("Back navigation attempt from '/' detected. Preventing.");
         // Force navigation back to home screen, replacing the current history entry
         navigate('/', { replace: true });
       }
@@ -136,9 +137,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       // Check if list is eligible for AI recommendations (10+ movies)
       checkListEligibleForAI().then((isEligible: boolean) => {
         // Store the eligibility state if needed for further actions
-        console.log(`Watchlist AI eligibility: ${isEligible}`);
+        logger.info(`Watchlist AI eligibility: ${isEligible}`);
       }).catch((err: Error) => {
-        console.error("Error checking AI eligibility:", err);
+        logger.error("Error checking AI eligibility:", err);
       });
     }
   }, [currentWatchlistId, checkListEligibleForAI]);
@@ -173,11 +174,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           if (isEligible) {
             setShowAIRecommendModal(true);
           } else {
-            console.log("List not eligible for AI recommendations");
+            logger.info("List not eligible for AI recommendations");
             // You could add a toast notification here
           }
         }).catch((error) => {
-          console.error("Error checking AI eligibility:", error);
+          logger.error("Error checking AI eligibility:", error);
         });
       };
 
@@ -210,7 +211,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const handleWatchlistCreated = useCallback(() => {
     handleCloseCreateModal();
     // Subscription should handle refresh
-    console.log("New list created, HomePage might need refresh if not using subscriptions effectively.");
+    logger.info("New list created, HomePage might need refresh if not using subscriptions effectively.");
   }, [handleCloseCreateModal]);
     const handleTitleClick = useCallback(() => {
     if (mainContentRef.current) {
@@ -243,7 +244,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }
   }, []);
   const resetFabPosition = useCallback(() => {
-    const defaultPosition = { right: 24, bottom: 24 };
+    const defaultPosition: Position = { right: 24, bottom: 24 };
     setFabPosition(defaultPosition);
     localStorage.setItem('fabPosition', JSON.stringify(defaultPosition));
   }, []);
@@ -330,7 +331,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             icon={fabIcon}
             ariaLabel={fabLabel}
             position={fabPosition}
-            onPositionChange={(newPosition) => {
+            onPositionChange={(newPosition: Position) => {
               setFabPosition(newPosition);
               localStorage.setItem('fabPosition', JSON.stringify(newPosition));
             }}

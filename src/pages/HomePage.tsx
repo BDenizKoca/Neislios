@@ -1,15 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'; // Removed unused React
+import { useState, useEffect, useCallback } from 'react';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-// Removed FloatingActionButton import
 import CreateWatchlistModal from '../components/watchlists/CreateWatchlistModal';
-import EditWatchlistModal from '../components/watchlists/EditWatchlistModal'; // Import Edit Modal
+import EditWatchlistModal from '../components/watchlists/EditWatchlistModal';
 import WatchlistCard from '../components/watchlists/WatchlistCard';
-import WatchlistCardSkeleton from '../components/watchlists/WatchlistCardSkeleton'; // Import Skeleton
-import { useAuth } from '../hooks/useAuth'; // Updated import path
+import WatchlistCardSkeleton from '../components/watchlists/WatchlistCardSkeleton';
+import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
-import { Watchlist, WatchlistRole } from '../types/watchlist'; // Import Watchlist & WatchlistRole
+import { Watchlist, WatchlistRole } from '../types/watchlist';
 import { Profile } from '../types/profile';
-// Removed useHeader import as setHeaderTitle is no longer used
+import { logger } from '../utils/logger';
+import { STORAGE_KEYS, storage } from '../utils/storage';
 
 type Tab = 'favorites' | 'yourLists' | 'sharedLists';
 
@@ -37,10 +37,8 @@ type RawWatchlistData = {
 
 function HomePage() {
   const { user } = useAuth();
-  // const { setHeaderTitle } = useHeader(); // Removed unused setter
-  // Read initial tab from localStorage or default to 'favorites'
   const [activeTab, setActiveTab] = useState<Tab>(() => {
-      return (localStorage.getItem('activeHomeTab') as Tab) || 'favorites';
+      return (storage.local.get(STORAGE_KEYS.ACTIVE_HOME_TAB) as Tab) || 'favorites';
   });
   const [allWatchlists, setAllWatchlists] = useState<Watchlist[]>([]); // Store all relevant lists
   const [favoriteLists, setFavoriteLists] = useState<Watchlist[]>([]);
@@ -112,7 +110,7 @@ function HomePage() {
 
           // Basic validation that we have *something* resembling watchlist data
           if (!rawWatchlistData || typeof rawWatchlistData !== 'object' || Array.isArray(rawWatchlistData) || !rawWatchlistData.id) {
-            console.warn("Skipping invalid or inaccessible watchlist data in membership:", m);
+            logger.warn("Skipping invalid or inaccessible watchlist data in membership:", m);
             return null;
           }
 
@@ -130,7 +128,7 @@ function HomePage() {
                     // avatar_url and updated_at are optional in Profile type
                  };
             } else {
-                 console.warn("Watchlist owner data is invalid or incomplete:", ownerData);
+                 logger.warn("Watchlist owner data is invalid or incomplete:", ownerData);
             }
           }
 
@@ -163,7 +161,7 @@ function HomePage() {
       setSharedLists(processedLists.filter(list => list.owner_id !== user.id && (list.member_role === 'editor' || list.member_role === 'viewer')));
 
     } catch (err: unknown) {
-      console.error("Error fetching watchlists:", err);
+      logger.error("Error fetching watchlists:", err);
       setError(err instanceof Error ? err.message : 'Failed to load watchlists.');
       setAllWatchlists([]);
       setFavoriteLists([]);
@@ -180,7 +178,7 @@ function HomePage() {
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('activeHomeTab', activeTab);
+    storage.local.set(STORAGE_KEYS.ACTIVE_HOME_TAB, activeTab);
   }, [activeTab]);
 
   // Removed useEffect that set header title to 'Your Watchlists'
@@ -191,11 +189,9 @@ function HomePage() {
     if (!user) return;
 
     const handleDbChange = (payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>) => { // Use indexable unknown
-        console.log('DB Change received! Refetching lists...', payload); // Add more detail
+        logger.info('DB Change received! Refetching lists...', payload); // Add more detail
         fetchWatchlists();
-    };
-
-    // Subscribe to changes in relevant tables without complex filters
+      };    // Subscribe to changes in relevant tables without complex filters
     const watchlistChannel = supabase.channel('public:watchlists')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'watchlists' }, handleDbChange)
       .subscribe();
@@ -211,7 +207,7 @@ function HomePage() {
 
     // Cleanup function
     return () => {
-      console.log('Unsubscribing from homepage changes');
+      logger.info('Unsubscribing from homepage changes');
       supabase.removeChannel(watchlistChannel);
       supabase.removeChannel(membersChannel);
       supabase.removeChannel(favoritesChannel);
@@ -318,7 +314,7 @@ function HomePage() {
             if (error) throw error;
         }
     } catch (err) {
-        console.error("Error toggling favorite:", err);
+        logger.error("Error toggling favorite:", err);
         // Revert optimistic update on error
         const revertUpdate = (list: Watchlist) =>
             list.id === watchlistId ? { ...list, is_favorite: isCurrentlyFavorite } : list;
@@ -337,7 +333,7 @@ function HomePage() {
         setEditingWatchlist(listToEdit);
         setIsEditModalOpen(true);
     } else {
-        console.error("Could not find watchlist to edit:", watchlistId);
+        logger.error("Could not find watchlist to edit:", watchlistId);
         setError("Could not find watchlist to edit.");
     }
   };
@@ -396,14 +392,14 @@ function HomePage() {
 
           // Success! Realtime subscription will trigger fetchWatchlists to update UI.
           // No need for optimistic UI update here if subscription is reliable.
-          console.log(`Watchlist ${watchlistId} delete initiated.`);
+          logger.info(`Watchlist ${watchlistId} delete initiated.`);
           // Close the edit modal if it was open for this list
           if (editingWatchlist?.id === watchlistId) {
               handleCloseEditModal();
           }
 
       } catch (err: unknown) {
-          console.error("Error deleting watchlist:", err);
+          logger.error("Error deleting watchlist:", err);
           setError(err instanceof Error ? err.message : 'Failed to delete watchlist.');
       }
   };

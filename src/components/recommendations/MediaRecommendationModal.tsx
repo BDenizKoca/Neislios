@@ -8,6 +8,7 @@ import { useAIRecommendations } from '../../hooks/useAIRecommendations';
 import { getMoviePosterUrl, getMediaDetails, TmdbMediaDetails } from '../../services/tmdbService';
 import { isMovieDetails } from '../../utils/tmdbUtils';
 import { useWatchlistItems } from '../../hooks/useWatchlistItems';
+import { logger } from '../../utils/logger';
 
 interface MediaRecommendationModalProps {
   isOpen: boolean;
@@ -51,11 +52,11 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
               parsed.recommendations && 
               parsed.recommendations.length > 0 &&
               Date.now() - parsed.timestamp < 300000) {
-            console.log('Restoring previous recommendations');
+            logger.info('Restoring previous recommendations');
             restoreRecommendations(parsed.recommendations);
             return;
           }        } catch {
-          console.warn('Failed to parse saved recommendation state');
+          logger.warn('Failed to parse saved recommendation state');
         }
       }
       
@@ -117,6 +118,9 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
       timestamp: Date.now()
     }));
     
+    // Save that we should reopen the modal when returning
+    sessionStorage.setItem('recommendation-modal-open', watchlistId);
+    
     // Navigate to appropriate details page
     if (mediaType === 'movie') {
       navigate(`/movie/${mediaId}`);
@@ -143,12 +147,10 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
       setLoadingPreview(false);
     }
   };
-  // Manage body class and persisted state based on modal visibility
+  // Manage body class based on modal visibility
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('modal-open');
-      // Persist open state so navigating away and back reopens the modal
-      sessionStorage.setItem('recommendation-modal-open', watchlistId);
     } else {
       document.body.classList.remove('modal-open');
       // Remove saved state when modal is intentionally closed
@@ -156,12 +158,11 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
       sessionStorage.removeItem('recommendation-modal-state');
     }
 
-    // On unmount, only clean up the body class so the saved state remains when
-    // navigating to a movie page and returning via the browser back button.
+    // On unmount, only clean up the body class
     return () => {
       document.body.classList.remove('modal-open');
     };
-  }, [isOpen, watchlistId]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

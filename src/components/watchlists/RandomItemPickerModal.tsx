@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom'; // Import Link
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { TmdbMediaDetails } from '../../services/tmdbService';
 import { isMovieDetails } from '../../utils/tmdbUtils';
@@ -8,12 +8,27 @@ import { WatchlistItemWithDetails } from '../../hooks/useWatchlistItems';
 interface RandomItemPickerModalProps {
     isOpen: boolean;
     onClose: () => void;
-    items: WatchlistItemWithDetails[]; // Receive the already filtered/sorted items
+    items: WatchlistItemWithDetails[];
 }
 
-const spinDuration = 2000; // Spin for 2 seconds
-// Calculate item height based on Tailwind class - now accounting for padding and margins
-const itemHeight = 86; // 70px height + 12px padding (top/bottom) + 4px margin (top/bottom)
+const SPIN_DURATION = 2000;
+const ITEM_HEIGHT = 86;
+const PROGRESS_UPDATE_INTERVAL = 25;
+const WIN_SOUND_DELAY = 200;
+
+const playAudio = (audioRef: React.RefObject<HTMLAudioElement | null>, volume: number) => {
+    if (audioRef.current) {
+        audioRef.current.volume = volume;
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => {});
+    }
+};
+
+const extractTitles = (items: WatchlistItemWithDetails[]): string[] => {
+    return items.map(item =>
+        item.tmdbDetails ? (isMovieDetails(item.tmdbDetails) ? item.tmdbDetails.title : item.tmdbDetails.name) : 'Unknown'
+    );
+};
 
 export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPickerModalProps) {
     const [randomPick, setRandomPick] = useState<TmdbMediaDetails | null>(null);
@@ -21,29 +36,39 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
     const [showPickerContent, setShowPickerContent] = useState(false);
     const [spinProgress, setSpinProgress] = useState(0);
     const [availableTitles, setAvailableTitles] = useState<string[]>([]);
-    const [reelTranslation, setReelTranslation] = useState<number>(0); // State for CSS variable
+    const [reelTranslation, setReelTranslation] = useState<number>(0);
     const [isVisuallySpinning, setIsVisuallySpinning] = useState(false);
     
-    // Audio refs for sound effects
     const spinningAudioRef = useRef<HTMLAudioElement | null>(null);
     const winAudioRef = useRef<HTMLAudioElement | null>(null);
 
-    const startPicking = useCallback(() => {
+    useEffect(() => {
+        if (!isOpen) {
+            setRandomPick(null);
+            setIsSpinning(false);
+            setIsVisuallySpinning(false);
+            setShowPickerContent(false);
+            setSpinProgress(0);
+            setAvailableTitles([]);
+            setReelTranslation(0);
+            return;
+        }
+
+        // Start picking logic directly in useEffect
         setRandomPick(null);
         setShowPickerContent(false);
-        setIsSpinning(true);
-        setIsVisuallySpinning(true);
         setSpinProgress(0);
         setAvailableTitles([]);
-        setReelTranslation(0); // Reset translation
+        setReelTranslation(0);
 
         const availableItems = items.filter(item => item.tmdbDetails);
 
         if (availableItems.length === 0) {
             toast.error("No available items to pick from.");
+            setRandomPick(null);
             setIsSpinning(false);
             setIsVisuallySpinning(false);
-            onClose();
+            setShowPickerContent(true); // Show content so user can see close button
             return;
         }
 
@@ -56,38 +81,41 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                 setIsVisuallySpinning(false);
             } else {
                 toast.error("Could not display the only available item.");
+                setRandomPick(null);
                 setIsSpinning(false);
                 setIsVisuallySpinning(false);
-                onClose();
+                setShowPickerContent(true); // Show content so user can see close button
             }
             return;
         }
 
-        const titles = availableItems.map(item =>
-            item.tmdbDetails ? (isMovieDetails(item.tmdbDetails) ? item.tmdbDetails.title : item.tmdbDetails.name) : 'Unknown'
-        );
+        // Only set spinning states if we have multiple items and will actually spin
+        setIsSpinning(true);
+        setIsVisuallySpinning(true);
+
+        const titles = extractTitles(availableItems);
         setAvailableTitles(titles);
-        // Calculate the exact translation needed based on the number of titles
-        setReelTranslation(-(titles.length * itemHeight));
+        
+        const translation = -(titles.length * ITEM_HEIGHT);
+        setReelTranslation(translation);
 
         let progressInterval: NodeJS.Timeout | null = null;
         const startTime = Date.now();
 
         const updateProgress = () => {
             const elapsedTime = Date.now() - startTime;
-            const currentProgress = Math.min(elapsedTime, spinDuration);
+            const currentProgress = Math.min(elapsedTime, SPIN_DURATION);
             setSpinProgress(currentProgress);
-            if (elapsedTime < spinDuration) {
-                 progressInterval = setTimeout(updateProgress, 25);
+            if (elapsedTime < SPIN_DURATION) {
+                 progressInterval = setTimeout(updateProgress, PROGRESS_UPDATE_INTERVAL);
             }
         };
-        progressInterval = setTimeout(updateProgress, 25);
-
+        progressInterval = setTimeout(updateProgress, PROGRESS_UPDATE_INTERVAL);
 
         const spinTimeout = setTimeout(() => {
             if (progressInterval) clearTimeout(progressInterval);
             setIsSpinning(false);
-            setSpinProgress(spinDuration);
+            setSpinProgress(SPIN_DURATION);
             const finalRandomIndex = Math.floor(Math.random() * availableItems.length);
             const finalPickedItem = availableItems[finalRandomIndex].tmdbDetails;
 
@@ -100,53 +128,21 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             } else {
                 toast.error("An error occurred selecting the final random item.");
                 setIsVisuallySpinning(false);
-                onClose();
+                setShowPickerContent(true); // Show content so user can see close button
             }
-        }, spinDuration);
+        }, SPIN_DURATION);
+
+        playAudio(spinningAudioRef, 0.5);
 
         return () => {
             if (progressInterval) clearTimeout(progressInterval);
             clearTimeout(spinTimeout);
         };
-
-    }, [items, onClose]);
-
-    useEffect(() => {
-        let cleanup: (() => void) | undefined;
-        if (isOpen) {
-            cleanup = startPicking();
-            
-            // Play spinning sound when animation starts
-            if (spinningAudioRef.current) {
-                spinningAudioRef.current.volume = 0.5;
-                spinningAudioRef.current.currentTime = 0;
-                spinningAudioRef.current.play().catch(() => {});
-            }
-        } else {
-            setRandomPick(null);
-            setIsSpinning(false);
-            setIsVisuallySpinning(false);
-            setShowPickerContent(false);
-            setSpinProgress(0);
-            setAvailableTitles([]);
-            setReelTranslation(0);
-        }
-        return cleanup;
-    }, [isOpen, startPicking]);
+    }, [isOpen, items]); // Only depend on isOpen and items
     
-    // Play win sound when spinning stops and result is shown
     useEffect(() => {
         if (!isSpinning && randomPick && isOpen) {
-            if (winAudioRef.current) {
-                // Small delay to make it feel like the win sound is tied to the final selection
-                setTimeout(() => {
-                    if (winAudioRef.current) {
-                        winAudioRef.current.volume = 0.6;
-                        winAudioRef.current.currentTime = 0;
-                        winAudioRef.current.play().catch(() => {});
-                    }
-                }, 200);
-            }
+            setTimeout(() => playAudio(winAudioRef, 0.6), WIN_SOUND_DELAY);
         }
     }, [isSpinning, randomPick, isOpen]);
 
@@ -159,7 +155,6 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             className={`fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             onClick={onClose}
         >
-            {/* Sound effects */}
             <audio ref={spinningAudioRef} preload="auto">
                 <source src="https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3" type="audio/mp3" />
             </audio>
@@ -177,34 +172,32 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                         <div className="slot-machine-container h-48 mb-4 w-full">
                              <div className="slot-highlight-zone"></div>
                              <div
-                                className={`slot-reel ${isVisuallySpinning ? 'animate-slot-spin' : ''}`}
+                                className={`slot-reel ${isVisuallySpinning ? 'animate-slot-spin slot-reel-spinning' : ''} slot-reel-container`}
+                                /* Inline style required for dynamic CSS custom property */
+                                /* The reel translation is calculated at runtime based on item count */
                                 style={{
-                                    '--reel-translation': `${reelTranslation}px`,
-                                    filter: isVisuallySpinning ? 'blur(1px)' : 'none',
-                                    transition: 'filter 0.3s ease-out'
+                                    '--reel-translation': `${reelTranslation}px`
                                 } as React.CSSProperties}
                              >
                                 {availableTitles.map((title, index) => (
                                     <div
                                         key={`slot-${index}`}
-                                        className="slot-item h-14 flex items-center justify-center"
-                                        style={{
-                                            top: `${index * itemHeight}px`,
-                                            fontSize: '1.2rem'
-                                        }}
+                                        className="slot-item h-14 flex items-center justify-center slot-item-positioned"
+                                        /* Inline style required for dynamic positioning */
+                                        /* Each slot item needs unique top position calculated at runtime */
+                                        style={{ top: `${index * ITEM_HEIGHT}px` }}
                                     >
                                         {title}
                                     </div>
                                 ))}
-                                {/* Duplicate the ENTIRE list for seamless looping */}
+                                {/* Duplicate items for seamless looping */}
                                 {availableTitles.map((title, index) => (
                                     <div
                                         key={`slot-dup-${index}`}
-                                        className="slot-item h-14 flex items-center justify-center"
-                                        style={{
-                                            top: `${(availableTitles.length + index) * itemHeight}px`,
-                                            fontSize: '1.2rem'
-                                        }}
+                                        className="slot-item h-14 flex items-center justify-center slot-item-positioned"
+                                        /* Inline style required for dynamic positioning */
+                                        /* Duplicate slot items need offset positioning for seamless loop */
+                                        style={{ top: `${(availableTitles.length + index) * ITEM_HEIGHT}px` }}
                                     >
                                         {title}
                                     </div>
@@ -213,16 +206,18 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                         </div>
                         <div className="h-2 w-full bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-primary transition-all duration-100 ease-linear rounded-full"
-                                style={{ width: `${(spinProgress / spinDuration) * 100}%` }}
+                                className="h-full bg-primary progress-bar-dynamic rounded-full"
+                                /* Inline style required for dynamic progress bar width */
+                                /* Width percentage changes continuously during spin animation */
+                                style={{ width: `${(spinProgress / SPIN_DURATION) * 100}%` }}
                             ></div>
                         </div>
                     </div>
                 ) : (
                     <div className={`transition-opacity duration-300 ease-in ${showPickerContent ? 'opacity-100' : 'opacity-0'}`}>
-                        <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Your Random Pick!</h3>
                         {randomPick ? (
                             <>
+                                <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Your Random Pick!</h3>
                                 <Link
                                     to={`/${randomPick.media_type}/${randomPick.id}`}
                                     onClick={onClose}
@@ -237,9 +232,16 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                                 </Link>
                             </>
                         ) : (
-                            showPickerContent && <p className="text-gray-500 dark:text-gray-400">...</p>
+                            showPickerContent && (
+                                <>
+                                    <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Random Pick</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mb-4">Unable to pick a random item. Please try again.</p>
+                                </>
+                            )
                         )}
-                        <button onClick={onClose} className="mt-6 bg-primary hover:bg-opacity-80 text-white py-2 px-4 rounded">Close</button>
+                        <button onClick={onClose} className="mt-6 bg-primary hover:bg-opacity-80 text-white py-2 px-4 rounded">
+                            Close
+                        </button>
                     </div>
                 )}
             </div>

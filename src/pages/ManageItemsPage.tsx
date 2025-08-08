@@ -15,6 +15,7 @@ import Skeleton from 'react-loading-skeleton';
 import toast from 'react-hot-toast';
 import { PlusIcon, UserMinusIcon, UserGroupIcon } from '@heroicons/react/24/outline'; // Added new icons
 import TransferOwnershipModal from '../components/watchlists/TransferOwnershipModal';
+import { STORAGE_KEYS, storage } from '../utils/storage';
 
 // CSS to hide FAB on this page
 const hideFabStyle = `
@@ -22,10 +23,6 @@ const hideFabStyle = `
     display: none !important;
   }
 `;
-
-// Storage keys for state persistence
-const SCROLL_STORAGE_KEY = 'manageListScrollPosition';
-const SEARCH_TERM_STORAGE_KEY = 'manageListSearchTerm';
 
 function ManageItemsPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
@@ -40,7 +37,7 @@ function ManageItemsPage() {
   
   // Initialize search term from sessionStorage
   const [searchTerm, setSearchTerm] = useState<string>(() => {
-    const saved = sessionStorage.getItem(SEARCH_TERM_STORAGE_KEY);
+    const saved = storage.session.get(STORAGE_KEYS.SEARCH_TERM.MANAGE_LIST);
     return saved || '';
   });
   
@@ -192,7 +189,7 @@ function ManageItemsPage() {
 
   // --- Save Search Term to Session Storage ---
   useEffect(() => {
-    sessionStorage.setItem(SEARCH_TERM_STORAGE_KEY, searchTerm);
+    storage.session.set(STORAGE_KEYS.SEARCH_TERM.MANAGE_LIST, searchTerm);
   }, [searchTerm]);
 
   // --- Scroll Position Tracking ---
@@ -201,7 +198,7 @@ function ManageItemsPage() {
       const mainElement = document.querySelector('main');
       if (mainElement) {
         const newPosition = mainElement.scrollTop;
-        sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
+        storage.session.set(STORAGE_KEYS.SCROLL_POSITION.MANAGE_LIST, newPosition.toString());
       }
     };
 
@@ -215,7 +212,7 @@ function ManageItemsPage() {
   // --- Restore Scroll Position ---
   useEffect(() => {
     if (!loading && items.length > 0) {
-      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      const savedPosition = storage.session.get(STORAGE_KEYS.SCROLL_POSITION.MANAGE_LIST);
       if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {
@@ -233,7 +230,7 @@ function ManageItemsPage() {
   // --- Handle Browser Back/Forward ---
   useEffect(() => {
     const handlePopState = () => {
-      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      const savedPosition = storage.session.get(STORAGE_KEYS.SCROLL_POSITION.MANAGE_LIST);
       if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {

@@ -9,11 +9,9 @@ import { Watchlist } from '../types/watchlist';
 import WatchlistCard from '../components/watchlists/WatchlistCard';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { STORAGE_KEYS, storage } from '../utils/storage';
 
 type SearchType = 'media' | 'watchlists';
-
-// Store last known scroll position in sessionStorage to persist between page navigations
-const SCROLL_STORAGE_KEY = 'searchPageScrollPosition';
 
 function MovieSearchPage() {
   const pageRef = useRef<HTMLDivElement>(null);
@@ -25,7 +23,7 @@ function MovieSearchPage() {
     const mainElement = document.querySelector('main');
     if (mainElement) {
       const currentScroll = mainElement.scrollTop;
-      sessionStorage.setItem(SCROLL_STORAGE_KEY, currentScroll.toString());
+      storage.session.set(STORAGE_KEYS.SCROLL_POSITION.MOVIE_SEARCH, currentScroll.toString());
     }
     navigate(to);
   }, [navigate]);
@@ -179,7 +177,7 @@ function MovieSearchPage() {
     
     const handleScroll = () => {
       const newPosition = mainElement.scrollTop;
-      sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
+      storage.session.set(STORAGE_KEYS.SCROLL_POSITION.MOVIE_SEARCH, newPosition.toString());
     };
     
     mainElement.addEventListener('scroll', handleScroll);
@@ -191,7 +189,7 @@ function MovieSearchPage() {
   // Restore scroll position when component mounts and content is loaded
   useEffect(() => {
     if (!loading && (results.length > 0 || watchlistResults.length > 0)) {
-      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      const savedPosition = storage.session.get(STORAGE_KEYS.SCROLL_POSITION.MOVIE_SEARCH);
       if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {
@@ -209,7 +207,7 @@ function MovieSearchPage() {
   // Handle popstate event (browser back/forward buttons)
   useEffect(() => {
     const handlePopState = () => {
-      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      const savedPosition = storage.session.get(STORAGE_KEYS.SCROLL_POSITION.MOVIE_SEARCH);
       if (savedPosition) {
         const position = parseInt(savedPosition, 10);
         if (position > 0) {

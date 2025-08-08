@@ -1,12 +1,11 @@
-import React, { useState } from 'react'; // Import useState for swipe feedback
-import { useSwipeable } from 'react-swipeable'; // Import useSwipeable
+import React, { useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 import { StarIcon as StarIconSolid, PencilSquareIcon } from '@heroicons/react/24/solid';
-import { StarIcon as StarIconOutline, GlobeAltIcon, LockClosedIcon } from '@heroicons/react/24/outline'; // Added GlobeAltIcon, LockClosedIcon
-import { useNavigate, Link } from 'react-router-dom'; // Import Link
+import { StarIcon as StarIconOutline, GlobeAltIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { useNavigate, Link } from 'react-router-dom';
 import { Watchlist } from '../../types/watchlist';
-import { useAuth } from '../../hooks/useAuth'; // Updated import path
-// Removed unused supabase import
-// import { Profile } from '../../types/profile'; // Removed unused import
+import { useAuth } from '../../hooks/useAuth';
+import { logger } from '../../utils/logger';
 
 interface WatchlistCardProps {
   watchlist: Watchlist;
@@ -29,7 +28,7 @@ const getContrastingTextColor = (hexColor: string | null | undefined): 'text-bla
         const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b; // per WCAG
         return luminance > 140 ? 'text-black' : 'text-white'; // Threshold might need adjustment
     } catch (e) {
-        console.error("Error parsing color:", hexColor, e);
+        logger.error("Error parsing color:", hexColor, e);
         return 'text-black'; // Default to black on error
     }
 };
@@ -46,7 +45,12 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
 
   const cardBgColor = watchlist.card_color || '#ffffff'; // Default white if null/undefined
   const cardTextColorClass = getContrastingTextColor(cardBgColor); // Returns 'text-black' or 'text-white'
-  const cardStyle = { backgroundColor: cardBgColor };
+  
+  // Note: Inline style required for user-customizable background color
+  // The background color is stored in the database and set by users
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: cardBgColor,
+  };
 
   // Determine secondary text color based on primary text color
   const secondaryTextColorClass = cardTextColorClass === 'text-white' ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400';
@@ -122,6 +126,8 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
       {...handlers}
       data-no-swipe-navigate="true" // Add data attribute to identify this element
       className={`relative rounded-lg shadow-md p-4 border border-transparent cursor-pointer hover:shadow-lg hover:brightness-95 dark:hover:brightness-110 transition-all duration-200 flex flex-col justify-between h-full overflow-hidden`} // Use brightness instead of bg change due to dynamic color
+      /* Inline style required for user-customizable card background color */
+      /* The background color is stored in the database and set by users */
       style={cardStyle}
       onClick={handleCardClick}
     >

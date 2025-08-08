@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useWatchlistItems } from './useWatchlistItems'; // Remove unused WatchlistItemWithDetails
+import { useWatchlistItems } from './useWatchlistItems';
+import { logger } from '../utils/logger';
 
 // Remove WatchlistWithItems interface if not used elsewhere, or keep if needed
 // interface WatchlistWithItems {
@@ -53,7 +54,7 @@ export const useWatchlistAI = (watchlistId: string | undefined) => {
        }
 
     } catch (error) {
-      console.error('Error during AI eligibility check logic:', error);
+      logger.error('Error during AI eligibility check logic:', error);
       setErrorCheck('An unexpected error occurred during eligibility check.');
       setLoadingCheck(false);
       return false;

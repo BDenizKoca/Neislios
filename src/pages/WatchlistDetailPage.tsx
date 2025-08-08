@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableItem } from '../components/common/SortableItem';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
 import { TmdbMediaDetails } from '../services/tmdbService'; // Removed getMediaDetails
@@ -94,6 +98,73 @@ function WatchlistDetailPage() {
   const [isAIEligible, setIsAIEligible] = useState(false); // State for AI eligibility
   const [showAIRecommendModal, setShowAIRecommendModal] = useState(false); // State for AI modal
 
+  // --- Drag and Drop Sensors ---
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 1000, // 1 second hold to activate drag
+        tolerance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 1000, // 1 second hold to activate drag
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // --- Drag End Handler ---
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || !watchlistId || !user) return;
+
+    if (active.id !== over.id) {
+      const oldIndex = sortedAndFilteredItems.findIndex(item => item.id === active.id);
+      const newIndex = sortedAndFilteredItems.findIndex(item => item.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        // Optimistically update the UI
+        const newItems = arrayMove(sortedAndFilteredItems, oldIndex, newIndex);
+        setSortedAndFilteredItems(newItems);
+
+        try {
+          // Update the database with new positions
+          const updates = newItems.map((item, index) => ({
+            id: item.id,
+            item_order: index + 1, // 1-based ordering
+          }));
+
+          const { error } = await supabase
+            .from('watchlist_items')
+            .upsert(updates, {
+              onConflict: 'id'
+            });
+
+          if (error) throw error;
+
+          // Emit update event for real-time sync
+          const watchlistUpdateEvent = new CustomEvent('watchlist-updated', { 
+            detail: { watchlistId }
+          });
+          window.dispatchEvent(watchlistUpdateEvent);
+          
+        } catch (error) {
+          console.error('Error updating item order:', error);
+          toast.error('Failed to save new order');
+          // Revert the optimistic update by refetching
+          if (typeof refetchItems === 'function') {
+            refetchItems();
+          }
+        }
+      }
+    }
+  }, [sortedAndFilteredItems, watchlistId, user, refetchItems]);
+
   // --- Check AI Eligibility ---
   useEffect(() => {
     if (watchlistId) {
@@ -109,11 +180,29 @@ function WatchlistDetailPage() {
   // --- Restore Recommendation Modal State ---
   useEffect(() => {
     if (watchlistId) {
-      // Check if we should restore the recommendation modal state
+      // Only restore if we have both modal open flag AND saved recommendations
       const savedModalState = sessionStorage.getItem('recommendation-modal-open');
-      if (savedModalState === watchlistId) {
-        console.log('Restoring recommendation modal state for watchlist:', watchlistId);
-        setShowAIRecommendModal(true);
+      const savedRecommendations = sessionStorage.getItem('recommendation-modal-state');
+      
+      if (savedModalState === watchlistId && savedRecommendations) {
+        try {
+          const parsed = JSON.parse(savedRecommendations);
+          // Only restore if the saved data is recent (within 5 minutes) and for this watchlist
+          if (parsed.watchlistId === watchlistId && 
+              parsed.recommendations && 
+              parsed.recommendations.length > 0 &&
+              Date.now() - parsed.timestamp < 300000) {
+            console.log('Restoring recommendation modal state for watchlist:', watchlistId);
+            setShowAIRecommendModal(true);
+            // Remove the restoration flag so it doesn't auto-open again
+            sessionStorage.removeItem('recommendation-modal-open');
+          }
+        } catch {
+          console.warn('Failed to parse saved recommendation state');
+          // Clean up invalid state
+          sessionStorage.removeItem('recommendation-modal-open');
+          sessionStorage.removeItem('recommendation-modal-state');
+        }
       }
     }
   }, [watchlistId]);
@@ -440,30 +529,52 @@ function WatchlistDetailPage() {
       ) : sortedAndFilteredItems.length === 0 && !isLoading ? ( // Use combined loading state
         <p className="text-gray-500 dark:text-gray-400">No items match the current filter.</p>
       ) : (
-        <div className="space-y-3">
-          {sortedAndFilteredItems.map(item => {
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext items={sortedAndFilteredItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {sortedAndFilteredItems.map(item => {
                 const addedByUser = members.find(m => m.id === item.added_by_user_id);
                 const memberWatcherIds = membersWatchedMediaMap.get(item.media_id) || new Set<string>();
-                const membersWhoWatched = members.filter(m => memberWatcherIds.has(m.id));                return (
-                 item.tmdbDetails ? (
-                    <MediaListItem
-                        key={item.id}
-                        mediaItem={item.tmdbDetails}
-                        isWatched={watchedMedia.has(item.media_id)}
-                        onToggleWatched={handleToggleWatched}
-                        addedBy={addedByUser}
-                        watchedByMembers={membersWhoWatched}
-                        watchlistId={watchlistId}
-                    />
-                 ) : (
-                    <div key={item.id} className="p-3 border rounded dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-500 flex items-center space-x-2">
-                        <Skeleton circle height={24} width={24} />
-                        <span>Could not load details for {item.media_id}</span>
-                    </div>
-                 )
-               );
-            })}
-        </div>
+                const membersWhoWatched = members.filter(m => memberWatcherIds.has(m.id));
+                
+                return (
+                  <SortableItem key={item.id} id={item.id}>
+                    {({ attributes, listeners, ref, className }) => (
+                      <div
+                        ref={ref}
+                        className={className}
+                        {...attributes}
+                        {...listeners}
+                        style={{ touchAction: 'manipulation' }}
+                      >
+                      {item.tmdbDetails ? (
+                        <MediaListItem
+                          mediaItem={item.tmdbDetails}
+                          isWatched={watchedMedia.has(item.media_id)}
+                          onToggleWatched={handleToggleWatched}
+                          addedBy={addedByUser}
+                          watchedByMembers={membersWhoWatched}
+                          watchlistId={watchlistId}
+                        />
+                      ) : (
+                        <div className="p-3 border rounded dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-500 flex items-center space-x-2">
+                          <Skeleton circle height={24} width={24} />
+                          <span>Could not load details for {item.media_id}</span>
+                        </div>
+                      )}
+                      </div>
+                    )}
+                  </SortableItem>
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Modals */}

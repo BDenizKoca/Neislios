@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './useAuth'; // Corrected import path
 import { Watchlist, WatchlistRole } from '../types/watchlist';
 import { Profile } from '../types/profile';
+import { logger } from '../utils/logger';
 
 interface UseWatchlistDetailsReturn {
     watchlist: (Watchlist & { owner?: Profile }) | null;
@@ -72,7 +73,7 @@ export function useWatchlistDetails(watchlistId: string | undefined): UseWatchli
             setUserRole(currentUserRole);
 
         } catch (err: unknown) {
-            console.error("Error fetching watchlist details:", err);
+            logger.error("Error fetching watchlist details:", err);
             setError(err instanceof Error ? err.message : 'Failed to load watchlist details.');
             setWatchlist(null); // Clear data on error
             setUserRole(null);

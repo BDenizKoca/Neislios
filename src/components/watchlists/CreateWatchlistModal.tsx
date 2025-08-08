@@ -2,32 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../hooks/useAuth'; // Updated import path
 import { CheckIcon } from '@heroicons/react/24/solid'; // For selected color indication
+import { WATCHLIST_COLOR_PALETTE } from '../../constants/colors';
 
 interface CreateWatchlistModalProps {
   isOpen: boolean;
   onClose: () => void;
   onWatchlistCreated: () => void;
 }
-
-// Predefined color palette
-const colorPalette = [
-  '#ffffff', // White (Default)
-  '#ef4444', // Red-500
-  '#f97316', // Orange-500
-  '#eab308', // Yellow-500
-  '#84cc16', // Lime-500
-  '#22c55e', // Green-500
-  '#14b8a6', // Teal-500
-  '#06b6d4', // Cyan-500
-  '#3b82f6', // Blue-500
-  '#6366f1', // Indigo-500
-  '#8b5cf6', // Violet-500
-  '#d946ef', // Fuchsia-500
-  '#ec4899', // Pink-500
-  '#78716c', // Stone-500
-  '#737373', // Neutral-500
-  '#1f2937', // Gray-800 (Example dark color)
-];
 
 
 const CreateWatchlistModal: React.FC<CreateWatchlistModalProps> = ({
@@ -95,7 +76,13 @@ const CreateWatchlistModal: React.FC<CreateWatchlistModalProps> = ({
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md m-4 border border-gray-200 dark:border-gray-700 transform transition-all duration-300 ease-in-out ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Create New Watchlist</h2>
-          <button onClick={onClose} className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500">
+          <button 
+            onClick={onClose} 
+            type="button"
+            aria-label="Close create watchlist modal"
+            title="Close"
+            className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -115,13 +102,13 @@ const CreateWatchlistModal: React.FC<CreateWatchlistModalProps> = ({
            <div>
              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Card Background Color</label>
              <div className="flex flex-wrap gap-2">
-                {colorPalette.map(color => (
+                {WATCHLIST_COLOR_PALETTE.map(color => (
                     <button
                         key={color}
                         type="button"
                         onClick={() => setCardColor(color)}
-                        className={`w-8 h-8 rounded-full border-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${cardColor === color ? 'ring-2 ring-offset-1 ring-primary' : 'border-gray-300 dark:border-gray-600'}`}
-                        style={{ backgroundColor: color }}
+                        className={`color-picker-button w-8 h-8 rounded-full border-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${cardColor === color ? 'ring-2 ring-offset-1 ring-primary' : 'border-gray-300 dark:border-gray-600'}`}
+                        data-color={color}
                         aria-label={`Select color ${color}`}
                     >
                         {cardColor === color && <CheckIcon className={`h-5 w-5 ${color === '#ffffff' || color === '#eab308' || color === '#84cc16' ? 'text-black' : 'text-white'}`} />} {/* Adjust checkmark color for light backgrounds */}

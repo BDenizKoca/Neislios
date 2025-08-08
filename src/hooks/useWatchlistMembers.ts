@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Profile } from '../types/profile';
+import { logger } from '../utils/logger';
 
 interface UseWatchlistMembersReturn {
     members: Profile[];
@@ -47,7 +48,7 @@ export function useWatchlistMembers(watchlistId: string | undefined): UseWatchli
                     fetchedMemberProfiles.push(profileData);
                     if (m.user_id) fetchedMemberIds.push(m.user_id);
                 } else {
-                    console.warn("Invalid profile data for member:", m);
+                    logger.warn("Invalid profile data for member:", m);
                 }
             });
             setMembers(fetchedMemberProfiles);
@@ -60,7 +61,7 @@ export function useWatchlistMembers(watchlistId: string | undefined): UseWatchli
                     .in('user_id', fetchedMemberIds); // Fetch only for members of this list
 
                 if (mwError) {
-                    console.error("Error fetching members' watched media:", mwError);
+                    logger.error("Error fetching members' watched media:", mwError);
                     // Decide if this is a critical error or just affects the watchedBy display
                     setError("Failed to load watched status for members.");
                     setMembersWatchedMediaMap(new Map()); // Ensure map is empty on error
@@ -83,7 +84,7 @@ export function useWatchlistMembers(watchlistId: string | undefined): UseWatchli
             }
 
         } catch (err: unknown) {
-            console.error("Error fetching watchlist members:", err);
+            logger.error("Error fetching watchlist members:", err);
             setError(err instanceof Error ? err.message : 'Failed to load watchlist members.');
             setMembers([]); // Clear data on error
             setMembersWatchedMediaMap(new Map());

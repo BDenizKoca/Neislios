@@ -5,6 +5,7 @@ import { Profile } from '../../types/profile';
 import { EyeIcon, EyeSlashIcon, CalendarDaysIcon, StarIcon, ClockIcon, UserGroupIcon, MinusCircleIcon, TvIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { STORAGE_KEYS, storage } from '../../utils/storage';
 
 // Helper type guards
 function isMovieDetails(details: TmdbMediaDetails): details is TmdbMovieDetails {
@@ -80,6 +81,15 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
     ? `/${mediaItem.media_type}/${mediaItem.id}?from=watchlist&watchlistId=${watchlistId}`
     : `/${mediaItem.media_type}/${mediaItem.id}`;
 
+  const handleNavigateToDetail = () => {
+    // Save scroll position of the main layout container just before navigation
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      const currentScroll = (mainElement as HTMLElement).scrollTop;
+      storage.session.set(STORAGE_KEYS.SCROLL_POSITION.WATCHLIST_DETAIL, currentScroll.toString());
+    }
+  };
+
   return (
     <div className="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 space-x-2">
         {/* Drag Handle (receives listeners) */}
@@ -94,7 +104,7 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
             </div>
         )}
         {/* Link wraps only the clickable content area */}
-        <Link to={detailLink} className="flex items-start flex-grow space-x-4 min-w-0">
+  <Link to={detailLink} onClick={handleNavigateToDetail} className="flex items-start flex-grow space-x-4 min-w-0">
           <div className="flex-shrink-0 w-16">
             {posterUrl ? (
               <img src={posterUrl} alt={`${title} poster`} className="w-full h-auto object-cover rounded" />

@@ -1,9 +1,10 @@
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/';
+import { logger } from '../utils/logger';
 
 if (!TMDB_API_KEY) {
-  console.error("TMDB API Key is missing. Please add VITE_TMDB_API_KEY to your .env file.");
+  logger.error("TMDB API Key is missing. Please add VITE_TMDB_API_KEY to your .env file.");
 }
 
 // --- Interfaces ---
@@ -97,7 +98,7 @@ const fetchTmdb = async <T>(endpoint: string, params: Record<string, string> = {
     }
     return await response.json();
   } catch (error) {
-    console.error("Error fetching from TMDB:", error);
+    logger.error("Error fetching from TMDB:", error);
     throw error;
   }
 };
@@ -132,16 +133,16 @@ export const getMediaDetails = async (mediaId: string): Promise<TmdbMediaDetails
         mediaType = parts[1];
         id = parseInt(parts[2], 10);
     } else if (parts.length === 2 && parts[0] === 'tmdb') {
-        console.warn(`Handling legacy media ID format for ${mediaId}. Assuming type 'movie'.`);
+        logger.warn(`Handling legacy media ID format for ${mediaId}. Assuming type 'movie'.`);
         mediaType = 'movie';
         id = parseInt(parts[1], 10);
     } else {
-        console.error("Invalid media ID format:", mediaId);
+        logger.error("Invalid media ID format:", mediaId);
         return null;
     }
 
     if (isNaN(id) || id === null) {
-        console.error("Invalid numeric ID in media ID:", mediaId);
+        logger.error("Invalid numeric ID in media ID:", mediaId);
         return null;
     }
 
@@ -151,11 +152,11 @@ export const getMediaDetails = async (mediaId: string): Promise<TmdbMediaDetails
         } else if (mediaType === 'tv') {
             return await getTvDetails(id);
         } else {
-            console.error("Unsupported media type:", mediaType);
+            logger.error("Unsupported media type:", mediaType);
             return null;
         }
     } catch (error) {
-        console.error(`Failed to fetch details for ${mediaId}:`, error);
+        logger.error(`Failed to fetch details for ${mediaId}:`, error);
         return null;
     }
 };
