@@ -6,6 +6,7 @@ import { Profile } from '../types/profile';
 import { Watchlist } from '../types/watchlist';
 import { logger } from '../utils/logger';
 import WatchlistCard from '../components/watchlists/WatchlistCard'; // To display public lists
+import { fallbackAvatar } from '../utils/avatars';
 
 function UserProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -119,9 +120,22 @@ function UserProfilePage() {
        {/* Profile Header */}
        <div className="flex items-center space-x-4 mb-6 p-4 bg-white dark:bg-gray-800 rounded shadow">
             {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={`${profile.display_name}'s Avatar`} className="h-20 w-20 rounded-full object-cover"/>
+                <img 
+                  src={profile.avatar_url} 
+                  alt={`${profile.display_name}'s Avatar`} 
+                  className="h-20 w-20 rounded-full object-cover"
+                  onError={(e) => {
+                    // Fallback to deterministic avatar if main image fails
+                    const target = e.target as HTMLImageElement;
+                    target.src = fallbackAvatar(profile.id);
+                  }}
+                />
             ) : (
-                <div className="h-20 w-20 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-500">No Avatar</div>
+                <img 
+                  src={fallbackAvatar(profile.id)} 
+                  alt={`${profile.display_name}'s Avatar`} 
+                  className="h-20 w-20 rounded-full object-cover"
+                />
             )}
             <div>
                 <h1 className="text-3xl font-bold">{profile.display_name}</h1>

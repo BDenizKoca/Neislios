@@ -5,6 +5,8 @@ import { Profile } from '../types/profile';
 import toast from 'react-hot-toast';
 import { logger } from '../utils/logger';
 import { useHeader } from '../hooks/useHeader'; // Updated import path
+import { AvatarPicker } from '../components/common';
+import { fallbackAvatar } from '../utils/avatars';
 
 function ProfilePage() {
   const { user, session } = useAuth();
@@ -112,9 +114,22 @@ function ProfilePage() {
       {/* Avatar Display */}
       <div className="flex justify-center mb-6">
         {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="User Avatar" className="h-24 w-24 rounded-full object-cover shadow-md"/>
+            <img 
+              src={profile.avatar_url} 
+              alt="User Avatar" 
+              className="h-24 w-24 rounded-full object-cover shadow-md"
+              onError={(e) => {
+                // Fallback to deterministic avatar if main image fails
+                const target = e.target as HTMLImageElement;
+                target.src = fallbackAvatar(user?.id || user?.email || '');
+              }}
+            />
         ) : (
-            <div className="h-24 w-24 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400 shadow-md">No Avatar</div>
+            <img 
+              src={fallbackAvatar(user?.id || user?.email || '')} 
+              alt="Default Avatar" 
+              className="h-24 w-24 rounded-full object-cover shadow-md"
+            />
         )}
       </div>
 
@@ -125,15 +140,40 @@ function ProfilePage() {
              <p className="mb-2 dark:text-gray-300"><strong>Email:</strong> {user?.email || 'N/A'}</p>
              <p className="mb-2 dark:text-gray-300"><strong>Current Display Name:</strong> {profile.display_name}</p>
              {/* Avatar URL Form */}
-             <form onSubmit={handleUpdateAvatar} className="space-y-3 pt-4 border-t dark:border-gray-600">
-                 <h4 className="font-medium dark:text-gray-100">Avatar URL</h4>
+             <form onSubmit={handleUpdateAvatar} className="space-y-4 pt-4 border-t dark:border-gray-600">
+                 <h4 className="font-medium dark:text-gray-100">Update Avatar</h4>
+                 
+                 {/* Avatar Picker Option */}
                  <div>
-                    <label htmlFor="avatarUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Image URL</label>
-                    <input id="avatarUrl" type="url" placeholder="https://example.com/image.png" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"/>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Choose from gallery:</label>
+                   <AvatarPicker 
+                     id={user?.id || user?.email || ''} 
+                     onPick={setAvatarUrl}
+                     className="justify-center"
+                   />
+                 </div>
+
+                 <div className="text-center text-sm text-gray-500 dark:text-gray-400">— OR —</div>
+
+                 {/* Manual URL Input */}
+                 <div>
+                    <label htmlFor="avatarUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Custom Image URL</label>
+                    <input 
+                      id="avatarUrl" 
+                      type="url" 
+                      placeholder="https://example.com/image.png" 
+                      value={avatarUrl} 
+                      onChange={(e) => setAvatarUrl(e.target.value)} 
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
+                    />
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter a direct URL to a JPG, PNG, GIF, or WEBP image. Leave blank to remove.</p>
                  </div>
-                 <button type="submit" disabled={updatingAvatar || avatarUrl.trim() === (profile.avatar_url || '')} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50">
-                    {updatingAvatar ? 'Saving...' : 'Update Avatar URL'}
+                 <button 
+                   type="submit" 
+                   disabled={updatingAvatar || avatarUrl.trim() === (profile.avatar_url || '')} 
+                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+                 >
+                    {updatingAvatar ? 'Saving...' : 'Update Avatar'}
                   </button>
              </form>
           </div>

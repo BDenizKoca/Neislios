@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { useNavigate, Link } from 'react-router-dom';
 import { logger } from '../utils/logger';
+import { AvatarPicker } from '../components/common';
+import { getDefaultAvatar } from '../utils/avatars';
 
 function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null); // For success/info messages
   const [loading, setLoading] = useState(false);
@@ -26,6 +29,9 @@ function SignupPage() {
     }
 
     try {
+      // Use selected avatar or default if none selected
+      const finalAvatarUrl = avatarUrl || getDefaultAvatar(email || displayName);
+      
       // Construct the credentials object according to the AuthContext definition
       const credentials = {
         email,
@@ -33,6 +39,7 @@ function SignupPage() {
         options: {
           data: {
             display_name: displayName.trim(),
+            avatar_url: finalAvatarUrl,
           },
         },
       };
@@ -81,6 +88,22 @@ function SignupPage() {
               placeholder="Your Name"
             />
           </div>
+
+          {/* Avatar Picker */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Choose Your Avatar (Optional)
+            </label>
+            <AvatarPicker 
+              id={email || displayName || 'preview'} 
+              onPick={setAvatarUrl}
+              className="justify-center"
+            />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+              {avatarUrl ? 'Avatar selected!' : 'A default avatar will be assigned if none selected'}
+            </p>
+          </div>
+
           {/* Email Input */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
