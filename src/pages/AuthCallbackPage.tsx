@@ -39,15 +39,54 @@ const AuthCallbackPage: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Handle the auth redirect process
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // Check if the user metadata exists in the profile table
-        checkAndCreateUserProfile(session.user.id);
+    let processed = false;
+
+    const handleAuthCallback = async () => {
+      try {
+        // Handle the OAuth callback and get the session
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Auth callback error:', error);
+          navigate('/login');
+          return;
+        }
+
+        if (data.session && data.session.user && !processed) {
+          processed = true;
+          await checkAndCreateUserProfile(data.session.user.id);
+        } else if (!processed) {
+          // No session found, redirect to login
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('Error in auth callback:', error);
+        navigate('/login');
+      }
+    };
+
+    // Add a small delay to ensure the auth state is properly set
+    const timeoutId = setTimeout(handleAuthCallback, 100);
+
+    // Fallback timeout to prevent infinite hanging (10 seconds)
+    const fallbackTimeoutId = setTimeout(() => {
+      if (!processed) {
+        console.warn('Auth callback timeout - redirecting to login');
+        navigate('/login');
+      }
+    }, 10000);
+
+    // Also listen for auth state changes as fallback
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session && !processed) {
+        processed = true;
+        await checkAndCreateUserProfile(session.user.id);
       }
     });
 
     return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(fallbackTimeoutId);
       authListener?.subscription.unsubscribe();
     };
   }, [navigate, checkAndCreateUserProfile]);

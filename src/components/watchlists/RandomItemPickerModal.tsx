@@ -49,6 +49,11 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
     const [availableTitles, setAvailableTitles] = useState<string[]>([]);
     const [reelTranslation, setReelTranslation] = useState<number>(0);
     const [isVisuallySpinning, setIsVisuallySpinning] = useState(false);
+    const [triggerReroll, setTriggerReroll] = useState(0);
+
+    const startRandomPick = () => {
+        setTriggerReroll(prev => prev + 1);
+    };
 
     useEffect(() => {
         if (!isOpen) {
@@ -152,7 +157,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             if (progressInterval) clearTimeout(progressInterval);
             clearTimeout(spinTimeout);
         };
-    }, [isOpen, items]); // Only depend on isOpen and items
+    }, [isOpen, items, triggerReroll]); // Add triggerReroll to dependencies
     
     useEffect(() => {
         if (!isSpinning && randomPick && isOpen) {
@@ -246,9 +251,20 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                                 </>
                             )
                         )}
-                        <button onClick={onClose} className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-medium transform hover:scale-105 transition-all duration-200 shadow-lg">
-                            Reroll
-                        </button>
+                        <div className="flex gap-3 mt-6">
+                            <button 
+                                onClick={startRandomPick} 
+                                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-medium transform hover:scale-105 transition-all duration-200 shadow-lg"
+                            >
+                                Reroll
+                            </button>
+                            <button 
+                                onClick={onClose} 
+                                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg font-medium transform hover:scale-105 transition-all duration-200 shadow-lg"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
