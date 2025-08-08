@@ -10,6 +10,7 @@ import WatchlistCard from '../components/watchlists/WatchlistCard';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { STORAGE_KEYS, storage } from '../utils/storage';
+import { logger } from '../utils/logger';
 
 type SearchType = 'media' | 'watchlists';
 
@@ -114,7 +115,7 @@ function MovieSearchPage() {
           .eq('user_id', user.id);
         if (error) throw error;
         setWatchedMedia(new Set(data?.map(m => m.media_id) || []));
-      } catch (err) { console.error("Failed to fetch watched media:", err); }
+  } catch (err) { logger.error("Failed to fetch watched media:", err); }
     };
     fetchWatched();
   }, [user]);
@@ -149,7 +150,7 @@ function MovieSearchPage() {
             });
             setFriendsWatchedMediaMap(watchedMap);
 
-        } catch (err) { console.error("Failed to fetch friends' watched media:", err); setFriends([]); setFriendsWatchedMediaMap(new Map()); }
+  } catch (err) { logger.error("Failed to fetch friends' watched media:", err); setFriends([]); setFriendsWatchedMediaMap(new Map()); }
     };
     fetchFriendsAndWatched();
   }, [user]);
@@ -165,7 +166,7 @@ function MovieSearchPage() {
           .eq('user_id', user.id);
         if (error) throw error;
         setFavoriteWatchlistIds(new Set(data?.map(f => f.watchlist_id) || []));
-      } catch (err) { console.error("Failed to fetch favorite watchlists:", err); }
+  } catch (err) { logger.error("Failed to fetch favorite watchlists:", err); }
     };
     fetchFavoriteWatchlists();
   }, [user]);
@@ -254,8 +255,8 @@ function MovieSearchPage() {
                 if (error) throw error;
                 toast.success('Marked as watched.', { id: toastId });
             }
-        } catch (err: unknown) {
-            console.error("Failed to toggle watched status:", err);
+    } catch (err: unknown) {
+      logger.error("Failed to toggle watched status:", err);
             setWatchedMedia(prev => { const ns = new Set(prev); if (currentState) ns.add(mediaId); else ns.delete(mediaId); return ns; }); // Revert
             toast.error(err instanceof Error ? err.message : 'Failed to update watched status.', { id: toastId });
         }
@@ -279,8 +280,8 @@ function MovieSearchPage() {
                 list.id === watchlistId ? { ...list, is_favorite: !isCurrentlyFavorite } : list
              ));
         }
-     } catch (err: unknown) {
-        console.error("Error toggling favorite:", err);
+    } catch (err: unknown) {
+      logger.error("Error toggling favorite:", err);
         toast.error(err instanceof Error ? err.message : 'Failed to update favorite status.', { id: toastId });
      }
   };

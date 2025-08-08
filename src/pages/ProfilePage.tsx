@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { supabase } from '../lib/supabaseClient';
 import { Profile } from '../types/profile';
 import toast from 'react-hot-toast';
+import { logger } from '../utils/logger';
 import { useHeader } from '../hooks/useHeader'; // Updated import path
 
 function ProfilePage() {
@@ -32,7 +33,7 @@ function ProfilePage() {
         setAvatarUrl(data.avatar_url || '');
       }
     } catch (err: unknown) { // Use unknown
-      console.error("Error fetching profile:", err);
+      logger.error("Error fetching profile:", err);
       toast.error(err instanceof Error ? err.message : 'Failed to load profile.'); // Check error type
     } finally {
       setLoading(false);
@@ -68,8 +69,8 @@ function ProfilePage() {
         if (rpcError) throw rpcError;
         toast.success("Display name updated successfully!", { id: toastId });
         await fetchProfile(); // Re-fetch to update displayed name
-    } catch (err: unknown) { // Use unknown
-        console.error("Error updating profile:", err);
+  } catch (err: unknown) { // Use unknown
+    logger.error("Error updating profile:", err);
         toast.error(err instanceof Error ? err.message : 'Failed to update display name.', { id: toastId }); // Check error type
     } finally {
         setUpdatingDisplayName(false);
@@ -92,8 +93,8 @@ function ProfilePage() {
         if (rpcError) throw rpcError;
         toast.success("Avatar URL updated successfully!", { id: toastId });
         await fetchProfile(); // Re-fetch to update displayed avatar
-    } catch (err: unknown) { // Use unknown
-        console.error("Error updating avatar URL:", err);
+  } catch (err: unknown) { // Use unknown
+    logger.error("Error updating avatar URL:", err);
         toast.error(err instanceof Error ? err.message : 'Failed to update avatar URL.', { id: toastId }); // Check error type
     } finally {
         setUpdatingAvatar(false);

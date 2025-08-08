@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { Profile } from '../types/profile';
 import { Watchlist } from '../types/watchlist';
+import { logger } from '../utils/logger';
 import WatchlistCard from '../components/watchlists/WatchlistCard'; // To display public lists
 
 function UserProfilePage() {
@@ -60,7 +61,7 @@ function UserProfilePage() {
         // Check friendship
         const { data: friendshipData, error: friendError } = await supabase
             .rpc('are_friends', { user_id_1: user.id, user_id_2: userId }); // Assumes an 'are_friends' function exists or check table directly
-        if (friendError) console.error("Error checking friendship:", friendError);
+  if (friendError) logger.error("Error checking friendship:", friendError);
         else if (friendshipData) setIsFriend(true);
 
         // If not friends, check for pending requests
@@ -72,7 +73,7 @@ function UserProfilePage() {
                 .or(`(sender_id.eq.${user.id},receiver_id.eq.${userId}),(sender_id.eq.${userId},receiver_id.eq.${user.id})`)
                 .maybeSingle();
 
-             if (requestError) console.error("Error checking friend request:", requestError);
+             if (requestError) logger.error("Error checking friend request:", requestError);
              else if (requestData) {
                  setFriendRequestStatus(requestData.sender_id === user.id ? 'sent' : 'received');
              }

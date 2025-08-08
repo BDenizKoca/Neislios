@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { logger } from '../utils/logger';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { useHeader } from '../hooks/useHeader';
@@ -32,7 +33,7 @@ function SettingsPage() {
       toast.success('Logged out successfully!', { id: toastId }); // Update toast on success
       // Navigation handled by ProtectedRoute
     } catch (error) {
-      console.error("Logout failed:", error);
+  logger.error("Logout failed:", error);
       toast.error((error as Error).message || 'Logout failed.', { id: toastId }); // Update toast on error
     }
   };
@@ -69,7 +70,7 @@ function SettingsPage() {
       setConfirmPassword('');
 
     } catch (err: unknown) { // Use unknown
-      console.error("Error updating password:", err);
+  logger.error("Error updating password:", err);
       toast.error(err instanceof Error ? err.message : 'Failed to update password.', { id: toastId }); // Check error type
     } finally {
       setPasswordLoading(false);
@@ -99,7 +100,7 @@ function SettingsPage() {
               await signOut(); // Logout happens after toast is shown
 
           } catch (err: unknown) { // Use unknown
-               console.error("Error deleting account:", err);
+               logger.error("Error deleting account:", err);
                toast.error(err instanceof Error ? err.message : 'Failed to delete account.', { id: toastId }); // Check error type
                setPasswordLoading(false); // Ensure loading stops on error
           }

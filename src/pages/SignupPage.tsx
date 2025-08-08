@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth'; // Updated import path
 import { useNavigate, Link } from 'react-router-dom';
+import { logger } from '../utils/logger';
 
 function SignupPage() {
   const [email, setEmail] = useState('');
@@ -52,7 +53,7 @@ function SignupPage() {
 
     } catch (err: unknown) { // Use unknown
       setError(err instanceof Error ? err.message : 'Failed to sign up. Please try again.'); // Check error type
-      console.error("Signup error:", err);
+      logger.error("Signup error:", err);
     } finally {
       setLoading(false);
     }
@@ -67,7 +68,7 @@ function SignupPage() {
       // Redirect/session update handled by Supabase & AuthContext listener
     } catch (err: unknown) { // Use unknown
       setError(err instanceof Error ? err.message : 'Failed to sign in with Google.'); // Check error type
-      console.error("Google login error:", err);
+      logger.error("Google login error:", err);
       setLoading(false);
     }
   };
