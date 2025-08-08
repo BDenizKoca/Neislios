@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { avatarOptions } from '../../utils/avatars';
 
 interface AvatarPickerProps {
