@@ -42,7 +42,7 @@ I should add a huge disclamer here that this project is mainly for my personal u
 **Deployment & Hosting:**
 - **Cloudflare Pages** - Lightning-fast global CDN hosting
 - **Automatic deployments** from GitHub integration
-- **Custom domain** with SSL/TLS certificates
+- **Free .pages.dev subdomain** with SSL/TLS certificates
 - **Edge caching** for optimal performance worldwide
 
 **Interactive Features:**
