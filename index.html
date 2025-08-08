@@ -18,6 +18,19 @@
     <!-- Additional PWA meta tags -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Neislios" />
+    
+    <!-- Prevent flash of white background -->
+    <style>
+      body {
+        background-color: #f3f4f6; /* light gray for light mode */
+        margin: 0;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #111827; /* dark gray for dark mode */
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
