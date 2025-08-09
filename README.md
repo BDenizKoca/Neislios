@@ -1,6 +1,7 @@
 # Neislios - Collaborative Movie Watchlist PWA
 
 ![Logo](public/icons/icon-128x128.png)
+
 **[Live Demo: neislios.pages.dev](https://neislios.pages.dev)**
 
 > **exploration into PWAs, React, and collaborative experiences.**
