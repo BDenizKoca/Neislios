@@ -1,6 +1,4 @@
-# Neislios – Collaborative Movie Watchlist PWA  
-
-![Logo](public/icons/icon-128x128.png)
+# Neislios
 
 **Live demo:** [neislios.pages.dev](https://neislios.pages.dev)  
 
@@ -9,6 +7,11 @@ Neislios is a minimalist, modern Progressive Web App to create, manage, and shar
 ---
 
 ## Features  
+
+<p align="center">
+  <img src="public/demo.gif" alt="App Demo" width="300"/>
+</p>
+
 
 - Smart authentication with email or Google (Supabase Auth)  
 - Collaborative watchlists with owner/editor permissions  
