@@ -8,7 +8,10 @@ Neislios is a minimalist, modern Progressive Web App to create, manage, and shar
 
 ## Features  
 
-![App Demo](public/demo.gif)
+<p align="center">
+  <img src="public/demo.gif" alt="Neislios app demo" width="220">
+</p>
+
 
 
 - Smart authentication with email or Google (Supabase Auth)  
