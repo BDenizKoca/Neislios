@@ -122,15 +122,15 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="🎲 What Should We Watch?"
-      subtitle="Random selector for movie night"
+      title="Random Selector"
+      subtitle="Select a random title from your watchlist"
       maxWidthClass="max-w-md"
     >
       <div className="text-center py-2">
         {isSpinning || isVisuallySpinning ? (
           <div className="flex flex-col items-center">
             <h3 className="text-lg font-bold mb-4 gradient-text animate-pulse">
-              Spinning the wheel...
+              Selecting title...
             </h3>
             <div className="slot-machine-container h-48 mb-6 w-full glass-panel rounded-2xl p-4">
               <div
@@ -157,7 +157,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
               <div className="space-y-4">
                 <div className="p-6 rounded-3xl bg-slate-900 border border-red-500/40 text-center animate-hype shadow-xl shadow-red-600/10">
                   <span className="text-xs font-bold uppercase tracking-wider text-red-500 block mb-1">
-                    🎉 Winner Pick
+                    Selected Pick
                   </span>
                   <Link
                     to={`/${randomPick.media_type}/${randomPick.id}`}
@@ -178,7 +178,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                     onClick={startRandomPick}
                     className="flex-1 btn-primary"
                   >
-                    🔄 Reroll
+                    Reroll
                   </button>
                   <button
                     onClick={onClose}

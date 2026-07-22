@@ -94,7 +94,7 @@ function TransferOwnershipModal({
         ) : (
           <div className="space-y-3">
             <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs leading-relaxed">
-              <strong className="block mb-1 text-sm font-bold">⚠️ Warning</strong>
+              <strong className="block mb-1 text-sm font-bold">Warning</strong>
               Transferring ownership cannot be undone. You will become an editor of this list and <span className="font-bold">{selectedMember?.display_name}</span> will become the owner.
             </div>
           </div>

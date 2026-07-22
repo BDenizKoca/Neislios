@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { TmdbSearchResult, getMoviePosterUrl } from '../../services/tmdbService';
 import { Profile } from '../../types/profile';
-import { EyeIcon, EyeSlashIcon, PlusIcon, StarIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, PlusIcon, StarIcon, CalendarDaysIcon, FilmIcon } from '@heroicons/react/24/outline';
 
 interface MediaCardProps {
   mediaItem: TmdbSearchResult;
@@ -62,7 +62,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center text-slate-400 bg-slate-100 dark:bg-slate-900">
-            <span className="text-3xl mb-2">🎬</span>
+            <FilmIcon className="w-8 h-8 mb-2 text-slate-400" />
             <span className="text-xs font-semibold">{title}</span>
           </div>
         )}

@@ -61,7 +61,6 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
           {/* Header */}
           <div className="flex justify-between items-center pb-6 border-b border-slate-200/60 dark:border-slate-800/60">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🎬</span>
               <span className="text-xl font-extrabold text-red-600 dark:text-red-500 tracking-tight">Neislios</span>
             </div>
             <button 

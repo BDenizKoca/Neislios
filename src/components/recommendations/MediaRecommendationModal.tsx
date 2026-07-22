@@ -187,7 +187,7 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
             </button>
           )}
           <span className="text-xl font-bold gradient-text">
-            {previewMedia ? 'Media Preview' : '✨ AI Recommendations'}
+            {previewMedia ? 'Media Preview' : 'AI Recommendations'}
           </span>
         </div>
       }
@@ -441,7 +441,7 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
             className="btn-primary text-sm flex items-center gap-2"
             disabled={isLoading || !items || items.length < 10}
           >
-            <span>✨ Regenerate</span>
+            <span>Regenerate</span>
           </button>
         </div>
     </Modal>

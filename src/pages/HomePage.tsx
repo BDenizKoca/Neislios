@@ -12,6 +12,7 @@ import { Profile } from '../types/profile';
 import { logger } from '../utils/logger';
 import { STORAGE_KEYS, storage } from '../utils/storage';
 import { mapRawProfile, mapRawWatchlist } from '../utils/dataMappers';
+import { FilmIcon } from '@heroicons/react/24/outline';
 
 type Tab = 'favorites' | 'yourLists' | 'sharedLists';
 
@@ -245,7 +246,7 @@ function HomePage() {
       return (
         <div className="flex flex-col items-center justify-center p-12 text-center">
           <div className="w-16 h-16 mb-4 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center text-slate-400">
-            🎬
+            <FilmIcon className="w-8 h-8" />
           </div>
           <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">No watchlists here yet</p>
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
