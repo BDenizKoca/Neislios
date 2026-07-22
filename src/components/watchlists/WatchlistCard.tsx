@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { useSwipeable } from 'react-swipeable';
+import React from 'react';
 import { StarIcon as StarIconSolid, PencilSquareIcon } from '@heroicons/react/24/solid';
-import { StarIcon as StarIconOutline, GlobeAltIcon, LockClosedIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconOutline, GlobeAltIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { useNavigate, Link } from 'react-router-dom';
 import { Watchlist } from '../../types/watchlist';
 import { useAuth } from '../../hooks/useAuth';
@@ -19,14 +18,11 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
   watchlist,
   onToggleFavorite,
   onEdit,
-  onDelete,
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const posters = useWatchlistPreviewPosters(watchlist.id);
   const isOwner = user?.id === watchlist.owner_id;
-  const [swipeFeedback, setSwipeFeedback] = useState<'favorite' | 'delete' | null>(null);
-  const [isSwiping, setIsSwiping] = useState(false);
 
   const cardBgColor = watchlist.card_color || undefined;
 
@@ -41,48 +37,11 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
   };
 
   const handleCardClick = () => {
-    if (!isSwiping) {
-      navigate(`/watchlist/${watchlist.id}`);
-    }
+    navigate(`/watchlist/${watchlist.id}`);
   };
-
-  const handlers = useSwipeable({
-    onSwipedRight: (eventData) => {
-      const touchStartX = eventData.initial[0];
-      const cardRect = (eventData.event.target as Element).getBoundingClientRect();
-      if (touchStartX - cardRect.left < 50) {
-        setSwipeFeedback('favorite');
-        onToggleFavorite(watchlist.id, watchlist.is_favorite ?? false);
-        setTimeout(() => setSwipeFeedback(null), 600);
-        eventData.event.stopPropagation();
-      }
-    },
-    onSwipedLeft: (eventData) => {
-      if (!onDelete) return;
-      const touchStartX = eventData.initial[0];
-      const cardRect = (eventData.event.target as Element).getBoundingClientRect();
-      if (cardRect.right - touchStartX < 50) {
-        setSwipeFeedback('delete');
-        if (window.confirm(`Delete watchlist "${watchlist.title}"? This cannot be undone.`)) {
-          onDelete(watchlist.id);
-        } else {
-          setSwipeFeedback(null);
-        }
-        setTimeout(() => setSwipeFeedback(null), 600);
-        eventData.event.stopPropagation();
-      }
-    },
-    onSwiping: () => setIsSwiping(true),
-    onSwiped: () => setTimeout(() => setIsSwiping(false), 100),
-    preventScrollOnSwipe: false,
-    trackMouse: false,
-    delta: 50,
-  });
 
   return (
     <div
-      {...handlers}
-      data-no-swipe-navigate="true"
       onClick={handleCardClick}
       className="group relative rounded-3xl p-5 border cursor-pointer transition-all duration-200 flex flex-col justify-between min-h-[240px] overflow-hidden glass-panel hover:border-red-500/40 dark:hover:border-red-500/40 shadow-sm hover:shadow-xl hover:-translate-y-1"
     >
@@ -165,17 +124,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
         )}
       </div>
 
-      {/* Swipe Feedback Overlay */}
-      {swipeFeedback === 'favorite' && (
-        <div className="absolute inset-y-0 left-0 bg-amber-500/80 backdrop-blur-sm flex items-center justify-center w-20 transition-all duration-300">
-          <StarIconSolid className="h-8 w-8 text-white animate-hype" />
-        </div>
-      )}
-      {swipeFeedback === 'delete' && (
-        <div className="absolute inset-y-0 right-0 bg-rose-500/80 backdrop-blur-sm flex items-center justify-center w-20 transition-all duration-300">
-          <TrashIcon className="h-8 w-8 text-white animate-hype" />
-        </div>
-      )}
+
 
       {/* Footer Details */}
       <div className="pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs sm:text-sm">

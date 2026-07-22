@@ -155,22 +155,19 @@ function HomePage() {
     };
   }, [user, fetchWatchlists]);
 
-  // Clean react-swipeable handlers replacing raw touch math
+  // Clean react-swipeable handlers for switching tabs anywhere on the home page
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: (event) => {
-      const el = event.event.target as HTMLElement;
-      if (el && el.closest && el.closest('[data-no-swipe-navigate="true"]')) return;
+    onSwipedLeft: () => {
       if (activeTab === 'favorites') setActiveTab('yourLists');
       else if (activeTab === 'yourLists') setActiveTab('sharedLists');
     },
-    onSwipedRight: (event) => {
-      const el = event.event.target as HTMLElement;
-      if (el && el.closest && el.closest('[data-no-swipe-navigate="true"]')) return;
+    onSwipedRight: () => {
       if (activeTab === 'sharedLists') setActiveTab('yourLists');
       else if (activeTab === 'yourLists') setActiveTab('favorites');
     },
     preventScrollOnSwipe: false,
     trackMouse: false,
+    delta: 40,
   });
 
   const handleToggleFavorite = async (watchlistId: string, isCurrentlyFavorite: boolean) => {
