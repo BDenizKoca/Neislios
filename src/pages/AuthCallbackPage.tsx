@@ -73,9 +73,10 @@ const AuthCallbackPage: React.FC = () => {
       if (data.session?.user && !processedRef.current) {
         await checkAndCreateUserProfile(data.session.user.id);
       } else {
-        // Check URL search & hash parameters
         const hasAuthParams = window.location.search.includes('code=') || 
                               window.location.hash.includes('access_token=');
+        const hasError = window.location.search.includes('error=') || 
+                         window.location.hash.includes('error=');
         const urlParams = new URLSearchParams(window.location.search);
         const errorDesc = urlParams.get('error_description');
 
