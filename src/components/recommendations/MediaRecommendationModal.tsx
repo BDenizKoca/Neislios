@@ -1,14 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PlusIcon, ArrowLeftIcon, ArrowTopRightOnSquareIcon, StarIcon } from '@heroicons/react/24/outline';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import toast from 'react-hot-toast'; // Import toast
-import { supabase } from '../../lib/supabaseClient'; // Import supabase
-import { useAuth } from '../../hooks/useAuth'; // Import useAuth
+import toast from 'react-hot-toast';
+import { supabase } from '../../lib/supabaseClient';
 import { useAIRecommendations } from '../../hooks/useAIRecommendations';
-import { getMoviePosterUrl, getMediaDetails, TmdbMediaDetails } from '../../services/tmdbService';
+import { getMoviePosterUrl, getMovieDetails, getTvDetails, TmdbMediaDetails } from '../../services/tmdbService';
 import { isMovieDetails } from '../../utils/tmdbUtils';
 import { useWatchlistItems } from '../../hooks/useWatchlistItems';
-import { logger } from '../../utils/logger';
 import Modal from '../common/Modal';
 
 interface MediaRecommendationModalProps {
@@ -22,153 +19,81 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
   onClose,
   watchlistId
 }) => {
-  const { loading: recommendationsLoading, recommendations, error: recommendationsError, generateRecommendations, restoreRecommendations } = useAIRecommendations();
-  const { items, loading: itemsLoading, error: itemsError, refetch: refetchWatchlistItems } = useWatchlistItems(watchlistId); // Add refetch
+  const { loading: recommendationsLoading, recommendations, error: recommendationsError, generateRecommendations } = useAIRecommendations();
+  const { items, loading: itemsLoading, error: itemsError, refetch: refetchWatchlistItems } = useWatchlistItems(watchlistId);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [addingItemId, setAddingItemId] = useState<number | null>(null); // State to track adding item
-  const [previewMedia, setPreviewMedia] = useState<{id: number, media_type: 'movie' | 'tv', details?: TmdbMediaDetails} | null>(null); // State for inline preview
+  const [addingItemId, setAddingItemId] = useState<number | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<{id: number, media_type: 'movie' | 'tv', details?: TmdbMediaDetails} | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  // Create a set of existing media IDs for quick lookup
-  const existingMediaIds = React.useMemo(() => new Set(
-    items
-      .map(item => {
-        const parts = item.media_id?.split(':'); // Extract from media_id (e.g., tmdb:movie:123 or tmdb:tv:456)
-        if (parts && parts.length >= 3) {
-          return `${parts[1]}:${parts[2]}`; // Return "movie:123" or "tv:456"
-        }
-        return null;
-      })
-      .filter(Boolean) // Filter out any null IDs
-  ), [items]);  useEffect(() => {
-    if (isOpen && !itemsLoading && items && items.length >= 10) {
-      // Check if we have saved recommendations to restore
-      const savedState = sessionStorage.getItem('recommendation-modal-state');
-      if (savedState) {
-        try {
-          const parsed = JSON.parse(savedState);
-          // Only restore if it's for the same watchlist and not too old (5 minutes)
-          if (parsed.watchlistId === watchlistId && 
-              parsed.recommendations && 
-              parsed.recommendations.length > 0 &&
-              Date.now() - parsed.timestamp < 300000) {
-            logger.info('Restoring previous recommendations');
-            restoreRecommendations(parsed.recommendations);
-            return;
-          }        } catch {
-          logger.warn('Failed to parse saved recommendation state');
-        }
-      }
-      
+  const [addedItems, setAddedItems] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (isOpen && items && items.length >= 10 && recommendations.length === 0 && !recommendationsLoading) {
       setIsGenerating(true);
       generateRecommendations(items)
         .finally(() => setIsGenerating(false));
-    } else if (isOpen && !itemsLoading && items && items.length < 10) {
-      console.warn("Watchlist no longer eligible for recommendations.");
     }
-    // Ensure effect runs when isOpen changes
-  }, [isOpen, items, itemsLoading, generateRecommendations, restoreRecommendations, watchlistId]);
-  const handleAddToList = useCallback(async (mediaId: number, mediaType: 'movie' | 'tv') => {
-    if (!user) {
-      toast.error("You must be logged in to add items.");
-      return;
-    }
-    const mediaKey = `${mediaType}:${mediaId}`;
-    if (existingMediaIds.has(mediaKey)) {
-      const itemType = mediaType === 'movie' ? 'movie' : 'TV series';
-      toast.error(`This ${itemType} is already in your watchlist.`);
-      return;
-    }
+  }, [isOpen, items, recommendations.length, recommendationsLoading, generateRecommendations]);
 
-    setAddingItemId(mediaId); // Indicate loading state for this specific button
-    const fullMediaId = `tmdb:${mediaType}:${mediaId}`;
-    const itemType = mediaType === 'movie' ? 'movie' : 'TV series';
-    const toastId = toast.loading(`Adding ${itemType} to watchlist...`);
+  useEffect(() => {
+    if (!isOpen) {
+      setPreviewMedia(null);
+    }
+  }, [isOpen]);
+
+  const handleAddToList = async (mediaId: number, mediaType: 'movie' | 'tv') => {
+    if (addedItems.has(mediaId) || addingItemId === mediaId) return;
+
+    setAddingItemId(mediaId);
 
     try {
-      const { error } = await supabase.from('watchlist_items').insert({
-        watchlist_id: watchlistId,
-        media_id: fullMediaId,
-        added_by_user_id: user.id,
-        // item_order will likely be set by a trigger or needs manual handling
-      });
-      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('watchlist_items')
+        .insert({
+          watchlist_id: watchlistId,
+          media_id: `tmdb:${mediaType}:${mediaId}`,
+          added_by_user_id: user.id,
+        });
+
       if (error) throw error;
 
-      toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} added successfully!`, { id: toastId });
-      // Refetch items to update the existingMediaIds set and ensure real-time updates
-      await refetchWatchlistItems();
-      
-      // Emit an event to notify parent components that the watchlist has been updated
-      const watchlistUpdateEvent = new CustomEvent('watchlist-updated', { 
-        detail: { watchlistId, mediaId: fullMediaId }
-      });
-      window.dispatchEvent(watchlistUpdateEvent);
-    } catch (err: unknown) {
-      console.error("Error adding item to watchlist:", err);
-      toast.error(err instanceof Error ? err.message : `Failed to add ${itemType}.`, { id: toastId });
+      setAddedItems(prev => new Set(prev).add(mediaId));
+      toast.success('Added to watchlist!');
+      refetchWatchlistItems();
+    } catch (err: any) {
+      console.error('Error adding item:', err);
+      toast.error(err.message || 'Failed to add item');
     } finally {
-      setAddingItemId(null); // Clear loading state for this button
-    }
-  }, [user, watchlistId, existingMediaIds, refetchWatchlistItems]);  const handleNavigateToDetails = (mediaId: number, mediaType: 'movie' | 'tv') => {
-    // Save current modal state and recommendations before navigation
-    sessionStorage.setItem('recommendation-modal-state', JSON.stringify({
-      watchlistId,
-      recommendations,
-      timestamp: Date.now()
-    }));
-    
-    // Save that we should reopen the modal when returning
-    sessionStorage.setItem('recommendation-modal-open', watchlistId);
-    
-    // Navigate to appropriate details page
-    if (mediaType === 'movie') {
-      navigate(`/movie/${mediaId}`);
-    } else {
-      // For TV series, navigate to TV details page
-      navigate(`/tv/${mediaId}`);
+      setAddingItemId(null);
     }
   };
 
-  const handlePreviewMedia = async (mediaId: number, mediaType: 'movie' | 'tv') => {
+  const handleMediaClick = async (mediaId: number, mediaType: 'movie' | 'tv') => {
     setLoadingPreview(true);
+    setPreviewMedia({ id: mediaId, media_type: mediaType });
+
     try {
-      const fullMediaId = `tmdb:${mediaType}:${mediaId}`;
-      const details = await getMediaDetails(fullMediaId);
-      setPreviewMedia({
-        id: mediaId,
-        media_type: mediaType,
-        details: details || undefined
-      });
-    } catch (error) {
-      console.error('Failed to load media details:', error);
-      toast.error('Failed to load preview');
+      if (mediaType === 'movie') {
+        const details = await getMovieDetails(mediaId);
+        setPreviewMedia({ id: mediaId, media_type: mediaType, details: details || undefined });
+      } else {
+        const details = await getTvDetails(mediaId);
+        setPreviewMedia({ id: mediaId, media_type: mediaType, details: details || undefined });
+      }
+    } catch (err) {
+      console.error('Error fetching details:', err);
+      toast.error('Failed to load media details');
     } finally {
       setLoadingPreview(false);
     }
   };
-  // Manage body class based on modal visibility
-  useEffect(() => {
-    if (isOpen) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-      // Remove saved state when modal is intentionally closed
-      sessionStorage.removeItem('recommendation-modal-open');
-      sessionStorage.removeItem('recommendation-modal-state');
-    }
-
-    // On unmount, only clean up the body class
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const isLoading = isGenerating || recommendationsLoading || itemsLoading;
   const error = recommendationsError || itemsError;
+  const existingMediaIds = new Set(items?.map(item => item.media_id) || []);
 
   return (
     <Modal
@@ -186,247 +111,17 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
               <ArrowLeftIcon className="h-5 w-5" />
             </button>
           )}
-          <span className="text-xl font-bold gradient-text">
+          <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
             {previewMedia ? 'Media Preview' : 'AI Recommendations'}
           </span>
         </div>
       }
       subtitle={previewMedia ? undefined : "Tailored movies & series based on your watchlist"}
-    >
-
-        <div className="p-4 flex-1 overflow-y-auto">
-          {previewMedia ? (
-            // Preview mode
-            <div className="space-y-4">
-              {loadingPreview ? (
-                <div className="flex flex-col items-center justify-center p-8">
-                  <div className="w-12 h-12 border-4 border-t-primary rounded-full animate-spin mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-300">Loading preview...</p>
-                </div>
-              ) : previewMedia.details ? (
-                <div className="flex flex-col lg:flex-row gap-6">
-                  {/* Poster */}
-                  <div className="lg:w-1/3 flex-shrink-0">
-                    {previewMedia.details.poster_path ? (
-                      <img
-                        src={getMoviePosterUrl(previewMedia.details.poster_path, 'w500') ?? undefined}
-                        alt={isMovieDetails(previewMedia.details) ? previewMedia.details.title : previewMedia.details.name}
-                        className="w-full rounded-lg shadow-lg"
-                      />
-                    ) : (
-                      <div className="w-full aspect-[2/3] bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-500 dark:text-gray-400">No image</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Details */}
-                  <div className="lg:w-2/3 space-y-4">
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                        {isMovieDetails(previewMedia.details) ? previewMedia.details.title : previewMedia.details.name}
-                      </h3>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
-                        <span className="flex items-center text-amber-400 font-semibold">
-                          <StarIcon className="w-4 h-4 mr-1 text-amber-400 fill-amber-400" />
-                          {previewMedia.details.vote_average.toFixed(1)}
-                        </span>
-                        <span>
-                          {isMovieDetails(previewMedia.details) 
-                            ? previewMedia.details.release_date?.substring(0, 4)
-                            : previewMedia.details.first_air_date?.substring(0, 4)
-                          }
-                        </span>
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
-                          {previewMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {previewMedia.details.genres && previewMedia.details.genres.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Genres</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {previewMedia.details.genres.map(genre => (
-                            <span key={genre.id} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm">
-                              {genre.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Overview</h4>
-                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {previewMedia.details.overview || 'No description available.'}
-                      </p>
-                    </div>
-                    
-                    {/* Action buttons */}
-                    <div className="flex space-x-3 pt-4">
-                      <button
-                        onClick={() => {
-                          const mediaKey = `${previewMedia.media_type}:${previewMedia.id}`;
-                          if (!existingMediaIds.has(mediaKey)) {
-                            handleAddToList(previewMedia.id, previewMedia.media_type);
-                          }
-                        }}
-                        disabled={existingMediaIds.has(`${previewMedia.media_type}:${previewMedia.id}`) || addingItemId === previewMedia.id}
-                        className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
-                          existingMediaIds.has(`${previewMedia.media_type}:${previewMedia.id}`)
-                            ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                            : addingItemId === previewMedia.id
-                            ? 'bg-blue-400 dark:bg-blue-700 text-white cursor-wait'
-                            : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white'
-                        }`}
-                      >
-                        {addingItemId === previewMedia.id ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Adding...
-                          </>
-                        ) : existingMediaIds.has(`${previewMedia.media_type}:${previewMedia.id}`) ? (
-                          <>
-                            <PlusIcon className="h-4 w-4 mr-2" />
-                            Added
-                          </>
-                        ) : (
-                          <>
-                            <PlusIcon className="h-4 w-4 mr-2" />
-                            Add to List
-                          </>
-                        )}
-                      </button>
-                      
-                      <button
-                        onClick={() => handleNavigateToDetails(previewMedia.id, previewMedia.media_type)}
-                        className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
-                      >
-                        <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-2" />
-                        Full Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-red-500 p-4 text-center">
-                  Failed to load preview details.
-                </div>
-              )}
-            </div>
-          ) : isLoading ? (
-            // ... loading indicator ...
-            <div className="flex flex-col items-center justify-center p-8">
-              <div className="w-12 h-12 border-4 border-t-primary rounded-full animate-spin mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-300">
-                {itemsLoading ? 'Loading watchlist items...' : 'Analyzing your watchlist...'}
-              </p>
-            </div>
-          ) : error ? (
-            // ... error message ...
-             <div className="text-red-500 p-4 text-center">
-              {error}
-            </div>
-          ) : recommendations.length === 0 && !itemsLoading && items && items.length >= 10 ? (
-            // ... no recommendations message ...
-             <div className="text-gray-600 dark:text-gray-300 p-4 text-center">
-              No recommendations found. Try adding more diverse movies to your list.
-            </div>
-          ) : !itemsLoading && items && items.length < 10 ? (
-            // ... not eligible message ...
-             <div className="text-gray-600 dark:text-gray-300 p-4 text-center">
-               Add at least 10 items to this watchlist to get AI recommendations.
-             </div>          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {recommendations.map(media => {
-                const mediaKey = `${media.media_type}:${media.id}`;
-                const isAlreadyAdded = existingMediaIds.has(mediaKey);
-                const isCurrentlyAdding = addingItemId === media.id;
-                return (
-                  <div
-                    key={`${media.media_type}-${media.id}`}
-                    className="flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200" // Added shadow
-                  >
-                    <div
-                      className="flex cursor-pointer" // Make main content area clickable
-                      onClick={() => handlePreviewMedia(media.id, media.media_type)}
-                    >
-                      <div className="w-1/3 flex-shrink-0"> {/* Adjusted width */}
-                        {media.poster_path ? (
-                          <img
-                            src={getMoviePosterUrl(media.poster_path, 'w185') ?? undefined} // Smaller image size
-                            alt={media.title}
-                            className="w-full h-auto object-cover" // Removed rounded
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-300 dark:bg-gray-700 aspect-[2/3]"> {/* Added aspect ratio */}
-                            <span className="text-gray-500 dark:text-gray-400 text-xs text-center p-1">No image</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="w-2/3 p-3 flex flex-col justify-between"> {/* Adjusted width */}
-                        <div>
-                          <h3 className="font-semibold mb-1 text-gray-900 dark:text-white line-clamp-2"> {/* Allow two lines */}
-                            {media.title}
-                          </h3>
-                          <div className="flex items-center mb-2 text-xs">
-                            <StarIcon className="w-3.5 h-3.5 mr-1 text-amber-400 fill-amber-400" />
-                            <span className="text-slate-600 dark:text-slate-300 font-semibold">
-                              {media.vote_average.toFixed(1)}
-                            </span>
-                            <span className="text-gray-500 dark:text-gray-400 ml-2">
-                              {media.release_date?.substring(0, 4) || 'N/A'}
-                            </span>
-                            <span className="text-blue-600 dark:text-blue-400 ml-2 text-xs">
-                              {media.media_type === 'movie' ? 'Movie' : 'TV Series'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
-                            {media.overview || 'No description available.'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                     {/* Add Button Area */}
-                     <div className="p-2 border-t border-gray-200 dark:border-gray-700 mt-auto">
-                       <button
-                         onClick={() => handleAddToList(media.id, media.media_type)}
-                         disabled={isAlreadyAdded || isCurrentlyAdding}
-                         className={`w-full flex items-center justify-center px-3 py-1.5 text-sm rounded transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${ 
-                           isAlreadyAdded
-                             ? 'bg-gray-400 dark:bg-gray-600 text-gray-700 dark:text-gray-400 cursor-not-allowed'
-                             : isCurrentlyAdding
-                             ? 'bg-blue-400 dark:bg-blue-700 text-white cursor-wait'
-                             : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:ring-blue-500'
-                         }`}
-                       >
-                         {isCurrentlyAdding ? (
-                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                           </svg>
-                         ) : (
-                           <PlusIcon className="h-4 w-4 mr-1" />
-                         )}
-                         {isAlreadyAdded ? 'Added' : isCurrentlyAdding ? 'Adding...' : 'Add to List'}
-                       </button>
-                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ... existing footer (Close, Regenerate buttons) ... */}
-         <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+      footer={
+        <>
           <button
             onClick={onClose}
-            className="btn-secondary text-sm"
+            className="btn-secondary text-sm px-6 py-2.5"
           >
             Close
           </button>
@@ -438,12 +133,217 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
                   .finally(() => setIsGenerating(false));
               }
             }}
-            className="btn-primary text-sm flex items-center gap-2"
+            className="btn-primary text-sm px-6 py-2.5 flex items-center gap-2"
             disabled={isLoading || !items || items.length < 10}
           >
             <span>Regenerate</span>
           </button>
-        </div>
+        </>
+      }
+    >
+      <div className="p-1">
+        {previewMedia ? (
+          // Preview mode
+          <div className="space-y-4">
+            {loadingPreview ? (
+              <div className="flex flex-col items-center justify-center p-8">
+                <div className="w-12 h-12 border-4 border-t-red-600 rounded-full animate-spin mb-4"></div>
+                <p className="text-slate-600 dark:text-slate-300 font-medium">Loading preview...</p>
+              </div>
+            ) : previewMedia.details ? (
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Poster */}
+                <div className="lg:w-1/3 flex-shrink-0">
+                  {previewMedia.details.poster_path ? (
+                    <img
+                      src={getMoviePosterUrl(previewMedia.details.poster_path, 'w500') ?? undefined}
+                      alt={isMovieDetails(previewMedia.details) ? previewMedia.details.title : previewMedia.details.name}
+                      className="w-full h-auto rounded-2xl shadow-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-64 bg-slate-800 rounded-2xl flex items-center justify-center text-slate-500">
+                      No Poster
+                    </div>
+                  )}
+                </div>
+
+                {/* Details */}
+                <div className="lg:w-2/3 space-y-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                      {isMovieDetails(previewMedia.details) ? previewMedia.details.title : previewMedia.details.name}
+                    </h3>
+                    <div className="flex items-center space-x-4 text-sm text-slate-600 dark:text-slate-300">
+                      <span className="flex items-center text-amber-400 font-semibold">
+                        <StarIcon className="w-4 h-4 mr-1 text-amber-400 fill-amber-400" />
+                        {previewMedia.details.vote_average.toFixed(1)}
+                      </span>
+                      <span>
+                        {isMovieDetails(previewMedia.details) 
+                          ? previewMedia.details.release_date?.substring(0, 4)
+                          : previewMedia.details.first_air_date?.substring(0, 4)}
+                      </span>
+                      <span className="px-2 py-0.5 bg-slate-200/60 dark:bg-slate-800/80 rounded-lg text-xs font-semibold">
+                        {previewMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">Overview</h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {previewMedia.details.overview || 'No description available.'}
+                    </p>
+                  </div>
+
+                  {previewMedia.details.genres && previewMedia.details.genres.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">Genres</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {previewMedia.details.genres.map(genre => (
+                          <span
+                            key={genre.id}
+                            className="px-2.5 py-1 text-xs rounded-lg bg-slate-200/60 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-medium"
+                          >
+                            {genre.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-4 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => handleAddToList(previewMedia.details!.id, previewMedia.media_type)}
+                      disabled={addedItems.has(previewMedia.details.id) || addingItemId === previewMedia.details.id}
+                      className={`btn-primary text-sm ${
+                        addedItems.has(previewMedia.details.id)
+                          ? 'opacity-60 cursor-not-allowed'
+                          : ''
+                      }`}
+                    >
+                      <PlusIcon className="w-4 h-4 inline mr-1" />
+                      {addedItems.has(previewMedia.details.id) ? 'Added to List' : 'Add to List'}
+                    </button>
+                    <a
+                      href={`https://www.themoviedb.org/${previewMedia.media_type}/${previewMedia.details.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-secondary text-sm flex items-center gap-1.5"
+                    >
+                      <span>View on TMDB</span>
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-rose-500 p-4 text-center">
+                Failed to load preview details.
+              </div>
+            )}
+          </div>
+        ) : (
+          // Recommendation list mode
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center p-12">
+                <div className="w-12 h-12 border-4 border-t-red-600 rounded-full animate-spin mb-4"></div>
+                <p className="text-slate-600 dark:text-slate-300 font-medium">
+                  Generating tailored recommendations...
+                </p>
+              </div>
+            ) : error ? (
+              <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-center text-sm">
+                {error}
+              </div>
+            ) : !items || items.length < 10 ? (
+              <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-center text-sm">
+                Add at least 10 items to your watchlist to unlock AI recommendations!
+              </div>
+            ) : recommendations.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 text-sm">
+                No recommendations found. Try regenerating!
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {recommendations.map(media => {
+                  const mediaKey = `tmdb:${media.media_type}:${media.id}`;
+                  const isAlreadyAdded = existingMediaIds.has(mediaKey) || addedItems.has(media.id);
+                  const isCurrentlyAdding = addingItemId === media.id;
+
+                  return (
+                    <div
+                      key={`${media.media_type}-${media.id}`}
+                      className="glass-panel rounded-2xl p-3 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                    >
+                      <div className="flex space-x-3 cursor-pointer" onClick={() => handleMediaClick(media.id, media.media_type)}>
+                        <div className="w-20 h-28 flex-shrink-0 bg-slate-800 rounded-xl overflow-hidden shadow-sm">
+                          {media.poster_path ? (
+                            <img
+                              src={getMoviePosterUrl(media.poster_path, 'w185') ?? undefined}
+                              alt={media.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">
+                              No Poster
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-sm mb-1 text-slate-900 dark:text-slate-100 line-clamp-2">
+                            {media.title}
+                          </h3>
+                          <div className="flex items-center mb-1.5 text-xs">
+                            <StarIcon className="w-3.5 h-3.5 mr-1 text-amber-400 fill-amber-400" />
+                            <span className="text-slate-600 dark:text-slate-300 font-semibold">
+                              {media.vote_average.toFixed(1)}
+                            </span>
+                            <span className="text-slate-400 ml-2">
+                              {media.release_date?.substring(0, 4) || 'N/A'}
+                            </span>
+                            <span className="text-slate-400 ml-2 text-xs">
+                              {media.media_type === 'movie' ? 'Movie' : 'TV Series'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                            {media.overview || 'No description available.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Add Button Area */}
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 mt-3">
+                        <button
+                          onClick={() => handleAddToList(media.id, media.media_type)}
+                          disabled={isAlreadyAdded || isCurrentlyAdding}
+                          className={`w-full flex items-center justify-center px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
+                            isAlreadyAdded
+                              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                              : 'btn-primary'
+                          }`}
+                        >
+                          {isCurrentlyAdding ? (
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <PlusIcon className="h-4 w-4 mr-1" />
+                          )}
+                          {isAlreadyAdded ? 'Added to List' : isCurrentlyAdding ? 'Adding...' : 'Add to List'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </Modal>
   );
 };

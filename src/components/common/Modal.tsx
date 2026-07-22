@@ -7,6 +7,7 @@ export interface ModalProps {
   title?: React.ReactNode;
   subtitle?: React.ReactNode;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   maxWidthClass?: string;
   showCloseButton?: boolean;
 }
@@ -17,6 +18,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   subtitle,
   children,
+  footer,
   maxWidthClass = 'max-w-lg',
   showCloseButton = true,
 }) => {
@@ -48,13 +50,13 @@ export const Modal: React.FC<ModalProps> = ({
         aria-hidden="true"
       />
 
-      {/* Modal Container with Max Height & Fixed Header */}
+      {/* Modal Container with Max Height & Fixed Header/Footer */}
       <div 
         className={`relative w-full ${maxWidthClass} max-h-[85vh] sm:max-h-[90vh] flex flex-col glass-modal rounded-3xl p-6 sm:p-8 shadow-2xl z-10 border border-slate-200/50 dark:border-slate-800/80 transform transition-all duration-200 ease-out animate-hype`}
         role="dialog"
         aria-modal="true"
       >
-        {/* Header */}
+        {/* Fixed Header */}
         {(title || showCloseButton) && (
           <div className="flex items-start justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800/60 flex-shrink-0">
             <div>
@@ -87,6 +89,13 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="flex-1 overflow-y-auto pr-1">
           {children}
         </div>
+
+        {/* Fixed Centered Footer */}
+        {footer && (
+          <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/60 flex-shrink-0 flex items-center justify-center gap-3">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

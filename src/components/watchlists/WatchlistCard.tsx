@@ -83,12 +83,18 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
       onClick={handleCardClick}
       className="group relative rounded-3xl p-6 border cursor-pointer transition-all duration-200 flex flex-col justify-between h-56 overflow-hidden glass-panel hover:border-red-500/40 dark:hover:border-red-500/40 shadow-sm hover:shadow-xl hover:-translate-y-1"
     >
-      {/* Accent Indicator Bar */}
+      {/* Card Theme Accent Bar & Tint Overlay */}
       {cardBgColor && (
-        <div 
-          className="absolute top-0 left-0 right-0 h-1.5 rounded-t-3xl" 
-          style={{ backgroundColor: cardBgColor }} 
-        />
+        <>
+          <div 
+            className="absolute top-0 left-0 right-0 h-2 rounded-t-3xl" 
+            style={{ backgroundColor: cardBgColor }} 
+          />
+          <div 
+            className="absolute inset-0 opacity-[0.12] pointer-events-none transition-opacity group-hover:opacity-25"
+            style={{ backgroundColor: cardBgColor }} 
+          />
+        </>
       )}
 
       {/* Top Header */}
