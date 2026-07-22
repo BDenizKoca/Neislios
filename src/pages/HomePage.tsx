@@ -306,9 +306,9 @@ function HomePage() {
         </button>
       </div>
 
-      {/* Navigation Controls Bar (Tabs + Mobile Create Button) */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex p-1.5 space-x-1 glass-panel rounded-2xl flex-1 sm:flex-initial sm:min-w-[380px] max-w-xl">
+      {/* Navigation Controls Bar (Tabs + Full Width Mobile Create Button) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex p-1.5 space-x-1 glass-panel rounded-2xl w-full sm:w-auto max-w-xl">
           {tabs.map((t) => {
             const isActive = activeTab === t.id;
             return (
@@ -336,15 +336,15 @@ function HomePage() {
           })}
         </div>
 
-        {/* Mobile-Only Compact Create Button */}
+        {/* Full Width Mobile Create Button UNDER the tabs */}
         <button
           type="button"
           onClick={() => setIsCreateModalOpen(true)}
-          className="sm:hidden btn-primary text-xs px-3 py-2.5 rounded-xl shrink-0 shadow-md shadow-red-600/20"
+          className="sm:hidden btn-primary w-full py-2.5 px-4 rounded-2xl justify-center text-sm font-bold shadow-md shadow-red-600/20"
           aria-label="Create Watchlist"
         >
           <PlusIcon className="w-4 h-4" />
-          <span>New</span>
+          <span>+ Create Watchlist</span>
         </button>
       </div>
 

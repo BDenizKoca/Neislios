@@ -267,38 +267,44 @@ function WatchlistDetailPage() {
     <div ref={pageRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full space-y-5">
       {/* Watchlist Header Panel */}
       <div className="p-4 sm:p-6 glass-panel rounded-3xl space-y-3.5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Title, Description & Meta */}
-          <div className="space-y-1.5 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight break-words">
-                  {watchlist.title}
-                </h1>
-                {members && members.length > 0 && (
-                  <CollaboratorAvatars 
-                    members={members}
-                    ownerId={watchlist.owner_id}
-                    maxVisible={4}
-                    size="sm"
-                    textColor="text-slate-600 dark:text-slate-400"
-                  />
-                )}
-              </div>
+        {/* Top Header Row (Title & Mobile Chevron Toggle) */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight break-words">
+              {watchlist.title}
+            </h1>
+            {watchlistItems.length > 0 && (
+              <span className="px-2.5 py-0.5 rounded-full bg-red-600/10 text-red-600 dark:text-red-400 font-extrabold text-xs shrink-0">
+                {stats.percentage}%
+              </span>
+            )}
+            {members && members.length > 0 && (
+              <CollaboratorAvatars 
+                members={members}
+                ownerId={watchlist.owner_id}
+                maxVisible={4}
+                size="sm"
+                textColor="text-slate-600 dark:text-slate-400"
+              />
+            )}
+          </div>
 
-              {/* Mobile Info Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setShowMobileDetails(!showMobileDetails)}
-                className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-                aria-label="Toggle details"
-              >
-                {showMobileDetails ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
-              </button>
-            </div>
+          {/* Mobile Collapse Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setShowMobileDetails(!showMobileDetails)}
+            className="sm:hidden p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 bg-slate-800/40 border border-slate-700/60 shrink-0"
+            aria-label="Toggle details"
+          >
+            {showMobileDetails ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+          </button>
+        </div>
 
-            {/* Description & Owner (Collapsible on Mobile, Always visible on Desktop) */}
-            <div className={`${showMobileDetails ? 'block' : 'hidden sm:block'} space-y-1.5 pt-1`}>
+        {/* Collapsible Content Area (Always visible on Desktop, toggled on Mobile) */}
+        <div className={`${showMobileDetails ? 'block' : 'hidden sm:block'} space-y-4 pt-1`}>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            {/* Description & Owner */}
+            <div className="space-y-1.5 flex-1">
               <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-2xl">
                 {watchlist.description || 'No description provided.'}
               </p>
@@ -306,90 +312,90 @@ function WatchlistDetailPage() {
                 Owner: <span className="font-semibold text-slate-700 dark:text-slate-200">{watchlist.owner?.display_name || 'Unknown'}</span>
               </div>
             </div>
+
+            {/* Progress Card (Compact & right aligned on desktop) */}
+            {watchlistItems.length > 0 && (
+              <div className="w-full lg:w-80 p-3 sm:p-3.5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-1.5 shrink-0">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                    <CheckCircleIcon className="w-4 h-4 text-emerald-500" />
+                    <span>{stats.watched} of {stats.total} Watched</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-red-600/10 text-red-600 dark:text-red-400 font-extrabold text-[11px]">
+                    {stats.percentage}%
+                  </span>
+                </div>
+                <div className="h-2 sm:h-2.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-600 rounded-full transition-all duration-500"
+                    style={{ width: `${stats.percentage}%` }}
+                  />
+                </div>
+                {stats.formattedRuntime !== '0m' && (
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    {stats.formattedRuntime} • {stats.movieCount} Movies, {stats.tvCount} TV Shows
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Progress Card (Right aligned on desktop, tight & compact) */}
-          {watchlistItems.length > 0 && (
-            <div className="w-full lg:w-80 p-3 sm:p-3.5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-1.5 shrink-0">
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                  <CheckCircleIcon className="w-4 h-4 text-emerald-500" />
-                  <span>{stats.watched} of {stats.total} Watched</span>
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-red-600/10 text-red-600 dark:text-red-400 font-extrabold text-[11px]">
-                  {stats.percentage}%
-                </span>
-              </div>
-              <div className="h-2 sm:h-2.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-red-600 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.percentage}%` }}
-                />
-              </div>
-              {stats.formattedRuntime !== '0m' && (
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  {stats.formattedRuntime} • {stats.movieCount} Movies, {stats.tvCount} TV Shows
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
-          <button
-            onClick={handlePickRandom}
-            className="btn-primary text-xs sm:text-sm px-3.5 py-2 shadow-md shadow-red-600/20"
-          >
-            <SparklesIcon className="h-4 w-4" />
-            <span>Random Pick</span>
-          </button>
-
-          {isAIEligible && (
+          {/* Structured Action Buttons Grid (2 Columns on Mobile, Flex on Desktop) */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60">
             <button
-              onClick={() => setShowAIRecommendModal(true)}
-              className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
-              disabled={checkingAIEligibility}
+              onClick={handlePickRandom}
+              className="btn-primary text-xs sm:text-sm px-3.5 py-2.5 justify-center shadow-md shadow-red-600/20"
             >
-              <LightBulbIcon className="h-4 w-4 text-amber-500" />
-              <span>{checkingAIEligibility ? 'Checking...' : 'AI Recommend'}</span>
+              <SparklesIcon className="h-4 w-4" />
+              <span>Random Pick</span>
             </button>
-          )}
 
-          <button
-            onClick={() => setShowShareModal(true)}
-            className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
-          >
-            <ShareIcon className="h-4 w-4 text-red-500" />
-            <span>Share</span>
-          </button>
-
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
-          >
-            <ArrowDownTrayIcon className="h-4 w-4 text-slate-400" />
-            <span>Export</span>
-          </button>
-
-          {canAccess && (
-            <>
+            {isAIEligible && (
               <button
-                onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/manage`)}
-                className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
+                onClick={() => setShowAIRecommendModal(true)}
+                className="btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
+                disabled={checkingAIEligibility}
               >
-                {userRole === 'viewer' ? 'View List' : 'Manage List'}
+                <LightBulbIcon className="h-4 w-4 text-amber-500" />
+                <span>{checkingAIEligibility ? 'Checking...' : 'AI Recommend'}</span>
               </button>
-              {userRole === 'owner' && (
+            )}
+
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
+            >
+              <ShareIcon className="h-4 w-4 text-red-500" />
+              <span>Share</span>
+            </button>
+
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4 text-slate-400" />
+              <span>Export</span>
+            </button>
+
+            {canAccess && (
+              <>
                 <button
-                  onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/collaborators`)}
-                  className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
+                  onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/manage`)}
+                  className="btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
                 >
-                  Collaborators
+                  {userRole === 'viewer' ? 'View List' : 'Manage List'}
                 </button>
-              )}
-            </>
-          )}
+                {userRole === 'owner' && (
+                  <button
+                    onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/collaborators`)}
+                    className="btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
+                  >
+                    <span>Collaborators</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
