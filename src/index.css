@@ -28,7 +28,7 @@
 }
 
 .gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 dark:from-red-500 dark:via-rose-400 dark:to-amber-400;
+  @apply font-extrabold text-red-600 dark:text-red-500;
 }
 
 .btn-primary {

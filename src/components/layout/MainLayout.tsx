@@ -224,7 +224,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               {/* Title / Logo Header */}
               <div className="flex-1 flex justify-center items-center px-4">
                 <h1
-                  className="text-lg font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity gradient-text truncate max-w-xs sm:max-w-md text-center"
+                  className="text-lg font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity text-slate-900 dark:text-slate-100 truncate max-w-xs sm:max-w-md text-center"
                   onClick={handleTitleClick}
                   title={headerTitle}
                 >

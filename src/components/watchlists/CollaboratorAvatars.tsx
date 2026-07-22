@@ -56,7 +56,7 @@ export default function CollaboratorAvatars({
               />
             ) : (
               <div
-                className={`${avatarSize} rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center font-medium text-white shadow-md`}
+                className={`${avatarSize} rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center font-bold text-white shadow-md`}
                 title={member.display_name}
               >
                 {member.display_name.charAt(0).toUpperCase()}

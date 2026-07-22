@@ -146,7 +146,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             </div>
             <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-100"
+                className="h-full bg-red-600 rounded-full transition-all duration-100"
                 style={{ width: `${(spinProgress / SPIN_DURATION) * 100}%` }}
               />
             </div>
@@ -155,8 +155,8 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
           <div className={`transition-opacity duration-300 ${showPickerContent ? 'opacity-100' : 'opacity-0'}`}>
             {randomPick ? (
               <div className="space-y-4">
-                <div className="p-6 rounded-3xl bg-gradient-to-br from-red-500/10 via-rose-500/10 to-amber-500/10 border border-red-500/30 text-center animate-hype shadow-lg shadow-red-600/10">
-                  <span className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400 block mb-1">
+                <div className="p-6 rounded-3xl bg-slate-900 border border-red-500/40 text-center animate-hype shadow-xl shadow-red-600/10">
+                  <span className="text-xs font-bold uppercase tracking-wider text-red-500 block mb-1">
                     🎉 Winner Pick
                   </span>
                   <Link

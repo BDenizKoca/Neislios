@@ -88,10 +88,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
           : 'glass-panel hover:border-violet-500/40 dark:hover:border-violet-500/40'
       }`}
     >
-      {/* Background Subtle Gradient Overlay */}
-      {!cardBgColor && (
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      )}
+
 
       {/* Top Header */}
       <div>
