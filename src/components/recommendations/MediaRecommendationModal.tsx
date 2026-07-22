@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { PlusIcon, ArrowLeftIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowLeftIcon, ArrowTopRightOnSquareIcon, StarIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import toast from 'react-hot-toast'; // Import toast
 import { supabase } from '../../lib/supabaseClient'; // Import supabase
@@ -227,8 +227,8 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
                         {isMovieDetails(previewMedia.details) ? previewMedia.details.title : previewMedia.details.name}
                       </h3>
                       <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
-                        <span className="flex items-center">
-                          <span className="text-yellow-500 mr-1">★</span>
+                        <span className="flex items-center text-amber-400 font-semibold">
+                          <StarIcon className="w-4 h-4 mr-1 text-amber-400 fill-amber-400" />
                           {previewMedia.details.vote_average.toFixed(1)}
                         </span>
                         <span>
@@ -373,9 +373,9 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
                           <h3 className="font-semibold mb-1 text-gray-900 dark:text-white line-clamp-2"> {/* Allow two lines */}
                             {media.title}
                           </h3>
-                          <div className="flex items-center mb-2 text-xs"> {/* Smaller text */}
-                            <span className="text-yellow-500 mr-1">★</span>
-                            <span className="text-gray-600 dark:text-gray-300">
+                          <div className="flex items-center mb-2 text-xs">
+                            <StarIcon className="w-3.5 h-3.5 mr-1 text-amber-400 fill-amber-400" />
+                            <span className="text-slate-600 dark:text-slate-300 font-semibold">
                               {media.vote_average.toFixed(1)}
                             </span>
                             <span className="text-gray-500 dark:text-gray-400 ml-2">
