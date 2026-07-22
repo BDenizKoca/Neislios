@@ -12,7 +12,7 @@ import { Profile } from '../types/profile';
 import { logger } from '../utils/logger';
 import { STORAGE_KEYS, storage } from '../utils/storage';
 import { mapRawProfile, mapRawWatchlist } from '../utils/dataMappers';
-import { FilmIcon } from '@heroicons/react/24/outline';
+import { FilmIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 type Tab = 'favorites' | 'yourLists' | 'sharedLists';
 
@@ -284,36 +284,55 @@ function HomePage() {
   ];
 
   return (
-    <div {...swipeHandlers} className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full">
-      {/* Modern Glass Tab Bar */}
-      <div className="px-4 pt-4 sm:pt-6">
-        <div className="flex p-1.5 space-x-1 glass-panel rounded-2xl max-w-xl mx-auto sm:mx-0">
-          {tabs.map((t) => {
-            const isActive = activeTab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
-                  isActive
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                <span>{t.label}</span>
-                {!loading && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    isActive
-                      ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                      : 'bg-slate-200/50 dark:bg-slate-800/50 text-slate-500'
-                  }`}>
-                    {t.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+    <div {...swipeHandlers} className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Desktop Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 sm:p-8 rounded-3xl">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+            Your Watchlists
+          </h1>
+          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium mt-1">
+            Organize, share, and track movies & TV shows with your friends.
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="btn-primary self-start sm:self-auto shadow-lg shadow-red-600/20"
+        >
+          <PlusIcon className="w-5 h-5" />
+          <span>Create Watchlist</span>
+        </button>
+      </div>
+
+      {/* Modern Glass Tab Bar */}
+      <div className="flex p-1.5 space-x-1 glass-panel rounded-2xl max-w-xl">
+        {tabs.map((t) => {
+          const isActive = activeTab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                isActive
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <span>{t.label}</span>
+              {!loading && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  isActive
+                    ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                    : 'bg-slate-200/50 dark:bg-slate-800/50 text-slate-500'
+                }`}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab Content */}
