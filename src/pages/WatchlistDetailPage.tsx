@@ -433,12 +433,12 @@ function WatchlistDetailPage() {
           {isAIEligible && (
             <button
               onClick={() => setShowAIRecommendModal(true)}
-              className="flex items-center px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition duration-150 ease-in-out text-sm"
-              disabled={checkingAIEligibility} // Disable while checking
+              className="btn-primary text-xs sm:text-sm flex items-center gap-1.5"
+              disabled={checkingAIEligibility}
               title="Get AI Recommendations"
             >
-              <LightBulbIcon className="h-5 w-5 mr-1 text-red-500" />
-              {checkingAIEligibility ? 'Checking...' : 'AI Recs'}
+              <LightBulbIcon className="h-4 w-4" />
+              <span>{checkingAIEligibility ? 'Checking...' : 'AI Recs'}</span>
             </button>
           )}
           {canAccess && (

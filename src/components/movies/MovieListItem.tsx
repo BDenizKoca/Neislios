@@ -117,19 +117,19 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
               {title}
             </h3>
             <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400 mt-1 flex-wrap">
-              <span className="flex items-center"><CalendarDaysIcon className="h-3 w-3 mr-1 inline-block"/>{year}</span>
-              {rating !== 'N/A' && <span className="flex items-center"><StarIcon className="h-3 w-3 mr-1 inline-block text-yellow-500"/>{rating}</span>}
-              {runtime && <span className="flex items-center"><ClockIcon className="h-3 w-3 mr-1 inline-block"/>{runtime}</span>}
-              {isTvDetails(mediaItem) && <span className="flex items-center"><TvIcon className="h-3 w-3 mr-1 inline-block"/>TV</span>}
+              <span className="flex items-center"><CalendarDaysIcon className="h-3.5 w-3.5 mr-1 inline-block text-slate-400"/>{year}</span>
+              {rating !== 'N/A' && <span className="flex items-center"><StarIcon className="h-3.5 w-3.5 mr-1 inline-block text-amber-400 fill-amber-400"/>{rating}</span>}
+              {runtime && <span className="flex items-center"><ClockIcon className="h-3.5 w-3.5 mr-1 inline-block text-slate-400"/>{runtime}</span>}
+              {isTvDetails(mediaItem) && <span className="flex items-center"><TvIcon className="h-3.5 w-3.5 mr-1 inline-block text-slate-400"/>TV</span>}
             </div>
             {watchedByText && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
-                     <UserGroupIcon className="h-3 w-3 mr-1 inline-block"/>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center">
+                     <UserGroupIcon className="h-3.5 w-3.5 mr-1 inline-block text-slate-400"/>
                      <span className="truncate" title={watchedByText || undefined}>{watchedByText}</span>
                 </div>
             )}
             {addedBy && (
-                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
+                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center">
                      <span>Added by: {addedBy.display_name}</span>
                  </div>
             )}
@@ -140,11 +140,11 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
         <div className="flex flex-col sm:flex-row items-center flex-shrink-0 space-y-1 sm:space-y-0 sm:space-x-2">
             {onToggleWatched && (
                 <button
-                    onClick={handleWatchedToggleClick} // Use corrected handler
-                    className={`p-2 rounded-full focus:outline-none transition-colors duration-200 ${
+                    onClick={handleWatchedToggleClick}
+                    className={`p-2.5 rounded-xl focus:outline-none transition-all duration-200 ${
                         isWatched
-                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20'
+                            : 'bg-slate-200/50 dark:bg-slate-800/60 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent'
                     }`}
                     aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
                 >
@@ -153,8 +153,8 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
             )}
             {onRemoveClick && (
                  <button
-                      onClick={handleRemoveClick} // Use corrected handler
-                      className="p-2 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 focus:outline-none"
+                      onClick={handleRemoveClick}
+                      className="p-2.5 rounded-xl text-rose-500 hover:bg-rose-500/10 focus:outline-none transition-all"
                       aria-label="Remove item from list"
                   >
                        <MinusCircleIcon className="h-5 w-5" />

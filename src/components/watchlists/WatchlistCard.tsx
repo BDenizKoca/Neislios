@@ -81,27 +81,28 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
       {...handlers}
       data-no-swipe-navigate="true"
       onClick={handleCardClick}
-      style={cardBgColor ? { backgroundColor: cardBgColor } : undefined}
-      className={`group relative rounded-3xl p-5 border cursor-pointer transition-all duration-200 flex flex-col justify-between h-56 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 ${
-        cardBgColor
-          ? 'border-black/10 dark:border-white/10 text-white'
-          : 'glass-panel hover:border-violet-500/40 dark:hover:border-violet-500/40'
-      }`}
+      className="group relative rounded-3xl p-6 border cursor-pointer transition-all duration-200 flex flex-col justify-between h-56 overflow-hidden glass-panel hover:border-red-500/40 dark:hover:border-red-500/40 shadow-sm hover:shadow-xl hover:-translate-y-1"
     >
-
+      {/* Accent Indicator Bar */}
+      {cardBgColor && (
+        <div 
+          className="absolute top-0 left-0 right-0 h-1.5 rounded-t-3xl" 
+          style={{ backgroundColor: cardBgColor }} 
+        />
+      )}
 
       {/* Top Header */}
       <div>
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 shrink-0">
+            <span className="p-1.5 rounded-xl bg-slate-200/50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 shrink-0">
               {watchlist.is_public ? (
                 <GlobeAltIcon className="h-4 w-4" title="Public Watchlist" />
               ) : (
                 <LockClosedIcon className="h-4 w-4" title="Private Watchlist" />
               )}
             </span>
-            <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+            <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
               {watchlist.title}
             </h3>
           </div>

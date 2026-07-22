@@ -15,7 +15,7 @@ export default function CollaboratorAvatars({
   ownerId, 
   maxVisible = 3, 
   size = 'sm',
-  textColor = 'text-gray-600',
+  textColor = 'text-slate-500 dark:text-slate-400',
   className = '' 
 }: CollaboratorAvatarsProps) {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -39,9 +39,9 @@ export default function CollaboratorAvatars({
   const remainingCount = collaborators.length - maxVisible;
 
   return (
-    <div className={`flex items-center space-x-1 ${className}`}>
-      <span className={`text-xs ${textColor}`}>Collaborators:</span>
-      <div className="flex items-center -space-x-1">
+    <div className={`flex items-center gap-2 ${className}`}>
+      <span className={`text-xs font-semibold ${textColor}`}>Collaborators:</span>
+      <div className="flex items-center -space-x-1.5">
         {visibleMembers.map((member) => (
           <div
             key={member.id}
@@ -51,21 +51,20 @@ export default function CollaboratorAvatars({
               <img
                 src={member.avatar_url}
                 alt={`${member.display_name}'s avatar`}
-                className={`${avatarSize} rounded-full object-cover shadow-md`}
+                className={`${avatarSize} rounded-full object-cover shadow-sm ring-2 ring-slate-900`}
                 title={member.display_name}
               />
             ) : (
               <div
-                className={`${avatarSize} rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center font-bold text-white shadow-md`}
+                className={`${avatarSize} rounded-full bg-slate-800 ring-2 ring-slate-900 border border-slate-700 flex items-center justify-center font-bold text-slate-200 shadow-sm`}
                 title={member.display_name}
               >
                 {member.display_name.charAt(0).toUpperCase()}
               </div>
             )}
-            {/* Tooltip for individual member */}
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-100 text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-xl">
               {member.display_name}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
             </div>
           </div>
         ))}
@@ -77,16 +76,15 @@ export default function CollaboratorAvatars({
             onMouseLeave={() => setShowTooltip(false)}
           >
             <div
-              className={`${avatarSize} rounded-full bg-gray-400 dark:bg-gray-600 flex items-center justify-center font-medium text-white cursor-pointer shadow-md`}
+              className={`${avatarSize} rounded-full bg-slate-800 ring-2 ring-slate-900 flex items-center justify-center font-semibold text-slate-300 text-xs cursor-pointer shadow-sm`}
               title={`+${remainingCount} more collaborators`}
             >
               +{remainingCount}
             </div>
             {/* Tooltip for remaining members */}
             {showTooltip && (
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-50">
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-100 text-[11px] rounded-lg whitespace-nowrap z-50 shadow-xl">
                 {collaborators.slice(maxVisible).map(member => member.display_name).join(', ')}
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
               </div>
             )}
           </div>
