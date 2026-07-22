@@ -4,36 +4,29 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { useHeader } from '../hooks/useHeader';
-
-// Define types for clarity
-interface Profile {
-  id: string;
-  display_name: string;
-  avatar_url?: string;
-}
+import { Profile } from '../types/profile';
+import { mapRawProfile } from '../utils/dataMappers';
 
 interface FriendRequest {
-  id: string; // Request ID
+  id: string;
   created_at: string;
-  sender?: Profile; // Populated for incoming
-  receiver?: Profile; // Populated for outgoing
+  sender?: Profile;
+  receiver?: Profile;
 }
 
 interface Friendship {
-  friend: Profile; // The profile of the friend
-  created_at: string; // When the friendship was formed (from friend_requests ideally)
+  friend: Profile;
+  created_at: string;
 }
-
 
 function FriendsPage() {
   const { user } = useAuth();
-  const { setHeaderTitle } = useHeader(); // Get setter
+  const { setHeaderTitle } = useHeader();
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<FriendRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState<string | null>(null); // Remove error state
-  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({}); // Loading state per item ID
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -43,10 +36,8 @@ function FriendsPage() {
     if (!user) return;
 
     setLoading(true);
-    // setError(null); // Remove error state reset
 
     try {
-      // --- Fetch Friendships ---
       const { data: friendships1, error: error1 } = await supabase
         .from('friendships').select('user_id_2').eq('user_id_1', user.id);
       if (error1) throw error1;
@@ -62,20 +53,18 @@ function FriendsPage() {
         setFriends(friendProfiles?.map(p => ({ friend: p, created_at: '' })) || []);
       } else { setFriends([]); }
 
-      // --- Fetch Incoming Requests ---
       const { data: incoming, error: incomingError } = await supabase
         .from('friend_requests').select(`id, created_at, sender:sender_id ( id, display_name, avatar_url )`)
         .eq('receiver_id', user.id).eq('status', 'pending');
       if (incomingError) throw incomingError;
-      const mappedIncoming = incoming?.map(req => ({ ...req, sender: Array.isArray(req.sender) ? req.sender[0] : req.sender })) || [];
+      const mappedIncoming = incoming?.map(req => ({ ...req, sender: mapRawProfile(req.sender) })) || [];
       setIncomingRequests(mappedIncoming);
 
-      // --- Fetch Outgoing Requests ---
       const { data: outgoing, error: outgoingError } = await supabase
         .from('friend_requests').select(`id, created_at, receiver:receiver_id ( id, display_name, avatar_url )`)
         .eq('sender_id', user.id).eq('status', 'pending');
       if (outgoingError) throw outgoingError;
-      const mappedOutgoing = outgoing?.map(req => ({ ...req, receiver: Array.isArray(req.receiver) ? req.receiver[0] : req.receiver })) || [];
+      const mappedOutgoing = outgoing?.map(req => ({ ...req, receiver: mapRawProfile(req.receiver) })) || [];
       setOutgoingRequests(mappedOutgoing);    } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to load friends data.');
       setFriends([]); setIncomingRequests([]); setOutgoingRequests([]);
@@ -93,21 +82,25 @@ function FriendsPage() {
     setHeaderTitle('Friends');
   }, [setHeaderTitle]);
 
-  // Realtime subscription setup for friends and requests
+  // Realtime subscription setup for friends and requests (Consolidated into 1 channel)
   useEffect(() => {
-    if (!user) return;    const handleDbChange = () => {
-        fetchData(); // Simple refetch on any relevant change
+    if (!user) return;
+
+    const handleDbChange = () => {
+      fetchData();
     };
-    const requestChannel = supabase.channel('friend-requests-changes')
+
+    const friendsChannel = supabase.channel(`friends-updates:${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests', filter: `sender_id=eq.${user.id}` }, handleDbChange)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests', filter: `receiver_id=eq.${user.id}` }, handleDbChange)
-      .subscribe((status, err) => { if (status === 'CHANNEL_ERROR') console.error(`Request Subscription error: ${err?.message}`); });
-    const friendshipChannel = supabase.channel('friendship-changes')
-       .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `user_id_1=eq.${user.id}` }, handleDbChange)
-       .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `user_id_2=eq.${user.id}` }, handleDbChange)
-       .subscribe((status, err) => { if (status === 'CHANNEL_ERROR') console.error(`Friendship Subscription error: ${err?.message}`); });    return () => {
-      supabase.removeChannel(requestChannel);
-      supabase.removeChannel(friendshipChannel);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `user_id_1=eq.${user.id}` }, handleDbChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `user_id_2=eq.${user.id}` }, handleDbChange)
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR') console.error(`Friends Subscription error: ${err?.message}`);
+      });
+
+    return () => {
+      supabase.removeChannel(friendsChannel);
     };
   }, [user, fetchData]);
 

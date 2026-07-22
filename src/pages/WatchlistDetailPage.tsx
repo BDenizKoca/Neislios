@@ -6,8 +6,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { SortableItem } from '../components/common/SortableItem';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
-import { TmdbMediaDetails } from '../services/tmdbService'; // Removed getMediaDetails
-import { isMovieDetails } from '../utils/tmdbUtils';
+import { TmdbMediaDetails } from '../services/tmdbService';
 import MediaListItem from '../components/movies/MovieListItem';
 import MovieListItemSkeleton from '../components/movies/MovieListItemSkeleton';
 import Skeleton from 'react-loading-skeleton';
@@ -21,7 +20,8 @@ import { RandomItemPickerModal } from '../components/watchlists/RandomItemPicker
 import { useWatchlistAI } from '../hooks/useWatchlistAI'; // Import AI hook
 import MediaRecommendationModal from '../components/recommendations/MediaRecommendationModal'; // Import AI modal
 import { LightBulbIcon } from '@heroicons/react/24/outline'; // Import icon
-import CollaboratorAvatars from '../components/watchlists/CollaboratorAvatars'; // Import CollaboratorAvatars component
+import CollaboratorAvatars from '../components/watchlists/CollaboratorAvatars';
+import { sortWatchlistItems } from '../utils/sortUtils';
 
 // Storage keys for state persistence
 const SCROLL_STORAGE_KEY = 'watchlistDetailScrollPosition';
@@ -210,54 +210,9 @@ function WatchlistDetailPage() {
 
   // --- Sorting Logic ---
   const sortAndFilterItems = useCallback(() => {
-    let processedItems = [...watchlistItems]; // Use items from useWatchlistItems hook
-    if (hideWatched) {
-      processedItems = processedItems.filter(item =>
-        item.media_id && !watchedMedia.has(item.media_id)
-      );
-    }
-    processedItems.sort((a, b) => {
-      const aDetails = a.tmdbDetails;
-      const bDetails = b.tmdbDetails;
-      switch (sortBy) {
-        case 'title_asc': {
-          const aTitle = aDetails ? (isMovieDetails(aDetails) ? aDetails.title : aDetails.name) : '';
-          const bTitle = bDetails ? (isMovieDetails(bDetails) ? bDetails.title : bDetails.name) : '';
-          return aTitle.localeCompare(bTitle);
-        }
-        case 'title_desc': {
-          const aTitle = aDetails ? (isMovieDetails(aDetails) ? aDetails.title : aDetails.name) : '';
-          const bTitle = bDetails ? (isMovieDetails(bDetails) ? bDetails.title : bDetails.name) : '';
-          return bTitle.localeCompare(aTitle);
-        }
-        case 'rating_asc': {
-          const aRating = aDetails?.vote_average || 0;
-          const bRating = bDetails?.vote_average || 0;
-          return aRating - bRating;
-        }
-        case 'rating_desc': {
-          const aRating = aDetails?.vote_average || 0;
-          const bRating = bDetails?.vote_average || 0;
-          return bRating - aRating;
-        }
-        case 'added_at_desc':
-          return new Date(b.added_at).getTime() - new Date(a.added_at).getTime();
-        case 'added_at_asc':
-          return new Date(a.added_at).getTime() - new Date(b.added_at).getTime();
-        case 'item_order':
-        default: {
-          const orderA = a.item_order ?? Infinity;
-          const orderB = b.item_order ?? Infinity;
-          if (orderA === orderB) {
-            // Fallback sort by added date if order is the same
-            return new Date(a.added_at).getTime() - new Date(b.added_at).getTime();
-          }
-          return orderA - orderB;
-        }
-      }
-    });
-    setSortedAndFilteredItems(processedItems);
-  }, [watchlistItems, sortBy, hideWatched, watchedMedia]); // Dependency is watchlistItems from hook
+    const sorted = sortWatchlistItems(watchlistItems, sortBy, hideWatched, watchedMedia);
+    setSortedAndFilteredItems(sorted);
+  }, [watchlistItems, sortBy, hideWatched, watchedMedia]);
 
   useEffect(() => {
     sortAndFilterItems();

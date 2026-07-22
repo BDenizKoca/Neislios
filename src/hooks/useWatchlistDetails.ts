@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { useAuth } from './useAuth'; // Corrected import path
+import { useAuth } from './useAuth';
 import { Watchlist, WatchlistRole } from '../types/watchlist';
 import { Profile } from '../types/profile';
 import { logger } from '../utils/logger';
+import { mapRawProfile } from '../utils/dataMappers';
 
 interface UseWatchlistDetailsReturn {
     watchlist: (Watchlist & { owner?: Profile }) | null;
@@ -64,12 +65,10 @@ export function useWatchlistDetails(watchlistId: string | undefined): UseWatchli
                  throw new Error("Access denied. This watchlist is private.");
             }
 
-            // Process owner data (can be object or array depending on relationship settings)
-            const ownerProfile = Array.isArray(watchlistData.owner)
-                ? watchlistData.owner[0]
-                : watchlistData.owner;
+            // Process owner data safely
+            const ownerProfile = mapRawProfile(watchlistData.owner);
 
-            setWatchlist({ ...watchlistData, owner: ownerProfile || undefined });
+            setWatchlist({ ...watchlistData, owner: ownerProfile });
             setUserRole(currentUserRole);
 
         } catch (err: unknown) {

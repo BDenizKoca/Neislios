@@ -5,50 +5,51 @@ import { supabase } from '../lib/supabaseClient';
 const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // Function to check if user profile exists and create it if not
   const checkAndCreateUserProfile = useCallback(async (userId: string) => {
     try {
-      // Get the user data to check if this is a Google sign-in
       const { data: userData } = await supabase.auth.getUser();
+      const currentUser = userData?.user;
       
-      // Check if this is a Google OAuth sign-in
-      const isGoogleAuth = userData?.user?.app_metadata?.provider === 'google';
-      
-      // Check if user has a profile in the profiles table
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (userData && userData.user) {
-        // If this is a Google sign-in and no profile exists, it's a new Google user - reject them
-        if (isGoogleAuth && (profileError || !profile)) {
-          console.log('Blocking new Google account creation');
-          // Sign out the user immediately
-          await supabase.auth.signOut();
-          // Redirect to login with an error message
-          navigate('/login?error=google_signup_disabled');
-          return;
-        }
-        
-        // Check if this is a new account (no profile or empty display_name) for non-Google users
-        if (!isGoogleAuth && (profileError || !profile || !profile.display_name)) {
-          // For email/password users, redirect to onboarding
+      if (currentUser) {
+        if (!profile) {
+          // New user (Google or Email) - Auto-create profile from Auth metadata
+          const googleName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '';
+          const googleAvatar = currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || null;
+
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: userId,
+              display_name: googleName || currentUser.email?.split('@')[0] || 'User',
+              avatar_url: googleAvatar,
+              updated_at: new Date().toISOString(),
+            });
+
+          if (insertError) {
+            console.error('Error auto-creating profile:', insertError);
+          }
+
+          // Route to onboarding so user can customize display name
           navigate('/google-onboarding');
           return;
         }
-        
-        // If this is an existing Google user with a profile, allow them through
-        if (isGoogleAuth && profile && profile.display_name) {
-          navigate('/');
+
+        if (!profile.display_name) {
+          navigate('/google-onboarding');
           return;
         }
       }
-        // If profile exists with display name, continue to home page
+
       navigate('/');
-    } catch {
-      navigate('/login'); // Redirect back to login on error
+    } catch (err) {
+      console.error('Error in checkAndCreateUserProfile:', err);
+      navigate('/login');
     }
   }, [navigate]);
 

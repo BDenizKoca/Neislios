@@ -2,19 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Add global styles and resets here */
-body {
-  /* Apply light mode default and specific dark mode background */
-  @apply bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200;
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  :root {
+    --color-bg-light: #f8fafc;
+    --color-bg-dark: #0b0f17;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-[#0b0f17] dark:text-slate-100 transition-colors duration-200;
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
 }
 
-/* Stronger override for dark mode background */
-:root.dark {
-  --bg-color: #202020; /* Neutral dark gray hex value */
+/* Glassmorphism & UI Design System Utilities */
+.glass-panel {
+  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm;
+}
+
+.glass-modal {
+  @apply bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 shadow-2xl;
+}
+
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500 dark:from-violet-400 dark:via-indigo-300 dark:to-pink-400;
 }
 
 /* Hide FAB when modals are open */
@@ -52,7 +66,6 @@ body.modal-open .floating-action-button {
 
 /* Sortable item styles */
 .sortable-item {
-  /* Base styles for sortable items */
   transition-property: transform, opacity;
   --sortable-transform: none;
   --sortable-transition: none;
@@ -78,17 +91,10 @@ body.modal-open .floating-action-button {
   z-index: var(--z-index);
 }
 
-.dark body,
-.dark .bg-gray-100,
-.dark main,
-.dark div[class*="bg-"] {
-  background-color: var(--bg-color) !important;
-}
-
 /* Random Pick Animation */
 @keyframes hype-animation {
   0% { transform: scale(0.5); opacity: 0; }
-  70% { transform: scale(1.05); opacity: 1; } /* Overshoot slightly */
+  70% { transform: scale(1.05); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
 
@@ -99,7 +105,6 @@ body.modal-open .floating-action-button {
 /* Enhanced Slot Machine Animation */
 .slot-machine-container {
   position: relative;
-  /* height: 60px; */ /* Remove fixed height, rely on Tailwind class in component */
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
@@ -108,23 +113,17 @@ body.modal-open .floating-action-button {
 .slot-reel {
   position: relative;
   width: 100%;
-  height: 300px; /* Taller to accommodate multiple items */
+  height: 300px;
   transform-style: preserve-3d;
 }
 
 @keyframes slot-spin {
   0% { transform: translateY(0); }
-  /* Translate by a much larger amount to simulate faster spinning */
-  /* Reduce translation for slower spin */
-  /* Reduce translation further */
-  /* Use the CSS variable set by the component */
-  100% { transform: translateY(var(--reel-translation, -500%)); } /* Fallback just in case */
+  100% { transform: translateY(var(--reel-translation, -500%)); }
 }
 
 .animate-slot-spin {
-  /* Duration is set inline, remove infinite */
-  /* Define only name and timing function, duration/iteration set inline/conditionally */
-  animation: slot-spin 1.5s linear infinite; /* Slow down loop duration */
+  animation: slot-spin 1.5s linear infinite;
 }
 
 .slot-item {
@@ -148,10 +147,3 @@ body.modal-open .floating-action-button {
   100% { transform: scale(1); text-shadow: 0 0 15px rgba(255, 255, 255, 0.3); }
 }
 
-/* Old slot animation (keeping for compatibility) */
-@keyframes old-slot-spin {
-  0% { transform: translateY(-10px); opacity: 0; }
-  20% { transform: translateY(0); opacity: 1; } /* Quick appear */
-  80% { transform: translateY(0); opacity: 1; } /* Hold */
-  100% { transform: translateY(10px); opacity: 0; } /* Quick disappear */
-}

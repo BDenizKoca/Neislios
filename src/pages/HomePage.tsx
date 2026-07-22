@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSwipeable } from 'react-swipeable';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import CreateWatchlistModal from '../components/watchlists/CreateWatchlistModal';
 import EditWatchlistModal from '../components/watchlists/EditWatchlistModal';
@@ -6,43 +7,20 @@ import WatchlistCard from '../components/watchlists/WatchlistCard';
 import WatchlistCardSkeleton from '../components/watchlists/WatchlistCardSkeleton';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
-import { Watchlist, WatchlistRole } from '../types/watchlist';
+import { Watchlist } from '../types/watchlist';
 import { Profile } from '../types/profile';
 import { logger } from '../utils/logger';
 import { STORAGE_KEYS, storage } from '../utils/storage';
+import { mapRawProfile, mapRawWatchlist } from '../utils/dataMappers';
 
 type Tab = 'favorites' | 'yourLists' | 'sharedLists';
-
-// Type for the raw owner data structure from Supabase join
-type RawOwnerData = {
-    id: string;
-    display_name: string | null;
-    avatar_url?: string | null;
-} | Array<{
-    id: string;
-    display_name: string | null;
-    avatar_url?: string | null;
-}> | null | undefined;
-
-// Type for the raw watchlist data structure from Supabase join
-type RawWatchlistData = {
-    id: string;
-    owner_id: string;
-    title: string;
-    description: string | null;
-    card_color: string | null;
-    is_public: boolean;
-    created_at: string;
-    updated_at: string | null;
-    owner: RawOwnerData;
-} | null | undefined;
 
 function HomePage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>(() => {
-      return (storage.local.get(STORAGE_KEYS.ACTIVE_HOME_TAB) as Tab) || 'favorites';
+    return (storage.local.get(STORAGE_KEYS.ACTIVE_HOME_TAB) as Tab) || 'favorites';
   });
-  const [allWatchlists, setAllWatchlists] = useState<Watchlist[]>([]); // Store all relevant lists
+  const [allWatchlists, setAllWatchlists] = useState<Watchlist[]>([]);
   const [favoriteLists, setFavoriteLists] = useState<Watchlist[]>([]);
   const [yourLists, setYourLists] = useState<Watchlist[]>([]);
   const [sharedLists, setSharedLists] = useState<Watchlist[]>([]);
@@ -51,7 +29,6 @@ function HomePage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingWatchlist, setEditingWatchlist] = useState<Watchlist | null>(null);
-  // Remove unused deleteLoading state
 
   const fetchWatchlists = useCallback(async () => {
     if (!user) return;
@@ -60,11 +37,9 @@ function HomePage() {
     setError(null);
 
     try {
-      // Fetch all watchlist memberships for the current user
+      // Fetch all watchlist memberships for current user
       const { data: memberships, error: memberError } = await supabase
         .from('watchlist_members')
-        // Select role from members, and watchlist details including owner_id
-        // Then join profiles explicitly based on watchlists.owner_id
         .select(`
           role,
           watchlist:watchlists!inner (
@@ -83,19 +58,14 @@ function HomePage() {
 
       if (memberError) throw memberError;
 
-      // Get all unique watchlist IDs to fetch their complete member lists
-      const watchlistIds = memberships?.map(m => {
-        const watchlistData = Array.isArray(m.watchlist) ? m.watchlist[0] : m.watchlist;
-        return watchlistData?.id;
-      }).filter(Boolean) || [];
+      const watchlistIds = memberships
+        ?.map(m => {
+          const w = Array.isArray(m.watchlist) ? m.watchlist[0] : m.watchlist;
+          return (w as Record<string, unknown>)?.id as string | undefined;
+        })
+        .filter(Boolean) as string[] || [];
 
-      // Fetch all members for these watchlists
-      interface MemberData {
-        watchlist_id: string;
-        profile: Profile | Profile[];
-      }
-      
-      let allMembersData: MemberData[] = [];
+      let allMembersData: Array<{ watchlist_id: string; profile: unknown }> = [];
       if (watchlistIds.length > 0) {
         const { data: membersData, error: allMembersError } = await supabase
           .from('watchlist_members')
@@ -106,32 +76,26 @@ function HomePage() {
           .in('watchlist_id', watchlistIds);
 
         if (allMembersError) {
-          logger.warn("Error fetching members data:", allMembersError);
+          logger.warn('Error fetching members data:', allMembersError);
         } else {
           allMembersData = membersData || [];
         }
       }
 
-      // Group members by watchlist_id
+      // Group members by watchlist_id using helper
       const membersByWatchlist = new Map<string, Profile[]>();
       allMembersData.forEach(memberData => {
-        const profileData = Array.isArray(memberData.profile) ? memberData.profile[0] : memberData.profile;
-        if (profileData?.id && profileData.display_name) {
+        const profileObj = mapRawProfile(memberData.profile);
+        if (profileObj) {
           const watchlistId = memberData.watchlist_id;
           if (!membersByWatchlist.has(watchlistId)) {
             membersByWatchlist.set(watchlistId, []);
           }
-          membersByWatchlist.get(watchlistId)?.push({
-            id: profileData.id,
-            display_name: profileData.display_name,
-            avatar_url: profileData.avatar_url
-          });
+          membersByWatchlist.get(watchlistId)?.push(profileObj);
         }
       });
 
-      if (memberError) throw memberError;
-
-      // Fetch favorite watchlist IDs for the current user
+      // Fetch user's favorite watchlist IDs
       const { data: favoritesData, error: favError } = await supabase
         .from('user_favorite_watchlists')
         .select('watchlist_id')
@@ -140,74 +104,18 @@ function HomePage() {
       if (favError) throw favError;
       const favoriteIds = new Set(favoritesData?.map(f => f.watchlist_id) || []);
 
-      // Process the fetched data
+      // Process lists using centralized data mapper
       const processedLists: Watchlist[] = memberships
-        ?.map(m => {
-          // Define expected shape from Supabase query result more explicitly
-          // Use 'any' for the initial access due to complex/unpredictable join types from Supabase
-          // Handle potential array from Supabase join (though !inner should prevent it)
-          const watchlistData = Array.isArray(m.watchlist) ? m.watchlist[0] : m.watchlist;
-          const rawWatchlistData: RawWatchlistData = watchlistData;
-
-          // Basic validation that we have *something* resembling watchlist data
-          if (!rawWatchlistData || typeof rawWatchlistData !== 'object' || Array.isArray(rawWatchlistData) || !rawWatchlistData.id) {
-            logger.warn("Skipping invalid or inaccessible watchlist data in membership:", m);
-            return null;
-          }
-
-          // Handle nested owner profile carefully
-          let ownerProfile: Profile | undefined = undefined;
-          const rawOwnerData: RawOwnerData = rawWatchlistData?.owner; // Access owner data safely
-          if (rawOwnerData) {
-            // Check if owner data is an array (from join) or a single object
-            const ownerData = Array.isArray(rawOwnerData) ? rawOwnerData[0] : rawOwnerData;
-            // Validate the structure of the owner data before creating Profile
-            if (ownerData && typeof ownerData === 'object' && ownerData.id && ownerData.display_name) {
-                 ownerProfile = {
-                    id: ownerData.id,
-                    display_name: ownerData.display_name,
-                    avatar_url: ownerData.avatar_url,
-                    // avatar_url and updated_at are optional in Profile type
-                 };
-            } else {
-                 logger.warn("Watchlist owner data is invalid or incomplete:", ownerData);
-            }
-          }
-
-          // Get members for this watchlist
-          const watchlistMembers = membersByWatchlist.get(rawWatchlistData.id) || [];
-
-          // Construct the final Watchlist object, ensuring all required fields exist
-          // and optional fields are handled correctly.
-          const watchlist: Watchlist = {
-            id: rawWatchlistData.id,
-            owner_id: rawWatchlistData.owner_id,
-            title: rawWatchlistData.title,
-            description: rawWatchlistData.description,
-            card_color: rawWatchlistData.card_color,
-            is_public: rawWatchlistData.is_public,
-            created_at: rawWatchlistData.created_at,
-            // Provide fallback for updated_at to satisfy Watchlist type (which now allows null)
-            updated_at: rawWatchlistData.updated_at,
-            owner: ownerProfile, // Assign the processed owner profile
-            members: watchlistMembers, // Include all members
-            member_role: m.role as WatchlistRole | undefined, // Cast role
-            is_favorite: favoriteIds.has(rawWatchlistData.id), // Check favorite status
-          };
-          return watchlist;
-        })
-        .filter((list): list is Watchlist => list !== null) // Filter should now work correctly
-         || []; // Default to empty array if memberships is null/undefined
+        ?.map(m => mapRawWatchlist(m as unknown as Record<string, unknown>, favoriteIds, membersByWatchlist))
+        .filter((list): list is Watchlist => list !== null) || [];
 
       setAllWatchlists(processedLists);
-
-      // Filter lists for each tab
       setFavoriteLists(processedLists.filter(list => list.is_favorite));
       setYourLists(processedLists.filter(list => list.owner_id === user.id));
       setSharedLists(processedLists.filter(list => list.owner_id !== user.id && (list.member_role === 'editor' || list.member_role === 'viewer')));
 
     } catch (err: unknown) {
-      logger.error("Error fetching watchlists:", err);
+      logger.error('Error fetching watchlists:', err);
       setError(err instanceof Error ? err.message : 'Failed to load watchlists.');
       setAllWatchlists([]);
       setFavoriteLists([]);
@@ -222,293 +130,217 @@ function HomePage() {
     fetchWatchlists();
   }, [fetchWatchlists]);
 
-  // Save active tab to localStorage whenever it changes
   useEffect(() => {
     storage.local.set(STORAGE_KEYS.ACTIVE_HOME_TAB, activeTab);
   }, [activeTab]);
 
-  // Removed useEffect that set header title to 'Your Watchlists'
-  // Default 'Neislios' from HeaderProvider will be used unless another page sets it.
-
-  // Realtime subscription setup - Simplified
+  // Realtime updates (Consolidated 1 channel per session to save WebSocket connections)
   useEffect(() => {
     if (!user) return;
 
-    const handleDbChange = (payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>) => { // Use indexable unknown
-        logger.info('DB Change received! Refetching lists...', payload); // Add more detail
-        fetchWatchlists();
-      };    // Subscribe to changes in relevant tables without complex filters
-    const watchlistChannel = supabase.channel('public:watchlists')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'watchlists' }, handleDbChange)
-      .subscribe();
-
-    const membersChannel = supabase.channel('public:watchlist_members')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'watchlist_members' }, handleDbChange)
-      .subscribe();
-
-    const favoritesChannel = supabase.channel('public:user_favorite_watchlists')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_favorite_watchlists', filter: `user_id=eq.${user.id}` }, handleDbChange) // Keep filter here as it's user-specific
-      .subscribe();
-
-
-    // Cleanup function
-    return () => {
-      logger.info('Unsubscribing from homepage changes');
-      supabase.removeChannel(watchlistChannel);
-      supabase.removeChannel(membersChannel);
-      supabase.removeChannel(favoritesChannel);
+    const handleDbChange = (payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>) => {
+      logger.info('DB Change received! Refetching lists...', payload);
+      fetchWatchlists();
     };
 
+    const homeChannel = supabase.channel(`home-updates:${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'watchlists' }, handleDbChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'watchlist_members' }, handleDbChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_favorite_watchlists', filter: `user_id=eq.${user.id}` }, handleDbChange)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(homeChannel);
+    };
   }, [user, fetchWatchlists]);
 
-  // --- Handle Tab Switching ---
-  const handleTabChange = (tab: Tab) => {
-    setActiveTab(tab);
-  };
+  // Clean react-swipeable handlers replacing raw touch math
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: (event) => {
+      const el = event.event.target as HTMLElement;
+      if (el && el.closest && el.closest('[data-no-swipe-navigate="true"]')) return;
+      if (activeTab === 'favorites') setActiveTab('yourLists');
+      else if (activeTab === 'yourLists') setActiveTab('sharedLists');
+    },
+    onSwipedRight: (event) => {
+      const el = event.event.target as HTMLElement;
+      if (el && el.closest && el.closest('[data-no-swipe-navigate="true"]')) return;
+      if (activeTab === 'sharedLists') setActiveTab('yourLists');
+      else if (activeTab === 'yourLists') setActiveTab('favorites');
+    },
+    preventScrollOnSwipe: false,
+    trackMouse: false,
+  });
 
-  // Touch handling state
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-
-  // Required minimum distance between touch start and end to be detected as swipe
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    // Always capture the touch start position
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-    
-    // Don't prevent default to allow scrolling
-    // But stop propagation to prevent other handlers from interfering
-    e.stopPropagation();
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart) return;
-    setTouchEnd(e.targetTouches[0].clientX);
-    // Stop propagation but don't prevent default (allows scrolling)
-    e.stopPropagation();
-  };
-
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStart || !touchEnd) return;
-
-    // Calculate distance
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-    
-    // Only handle swipe if it's on a non-card element
-    const target = e.target as Element;
-    if (!target.closest('[data-no-swipe-navigate="true"]')) {
-      // Handle left swipe
-      if (isLeftSwipe) {
-        if (activeTab === 'favorites') handleTabChange('yourLists');
-        else if (activeTab === 'yourLists') handleTabChange('sharedLists');
-      }
-      
-      // Handle right swipe
-      if (isRightSwipe) {
-        if (activeTab === 'sharedLists') handleTabChange('yourLists');
-        else if (activeTab === 'yourLists') handleTabChange('favorites');
-      }
-    }
-    
-    // Stop event propagation
-    e.stopPropagation();
-  };
-
-  // --- Placeholder Action Handlers ---
-  const handleCloseCreateModal = () => setIsCreateModalOpen(false); // Close modal
-  const handleWatchlistCreated = () => {
-    // No need to call fetchWatchlists here, subscription should handle it
-    handleCloseCreateModal();
-  };
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingWatchlist(null); // Clear editing state
-  };
-  const handleWatchlistUpdated = () => {
-      // No need to call fetchWatchlists here, subscription should handle it
-      handleCloseEditModal();
-  };
   const handleToggleFavorite = async (watchlistId: string, isCurrentlyFavorite: boolean) => {
     if (!user) return;
-    // Implement logic to add/remove from user_favorite_watchlists table
-    // Note: This would require database schema changes and API endpoints
-    // Optimistically update UI first
+
     const optimisticUpdate = (list: Watchlist) =>
-        list.id === watchlistId ? { ...list, is_favorite: !isCurrentlyFavorite } : list;
+      list.id === watchlistId ? { ...list, is_favorite: !isCurrentlyFavorite } : list;
 
     setAllWatchlists(prev => prev.map(optimisticUpdate));
-    setFavoriteLists(prev => isCurrentlyFavorite ? prev.filter(l => l.id !== watchlistId) : [...prev, allWatchlists.find(l => l.id === watchlistId)!].filter(Boolean).map(optimisticUpdate)); // Add/remove and update
+    setFavoriteLists(prev => isCurrentlyFavorite ? prev.filter(l => l.id !== watchlistId) : [...prev, allWatchlists.find(l => l.id === watchlistId)!].filter(Boolean).map(optimisticUpdate));
     setYourLists(prev => prev.map(optimisticUpdate));
     setSharedLists(prev => prev.map(optimisticUpdate));
 
-
     try {
-        if (isCurrentlyFavorite) {
-            const { error } = await supabase
-                .from('user_favorite_watchlists')
-                .delete()
-                .match({ user_id: user.id, watchlist_id: watchlistId });
-            if (error) throw error;
-        } else {
-            const { error } = await supabase
-                .from('user_favorite_watchlists')
-                .insert({ user_id: user.id, watchlist_id: watchlistId });
-            if (error) throw error;
-        }
+      if (isCurrentlyFavorite) {
+        const { error } = await supabase
+          .from('user_favorite_watchlists')
+          .delete()
+          .match({ user_id: user.id, watchlist_id: watchlistId });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_favorite_watchlists')
+          .insert({ user_id: user.id, watchlist_id: watchlistId });
+        if (error) throw error;
+      }
     } catch (err) {
-        logger.error("Error toggling favorite:", err);
-        // Revert optimistic update on error
-        const revertUpdate = (list: Watchlist) =>
-            list.id === watchlistId ? { ...list, is_favorite: isCurrentlyFavorite } : list;
-        setAllWatchlists(prev => prev.map(revertUpdate));
-        setFavoriteLists(prev => !isCurrentlyFavorite ? prev.filter(l => l.id !== watchlistId) : [...prev, allWatchlists.find(l => l.id === watchlistId)!].filter(Boolean).map(revertUpdate));
-        setYourLists(prev => prev.map(revertUpdate));
-        setSharedLists(prev => prev.map(revertUpdate));
-        setError('Failed to update favorite status.');
+      logger.error('Error toggling favorite:', err);
+      fetchWatchlists();
+      setError('Failed to update favorite status.');
     }
-
-    // alert(`Toggle favorite for: ${watchlistId, currently: ${isCurrentlyFavorite}`);
   };
-  const handleEdit = (watchlistId: string) => { // Opens Edit Modal
+
+  const handleEdit = (watchlistId: string) => {
     const listToEdit = allWatchlists.find(list => list.id === watchlistId);
     if (listToEdit) {
-        setEditingWatchlist(listToEdit);
-        setIsEditModalOpen(true);
-    } else {
-        logger.error("Could not find watchlist to edit:", watchlistId);
-        setError("Could not find watchlist to edit.");
+      setEditingWatchlist(listToEdit);
+      setIsEditModalOpen(true);
     }
   };
 
-  // --- Tab Content Rendering ---
-  const renderListContent = (lists: Watchlist[]) => {
-    // Show skeletons while loading
-    if (loading) {
-        return (
-            <div className="space-y-3">
-                {/* Render multiple skeletons */}
-                {[...Array(5)].map((_, index) => <WatchlistCardSkeleton key={index} />)}
-            </div>
-        );
+  const handleDeleteWatchlist = async (watchlistId: string) => {
+    setError(null);
+    try {
+      const { error: deleteError } = await supabase
+        .from('watchlists')
+        .delete()
+        .eq('id', watchlistId);
+
+      if (deleteError) throw deleteError;
+      if (editingWatchlist?.id === watchlistId) {
+        setIsEditModalOpen(false);
+        setEditingWatchlist(null);
+      }
+    } catch (err: unknown) {
+      logger.error('Error deleting watchlist:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete watchlist.');
     }
-    if (error && lists.length === 0 && activeTab !== 'favorites') return <p className="text-center p-4 text-red-600">{error}</p>;
-    if (!loading && lists.length === 0) return <p className="text-center p-4 text-gray-500 dark:text-gray-400">No watchlists found.</p>; // Added dark mode text
+  };
 
-    // Use a vertical list instead of a grid
-    // Use a responsive grid layout
+  const renderListContent = (lists: Watchlist[]) => {
+    if (loading) {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+          {[...Array(6)].map((_, index) => <WatchlistCardSkeleton key={index} />)}
+        </div>
+      );
+    }
+    if (error && lists.length === 0) {
+      return <div className="text-center p-8 text-rose-500 font-medium">{error}</div>;
+    }
+    if (lists.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 text-center">
+          <div className="w-16 h-16 mb-4 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center text-slate-400">
+            🎬
+          </div>
+          <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">No watchlists here yet</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+            Create a new list or mark existing ones as favorite to organize your movies & shows.
+          </p>
+        </div>
+      );
+    }
+
     return (
-      <div 
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1 touch-pan-y"
-      > 
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 p-4 sm:p-6">
         {lists.map(list => {
-            const onDeleteHandler = (activeTab === 'yourLists' && list.owner_id === user?.id)
-                ? handleDeleteWatchlist
-                : undefined;
+          const onDeleteHandler = (activeTab === 'yourLists' && list.owner_id === user?.id)
+            ? handleDeleteWatchlist
+            : undefined;
 
-            return (
-              <WatchlistCard
-                key={list.id}
-                watchlist={list}
-                onToggleFavorite={handleToggleFavorite}
-                onEdit={handleEdit}
-                onDelete={onDeleteHandler}
-              />
-            );
+          return (
+            <WatchlistCard
+              key={list.id}
+              watchlist={list}
+              onToggleFavorite={handleToggleFavorite}
+              onEdit={handleEdit}
+              onDelete={onDeleteHandler}
+            />
+          );
         })}
       </div>
     );
   };
 
-  // --- Delete Watchlist Handler ---
-  const handleDeleteWatchlist = async (watchlistId: string) => {
-      // Confirmation is handled in the modal now
-      setError(null);
-      try {
-          // RLS policy should enforce ownership, but we could double-check owner_id if needed
-          const { error: deleteError } = await supabase
-              .from('watchlists')
-              .delete()
-              .eq('id', watchlistId);
-
-          if (deleteError) throw deleteError;
-
-          // Success! Realtime subscription will trigger fetchWatchlists to update UI.
-          // No need for optimistic UI update here if subscription is reliable.
-          logger.info(`Watchlist ${watchlistId} delete initiated.`);
-          // Close the edit modal if it was open for this list
-          if (editingWatchlist?.id === watchlistId) {
-              handleCloseEditModal();
-          }
-
-      } catch (err: unknown) {
-          logger.error("Error deleting watchlist:", err);
-          setError(err instanceof Error ? err.message : 'Failed to delete watchlist.');
-      }
-  };
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'favorites':
-        return renderListContent(favoriteLists);
-      case 'yourLists':
-        return renderListContent(yourLists);
-      case 'sharedLists':
-        return renderListContent(sharedLists);
-      default:
-        return null;
-    }
-  };
-
-  // Helper function for tab button classes (same as before)
-  const getTabClass = (tabName: Tab): string => {
-    const baseClass = "py-2 px-4 text-sm font-medium focus:outline-none";
-    const activeClass = "text-blue-600 bg-gray-100 dark:bg-gray-700 dark:text-white border-b-2 border-blue-500";
-    const inactiveClass = "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800";
-    return `${baseClass} ${activeTab === tabName ? activeClass : inactiveClass}`;
-  };
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: 'favorites', label: 'Favorites', count: favoriteLists.length },
+    { id: 'yourLists', label: 'Your Lists', count: yourLists.length },
+    { id: 'sharedLists', label: 'Shared with You', count: sharedLists.length },
+  ];
 
   return (
-    <div 
-      id="swipeable-home-container"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      className="flex flex-col flex-1 overflow-hidden h-full touch-pan-y"
-    >
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex justify-center space-x-8" aria-label="Tabs">
-          <button onClick={() => setActiveTab('favorites')} className={getTabClass('favorites')}>Favorites</button>
-          <button onClick={() => setActiveTab('yourLists')} className={getTabClass('yourLists')}>Your Lists</button>
-          <button onClick={() => setActiveTab('sharedLists')} className={getTabClass('sharedLists')}>Shared Lists</button>
-        </nav>
+    <div {...swipeHandlers} className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full">
+      {/* Modern Glass Tab Bar */}
+      <div className="px-4 pt-4 sm:pt-6">
+        <div className="flex p-1.5 space-x-1 glass-panel rounded-2xl max-w-xl mx-auto sm:mx-0">
+          {tabs.map((t) => {
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                  isActive
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <span>{t.label}</span>
+                {!loading && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    isActive
+                      ? 'bg-slate-100 dark:bg-slate-700 text-violet-600 dark:text-violet-400'
+                      : 'bg-slate-200/50 dark:bg-slate-800/50 text-slate-500'
+                  }`}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Tab Content Area - With proper flex and overflow settings */}
-      <div className="flex-1 overflow-auto">
-        {renderTabContent()}
+      {/* Tab Content */}
+      <div className="flex-1 overflow-auto mt-2">
+        {activeTab === 'favorites' && renderListContent(favoriteLists)}
+        {activeTab === 'yourLists' && renderListContent(yourLists)}
+        {activeTab === 'sharedLists' && renderListContent(sharedLists)}
       </div>
 
-      {/* Floating Action Button is now handled in MainLayout */}
-
-      {/* Create Watchlist Modal */}
+      {/* Modals */}
       <CreateWatchlistModal
         isOpen={isCreateModalOpen}
-        onClose={handleCloseCreateModal}
-        onWatchlistCreated={handleWatchlistCreated}
+        onClose={() => setIsCreateModalOpen(false)}
+        onWatchlistCreated={() => setIsCreateModalOpen(false)}
       />
 
-      {/* Edit Watchlist Modal */}
       <EditWatchlistModal
         isOpen={isEditModalOpen}
-        onClose={handleCloseEditModal}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingWatchlist(null);
+        }}
         watchlist={editingWatchlist}
-        onWatchlistUpdated={handleWatchlistUpdated}
-        onDelete={handleDeleteWatchlist} // Pass delete handler
+        onWatchlistUpdated={() => {
+          setIsEditModalOpen(false);
+          setEditingWatchlist(null);
+        }}
+        onDelete={handleDeleteWatchlist}
       />
     </div>
   );

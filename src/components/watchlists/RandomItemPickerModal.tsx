@@ -4,270 +4,206 @@ import toast from 'react-hot-toast';
 import { TmdbMediaDetails } from '../../services/tmdbService';
 import { isMovieDetails } from '../../utils/tmdbUtils';
 import { WatchlistItemWithDetails } from '../../hooks/useWatchlistItems';
+import Modal from '../common/Modal';
 
 interface RandomItemPickerModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    items: WatchlistItemWithDetails[];
+  isOpen: boolean;
+  onClose: () => void;
+  items: WatchlistItemWithDetails[];
 }
 
 const SPIN_DURATION = 2000;
 const ITEM_HEIGHT = 86;
 const PROGRESS_UPDATE_INTERVAL = 25;
-const WIN_VIBRATION_DELAY = 200;
 
-// Vibration utility functions
 const vibrate = (pattern: number | number[]) => {
-    if ('vibrate' in navigator) {
-        navigator.vibrate(pattern);
-    }
+  if ('vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
 };
 
-const vibrateSpinStart = () => {
-    vibrate([50, 30, 50, 30, 100]); // Rapid bursts for excitement
-};
-
-const vibrateWin = () => {
-    vibrate([300, 100, 300, 100, 500]); // Strong celebration pattern
-};
-
-const vibrateProgressPulse = () => {
-    vibrate(25); // Quick pulse during spin
-};
+const vibrateSpinStart = () => vibrate([50, 30, 50, 30, 100]);
+const vibrateWin = () => vibrate([300, 100, 300, 100, 500]);
+const vibrateProgressPulse = () => vibrate(25);
 
 const extractTitles = (items: WatchlistItemWithDetails[]): string[] => {
-    return items.map(item =>
-        item.tmdbDetails ? (isMovieDetails(item.tmdbDetails) ? item.tmdbDetails.title : item.tmdbDetails.name) : 'Unknown'
-    );
+  return items.map(item =>
+    item.tmdbDetails ? (isMovieDetails(item.tmdbDetails) ? item.tmdbDetails.title : item.tmdbDetails.name) : 'Unknown'
+  );
 };
 
 export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPickerModalProps) {
-    const [randomPick, setRandomPick] = useState<TmdbMediaDetails | null>(null);
-    const [isSpinning, setIsSpinning] = useState(false);
-    const [showPickerContent, setShowPickerContent] = useState(false);
-    const [spinProgress, setSpinProgress] = useState(0);
-    const [availableTitles, setAvailableTitles] = useState<string[]>([]);
-    const [reelTranslation, setReelTranslation] = useState<number>(0);
-    const [isVisuallySpinning, setIsVisuallySpinning] = useState(false);
-    const [triggerReroll, setTriggerReroll] = useState(0);
+  const [randomPick, setRandomPick] = useState<TmdbMediaDetails | null>(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [showPickerContent, setShowPickerContent] = useState(false);
+  const [spinProgress, setSpinProgress] = useState(0);
+  const [availableTitles, setAvailableTitles] = useState<string[]>([]);
+  const [reelTranslation, setReelTranslation] = useState<number>(0);
+  const [isVisuallySpinning, setIsVisuallySpinning] = useState(false);
+  const [triggerReroll, setTriggerReroll] = useState(0);
 
-    const startRandomPick = () => {
-        setTriggerReroll(prev => prev + 1);
-    };
+  const startRandomPick = () => setTriggerReroll(prev => prev + 1);
 
-    useEffect(() => {
-        if (!isOpen) {
-            setRandomPick(null);
-            setIsSpinning(false);
-            setIsVisuallySpinning(false);
-            setShowPickerContent(false);
-            setSpinProgress(0);
-            setAvailableTitles([]);
-            setReelTranslation(0);
-            return;
-        }
-
-        // Start picking logic directly in useEffect
-        setRandomPick(null);
-        setShowPickerContent(false);
-        setSpinProgress(0);
-        setAvailableTitles([]);
-        setReelTranslation(0);
-
-        const availableItems = items.filter(item => item.tmdbDetails);
-
-        if (availableItems.length === 0) {
-            toast.error("No available items to pick from.");
-            setRandomPick(null);
-            setIsSpinning(false);
-            setIsVisuallySpinning(false);
-            setShowPickerContent(true); // Show content so user can see close button
-            return;
-        }
-
-        if (availableItems.length === 1) {
-            const singleItemDetails = availableItems[0].tmdbDetails;
-            if (singleItemDetails) {
-                setRandomPick(singleItemDetails);
-                setShowPickerContent(true);
-                setIsSpinning(false);
-                setIsVisuallySpinning(false);
-            } else {
-                toast.error("Could not display the only available item.");
-                setRandomPick(null);
-                setIsSpinning(false);
-                setIsVisuallySpinning(false);
-                setShowPickerContent(true); // Show content so user can see close button
-            }
-            return;
-        }
-
-        // Only set spinning states if we have multiple items and will actually spin
-        setIsSpinning(true);
-        setIsVisuallySpinning(true);
-
-        const titles = extractTitles(availableItems);
-        setAvailableTitles(titles);
-        
-        const translation = -(titles.length * ITEM_HEIGHT);
-        setReelTranslation(translation);
-
-        let progressInterval: NodeJS.Timeout | null = null;
-        const startTime = Date.now();
-
-        const updateProgress = () => {
-            const elapsedTime = Date.now() - startTime;
-            const currentProgress = Math.min(elapsedTime, SPIN_DURATION);
-            setSpinProgress(currentProgress);
-            
-            // Add progressive vibration pulses during spin
-            if (elapsedTime < SPIN_DURATION && elapsedTime % 400 < PROGRESS_UPDATE_INTERVAL) {
-                vibrateProgressPulse();
-            }
-            
-            if (elapsedTime < SPIN_DURATION) {
-                 progressInterval = setTimeout(updateProgress, PROGRESS_UPDATE_INTERVAL);
-            }
-        };
-        progressInterval = setTimeout(updateProgress, PROGRESS_UPDATE_INTERVAL);
-
-        const spinTimeout = setTimeout(() => {
-            if (progressInterval) clearTimeout(progressInterval);
-            setIsSpinning(false);
-            setSpinProgress(SPIN_DURATION);
-            const finalRandomIndex = Math.floor(Math.random() * availableItems.length);
-            const finalPickedItem = availableItems[finalRandomIndex].tmdbDetails;
-
-            if (finalPickedItem) {
-                setRandomPick(finalPickedItem);
-                setTimeout(() => {
-                    setShowPickerContent(true);
-                    setTimeout(() => setIsVisuallySpinning(false), 50);
-                }, 50);
-            } else {
-                toast.error("An error occurred selecting the final random item.");
-                setIsVisuallySpinning(false);
-                setShowPickerContent(true); // Show content so user can see close button
-            }
-        }, SPIN_DURATION);
-
-        vibrateSpinStart(); // Start vibration when spin begins
-
-        return () => {
-            if (progressInterval) clearTimeout(progressInterval);
-            clearTimeout(spinTimeout);
-        };
-    }, [isOpen, items, triggerReroll]); // Add triggerReroll to dependencies
-    
-    useEffect(() => {
-        if (!isSpinning && randomPick && isOpen) {
-            setTimeout(() => vibrateWin(), WIN_VIBRATION_DELAY);
-        }
-    }, [isSpinning, randomPick, isOpen]);
-
+  useEffect(() => {
     if (!isOpen) {
-        return null;
+      setRandomPick(null);
+      setIsSpinning(false);
+      setIsVisuallySpinning(false);
+      setShowPickerContent(false);
+      setSpinProgress(0);
+      setAvailableTitles([]);
+      setReelTranslation(0);
+      return;
     }
 
-    return (
-        <div
-            className={`fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            onClick={onClose}
-        >
-            <div
-                className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center transform transition-all duration-300 ease-in-out ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} animate-hype`}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {isSpinning || isVisuallySpinning ? (
-                    <div className="flex flex-col items-center">
-                        <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white animate-pulse">Picking Random Item...</h3>
-                        <div className="slot-machine-container h-48 mb-4 w-full">
-                             <div className="slot-highlight-zone"></div>
-                             <div
-                                className={`slot-reel ${isVisuallySpinning ? 'animate-slot-spin slot-reel-spinning' : ''} slot-reel-container`}
-                                /* Inline style required for dynamic CSS custom property */
-                                /* The reel translation is calculated at runtime based on item count */
-                                style={{
-                                    '--reel-translation': `${reelTranslation}px`
-                                } as React.CSSProperties}
-                             >
-                                {availableTitles.map((title, index) => (
-                                    <div
-                                        key={`slot-${index}`}
-                                        className="slot-item h-14 flex items-center justify-center slot-item-positioned"
-                                        /* Inline style required for dynamic positioning */
-                                        /* Each slot item needs unique top position calculated at runtime */
-                                        style={{ top: `${index * ITEM_HEIGHT}px` }}
-                                    >
-                                        {title}
-                                    </div>
-                                ))}
-                                {/* Duplicate items for seamless looping */}
-                                {availableTitles.map((title, index) => (
-                                    <div
-                                        key={`slot-dup-${index}`}
-                                        className="slot-item h-14 flex items-center justify-center slot-item-positioned"
-                                        /* Inline style required for dynamic positioning */
-                                        /* Duplicate slot items need offset positioning for seamless loop */
-                                        style={{ top: `${(availableTitles.length + index) * ITEM_HEIGHT}px` }}
-                                    >
-                                        {title}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="h-2 w-full bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
-                            <div
-                                className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 progress-bar-dynamic rounded-full transition-all duration-100 shadow-lg animate-pulse"
-                                /* Inline style required for dynamic progress bar width */
-                                /* Width percentage changes continuously during spin animation */
-                                style={{ width: `${(spinProgress / SPIN_DURATION) * 100}%` }}
-                            ></div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className={`transition-opacity duration-300 ease-in ${showPickerContent ? 'opacity-100' : 'opacity-0'}`}>
-                        {randomPick ? (
-                            <>
-                                <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Your Random Pick!</h3>
-                                <Link
-                                    to={`/${randomPick.media_type}/${randomPick.id}`}
-                                    onClick={onClose}
-                                    className="hover:underline win-reveal block p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-xl border-2 border-dashed border-blue-300 dark:border-purple-400 transform hover:scale-105 transition-all duration-200"
-                                >
-                                    <p className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">
-                                        {isMovieDetails(randomPick) ? randomPick.title : randomPick.name}
-                                    </p>
-                                    <p className="text-base text-gray-600 dark:text-gray-300">
-                                        {isMovieDetails(randomPick) ? randomPick.release_date?.substring(0, 4) : randomPick.first_air_date?.substring(0, 4)}
-                                    </p>
-                                </Link>
-                            </>
-                        ) : (
-                            showPickerContent && (
-                                <>
-                                    <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Random Pick</h3>
-                                    <p className="text-gray-500 dark:text-gray-400 mb-4">Unable to pick a random item. Please try again.</p>
-                                </>
-                            )
-                        )}
-                        <div className="flex gap-3 mt-6">
-                            <button 
-                                onClick={startRandomPick} 
-                                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-medium transform hover:scale-105 transition-all duration-200 shadow-lg"
-                            >
-                                Reroll
-                            </button>
-                            <button 
-                                onClick={onClose} 
-                                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg font-medium transform hover:scale-105 transition-all duration-200 shadow-lg"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                )}
+    setRandomPick(null);
+    setShowPickerContent(false);
+    setSpinProgress(0);
+    setAvailableTitles([]);
+    setReelTranslation(0);
+
+    const availableItems = items.filter(item => item.tmdbDetails);
+
+    if (availableItems.length === 0) {
+      toast.error("No available items to pick from.");
+      setShowPickerContent(true);
+      return;
+    }
+
+    if (availableItems.length === 1) {
+      const singleItemDetails = availableItems[0].tmdbDetails;
+      if (singleItemDetails) {
+        setRandomPick(singleItemDetails);
+        setShowPickerContent(true);
+      } else {
+        toast.error("Could not display available item.");
+        setShowPickerContent(true);
+      }
+      return;
+    }
+
+    setIsSpinning(true);
+    setIsVisuallySpinning(true);
+    vibrateSpinStart();
+
+    const titles = extractTitles(availableItems);
+    setAvailableTitles(titles);
+    setReelTranslation(-titles.length * ITEM_HEIGHT);
+
+    const startTime = Date.now();
+    const progressInterval = setInterval(() => {
+      const elapsedTime = Date.now() - startTime;
+      const progress = Math.min(elapsedTime, SPIN_DURATION);
+      setSpinProgress(progress);
+      if (Math.random() > 0.7) vibrateProgressPulse();
+
+      if (progress >= SPIN_DURATION) {
+        clearInterval(progressInterval);
+
+        const randomIndex = Math.floor(Math.random() * availableItems.length);
+        const selectedItem = availableItems[randomIndex];
+
+        setTimeout(() => {
+          setIsVisuallySpinning(false);
+          if (selectedItem?.tmdbDetails) {
+            setRandomPick(selectedItem.tmdbDetails);
+            vibrateWin();
+          }
+          setIsSpinning(false);
+          setShowPickerContent(true);
+        }, 150);
+      }
+    }, PROGRESS_UPDATE_INTERVAL);
+
+    return () => clearInterval(progressInterval);
+  }, [isOpen, items, triggerReroll]);
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="🎲 What Should We Watch?"
+      subtitle="Random selector for movie night"
+      maxWidthClass="max-w-md"
+    >
+      <div className="text-center py-2">
+        {isSpinning || isVisuallySpinning ? (
+          <div className="flex flex-col items-center">
+            <h3 className="text-lg font-bold mb-4 gradient-text animate-pulse">
+              Spinning the wheel...
+            </h3>
+            <div className="slot-machine-container h-48 mb-6 w-full glass-panel rounded-2xl p-4">
+              <div
+                className={`slot-reel ${isVisuallySpinning ? 'animate-slot-spin' : ''}`}
+                style={{ '--reel-translation': `${reelTranslation}px` } as React.CSSProperties}
+              >
+                {availableTitles.map((title, index) => (
+                  <div key={`slot-${index}`} className="slot-item h-12 flex items-center justify-center font-bold text-slate-800 dark:text-slate-200">
+                    {title}
+                  </div>
+                ))}
+              </div>
             </div>
-        </div>
-    );
+            <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500 rounded-full transition-all duration-100"
+                style={{ width: `${(spinProgress / SPIN_DURATION) * 100}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className={`transition-opacity duration-300 ${showPickerContent ? 'opacity-100' : 'opacity-0'}`}>
+            {randomPick ? (
+              <div className="space-y-4">
+                <div className="p-6 rounded-3xl bg-gradient-to-br from-violet-500/10 via-indigo-500/10 to-pink-500/10 border border-violet-500/30 text-center animate-hype">
+                  <span className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400 block mb-1">
+                    Winner Pick
+                  </span>
+                  <Link
+                    to={`/${randomPick.media_type}/${randomPick.id}`}
+                    onClick={onClose}
+                    className="block group"
+                  >
+                    <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-violet-500 transition-colors">
+                      {isMovieDetails(randomPick) ? randomPick.title : randomPick.name}
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      {isMovieDetails(randomPick) ? randomPick.release_date?.substring(0, 4) : randomPick.first_air_date?.substring(0, 4)}
+                    </p>
+                  </Link>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={startRandomPick}
+                    className="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-md shadow-violet-600/20 transition-all text-sm"
+                  >
+                    🔄 Reroll
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">No available items to pick from.</p>
+                <button
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
 }
+
+export default RandomItemPickerModal;

@@ -13,11 +13,10 @@ function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Check for error messages from URL params
   useEffect(() => {
     const errorParam = searchParams.get('error');
-    if (errorParam === 'google_signup_disabled') {
-      setError('Google account creation is currently disabled. Existing Google users can still sign in. Please create an account using email and password.');
+    if (errorParam) {
+      setError('Authentication failed. Please try signing in again.');
     }
   }, [searchParams]);
 

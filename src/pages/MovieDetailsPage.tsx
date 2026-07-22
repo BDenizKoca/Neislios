@@ -1,22 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
-import { getMediaDetails, getMoviePosterUrl, getProfilePictureUrl, TmdbMediaDetails, TmdbSearchResult } from '../services/tmdbService'; // Removed TmdbMovieDetails, TmdbTvDetails
-import { isMovieDetails, isTvDetails } from '../utils/tmdbUtils'; // Import type guards from utils
-import { useAuth } from '../hooks/useAuth'; // Updated import path
+import { useLocation, useParams } from 'react-router-dom';
+import { getMediaDetails, getMoviePosterUrl, getProfilePictureUrl, TmdbMediaDetails, TmdbSearchResult } from '../services/tmdbService';
+import { isMovieDetails, isTvDetails } from '../utils/tmdbUtils';
+import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabaseClient';
 import { Profile } from '../types/profile';
 import AddToListModal from '../components/movies/AddToListModal';
 import { EyeIcon, EyeSlashIcon, ArrowTopRightOnSquareIcon, ListBulletIcon, CalendarDaysIcon, StarIcon, ClockIcon, TvIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import Skeleton from 'react-loading-skeleton';
-import { useHeader } from '../hooks/useHeader'; // Updated import path
-
-// Removed local type guard definitions
+import { useHeader } from '../hooks/useHeader';
 
 function MovieDetailsPage() {
+  const { tmdbId } = useParams<{ tmdbId: string }>();
   const location = useLocation();
   const { user } = useAuth();
-  const { setHeaderTitle } = useHeader(); // Get setter
+  const { setHeaderTitle } = useHeader();
 
   const [mediaDetails, setMediaDetails] = useState<TmdbMediaDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,11 +29,8 @@ function MovieDetailsPage() {
   const [loadingEditableLists, setLoadingEditableLists] = useState(true);
   const [showTrailer, setShowTrailer] = useState(false);
 
-  // Extract mediaType and id from path
-  const pathSegments = location.pathname.split('/').filter(Boolean);
-  const mediaType = pathSegments.length >= 2 ? pathSegments[pathSegments.length - 2] : null;
-  const mediaIdParam = pathSegments.length >= 1 ? pathSegments[pathSegments.length - 1] : null;
-  const mediaId = mediaIdParam ? parseInt(mediaIdParam, 10) : null;
+  const mediaType = location.pathname.startsWith('/tv/') ? 'tv' : 'movie';
+  const mediaId = tmdbId ? parseInt(tmdbId, 10) : null;
   const fullMediaId = mediaType && mediaId ? `tmdb:${mediaType}:${mediaId}` : null;
 
   // Parse query parameters to detect watchlist context

@@ -1,17 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { TmdbSearchResult, getMoviePosterUrl } from '../../services/tmdbService'; // Use union type
+import { TmdbSearchResult, getMoviePosterUrl } from '../../services/tmdbService';
 import { Profile } from '../../types/profile';
 import { EyeIcon, EyeSlashIcon, PlusIcon, StarIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 
 interface MediaCardProps {
-  mediaItem: TmdbSearchResult; // Use union type
-  onAddToListClick?: (item: TmdbSearchResult) => void; // Pass the item
+  mediaItem: TmdbSearchResult;
+  onAddToListClick?: (item: TmdbSearchResult) => void;
   isWatched?: boolean;
-  onToggleWatched?: (item: TmdbSearchResult, currentState: boolean) => void; // Pass the item
+  onToggleWatched?: (item: TmdbSearchResult, currentState: boolean) => void;
   watchedByFriends?: Profile[];
-  onNavigate?: (path: string) => void; // Add custom navigation handler prop
-  // Removed watchedByMembers and addedBy as they are list-context specific
+  onNavigate?: (path: string) => void;
 }
 
 const MediaCard: React.FC<MediaCardProps> = ({
@@ -24,30 +23,24 @@ const MediaCard: React.FC<MediaCardProps> = ({
 }) => {
   const posterUrl = getMoviePosterUrl(mediaItem.poster_path, 'w342');
 
-  // Determine title and year based on media type
   const title = mediaItem.media_type === 'movie' ? mediaItem.title : mediaItem.name;
   const year = mediaItem.media_type === 'movie'
     ? (mediaItem.release_date ? new Date(mediaItem.release_date).getFullYear() : 'N/A')
     : (mediaItem.first_air_date ? new Date(mediaItem.first_air_date).getFullYear() : 'N/A');
   const rating = mediaItem.vote_average ? mediaItem.vote_average.toFixed(1) : 'N/A';
 
-  // Construct the correct link based on media type
   const detailLink = `/${mediaItem.media_type}/${mediaItem.id}`;
 
   const handleAddClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click navigation
+    e.stopPropagation();
     e.preventDefault();
-    if (onAddToListClick) {
-      onAddToListClick(mediaItem);
-    }
+    if (onAddToListClick) onAddToListClick(mediaItem);
   };
 
   const handleWatchedClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (onToggleWatched) {
-      onToggleWatched(mediaItem, !!isWatched);
-    }
+    if (onToggleWatched) onToggleWatched(mediaItem, !!isWatched);
   };
 
   const handleNavigate = (e: React.MouseEvent) => {
@@ -58,64 +51,91 @@ const MediaCard: React.FC<MediaCardProps> = ({
   };
 
   return (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-200">
-      <Link to={detailLink} onClick={handleNavigate}>
-        {/* Image Container */}
-        <div className="relative aspect-[2/3] w-full bg-gray-200 dark:bg-gray-700">
-          {posterUrl ? (
-            <img src={posterUrl} alt={`${title} poster`} className="w-full h-full object-cover" loading="lazy" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500">No Poster</div>          )}
-          {/* Watched Indicator */}
-          {isWatched && (
-            <div className="absolute bottom-2 right-2 bg-purple-600 border-2 border-white rounded-full p-2 shadow-lg">
-              <EyeIcon className="h-5 w-5 text-white" />
-            </div>
+    <div className="group relative glass-panel rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full border border-slate-200/80 dark:border-slate-800/80">
+      <Link to={detailLink} onClick={handleNavigate} className="block relative aspect-[2/3] w-full overflow-hidden bg-slate-200 dark:bg-slate-800">
+        {posterUrl ? (
+          <img
+            src={posterUrl}
+            alt={`${title} poster`}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center text-slate-400 bg-slate-100 dark:bg-slate-900">
+            <span className="text-3xl mb-2">🎬</span>
+            <span className="text-xs font-semibold">{title}</span>
+          </div>
+        )}
+
+        {/* Media Type Badge */}
+        <span className="absolute top-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-950/70 text-slate-100 backdrop-blur-md uppercase tracking-wider">
+          {mediaItem.media_type}
+        </span>
+
+        {/* Rating Badge */}
+        {rating !== 'N/A' && (
+          <span className="absolute bottom-3 left-3 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/90 text-slate-950 backdrop-blur-md flex items-center gap-1 shadow-sm">
+            <StarIcon className="w-3 h-3 fill-slate-950 text-slate-950" />
+            {rating}
+          </span>
+        )}
+
+        {/* Watched Indicator */}
+        {isWatched && (
+          <div className="absolute bottom-3 right-3 bg-violet-600 border border-white/20 text-white rounded-full p-2 shadow-lg backdrop-blur-md">
+            <EyeIcon className="h-4 w-4 text-white" />
+          </div>
+        )}
+
+        {/* Hover Action Overlay Buttons */}
+        <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {onAddToListClick && (
+            <button
+              onClick={handleAddClick}
+              className="p-2.5 bg-slate-950/80 hover:bg-violet-600 text-white rounded-2xl shadow-lg backdrop-blur-md transition-all active:scale-95"
+              aria-label="Add to list"
+              title="Add to list"
+            >
+              <PlusIcon className="h-4 w-4" />
+            </button>
+          )}
+          {onToggleWatched && (
+            <button
+              onClick={handleWatchedClick}
+              className={`p-2.5 rounded-2xl shadow-lg backdrop-blur-md transition-all active:scale-95 ${
+                isWatched
+                  ? 'bg-violet-600 text-white'
+                  : 'bg-slate-950/80 hover:bg-violet-600 text-white'
+              }`}
+              aria-label={isWatched ? 'Mark unwatched' : 'Mark watched'}
+              title={isWatched ? 'Mark unwatched' : 'Mark watched'}
+            >
+              {isWatched ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+            </button>
           )}
         </div>
       </Link>
 
-      {/* Content Below Image */}
-      <div className="p-4"> {/* Consistent padding */}
-        <Link to={detailLink} className="block hover:text-primary dark:hover:text-primary" onClick={handleNavigate}>
-            <h3 className="text-md font-semibold text-gray-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-primary" title={title}>
+      {/* Card Info Section */}
+      <div className="p-4 flex flex-col justify-between flex-1">
+        <div>
+          <Link to={detailLink} onClick={handleNavigate} className="block group-hover:text-violet-500 transition-colors">
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 line-clamp-1" title={title}>
               {title}
             </h3>
-        </Link>
-        {/* Metadata */}
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-          <span className="flex items-center"><CalendarDaysIcon className="h-3 w-3 mr-1"/>{year}</span>
-          {rating !== 'N/A' && <span className="flex items-center"><StarIcon className="h-3 w-3 mr-1 text-yellow-500"/>{rating}</span>}
+          </Link>
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <span className="flex items-center gap-1">
+              <CalendarDaysIcon className="h-3.5 w-3.5" />
+              {year}
+            </span>
+          </div>
         </div>
-        {/* Friends Watched */}
-        {watchedByFriends && watchedByFriends.length > 0 && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate" title={`Watched by: ${watchedByFriends.map(f => f.display_name).join(', ')}`}>
-                Watched by {watchedByFriends.length} friend{watchedByFriends.length > 1 ? 's' : ''}
-            </p>
-        )}
-      </div>
 
-      {/* Action Buttons - Absolute positioned */}
-      <div className="absolute top-2 right-2 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        {onAddToListClick && (
-          <button
-            onClick={handleAddClick}
-            className="p-2 bg-black bg-opacity-60 text-white rounded-full hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary"
-            aria-label="Add to list"
-            title="Add to list"
-          >
-            <PlusIcon className="h-4 w-4" />
-          </button>
-        )}
-        {onToggleWatched && (
-           <button
-            onClick={handleWatchedClick}
-            className={`p-2 rounded-full focus:outline-none ${isWatched ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-black bg-opacity-60 text-white hover:bg-gray-700'}`}
-            aria-label={isWatched ? 'Mark unwatched' : 'Mark watched'}
-            title={isWatched ? 'Mark unwatched' : 'Mark watched'}
-          >
-            {isWatched ? <EyeSlashIcon className="h-4 w-4"/> : <EyeIcon className="h-4 w-4"/>}
-          </button>
+        {watchedByFriends && watchedByFriends.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 text-[11px] text-slate-500 dark:text-slate-400 truncate">
+            Watched by {watchedByFriends.length} friend{watchedByFriends.length > 1 ? 's' : ''}
+          </div>
         )}
       </div>
     </div>

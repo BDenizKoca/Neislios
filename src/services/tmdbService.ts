@@ -124,7 +124,14 @@ export const getTvDetails = async (tvId: number): Promise<TmdbTvDetails> => {
   return { ...details, media_type: 'tv' };
 };
 
+// In-memory cache for TMDB media details
+const mediaDetailsCache = new Map<string, TmdbMediaDetails>();
+
 export const getMediaDetails = async (mediaId: string): Promise<TmdbMediaDetails | null> => {
+    if (mediaDetailsCache.has(mediaId)) {
+        return mediaDetailsCache.get(mediaId) || null;
+    }
+
     const parts = mediaId.split(':');
     let mediaType: string | null = null;
     let id: number | null = null;
@@ -147,14 +154,20 @@ export const getMediaDetails = async (mediaId: string): Promise<TmdbMediaDetails
     }
 
     try {
+        let result: TmdbMediaDetails | null = null;
         if (mediaType === 'movie') {
-            return await getMovieDetails(id);
+            result = await getMovieDetails(id);
         } else if (mediaType === 'tv') {
-            return await getTvDetails(id);
+            result = await getTvDetails(id);
         } else {
             logger.error("Unsupported media type:", mediaType);
             return null;
         }
+
+        if (result) {
+            mediaDetailsCache.set(mediaId, result);
+        }
+        return result;
     } catch (error) {
         logger.error(`Failed to fetch details for ${mediaId}:`, error);
         return null;

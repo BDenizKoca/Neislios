@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Profile } from '../types/profile';
 import { logger } from '../utils/logger';
+import { mapRawProfile } from '../utils/dataMappers';
 
 interface UseWatchlistMembersReturn {
     members: Profile[];
@@ -42,10 +43,9 @@ export function useWatchlistMembers(watchlistId: string | undefined): UseWatchli
             const fetchedMemberProfiles: Profile[] = [];
             const fetchedMemberIds: string[] = [];
             (allMembersData || []).forEach(m => {
-                // Handle potential array/object difference for profile relation
-                const profileData = Array.isArray(m.profile) ? m.profile[0] : m.profile;
-                if (profileData?.id && profileData.display_name) {
-                    fetchedMemberProfiles.push(profileData);
+                const profileObj = mapRawProfile(m.profile);
+                if (profileObj) {
+                    fetchedMemberProfiles.push(profileObj);
                     if (m.user_id) fetchedMemberIds.push(m.user_id);
                 } else {
                     logger.warn("Invalid profile data for member:", m);

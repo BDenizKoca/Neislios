@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react'; // Add useCallback
-import { XMarkIcon, PlusIcon, ArrowLeftIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'; // Add more icons
+import React, { useEffect, useState, useCallback } from 'react';
+import { PlusIcon, ArrowLeftIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import toast from 'react-hot-toast'; // Import toast
 import { supabase } from '../../lib/supabaseClient'; // Import supabase
@@ -9,6 +9,7 @@ import { getMoviePosterUrl, getMediaDetails, TmdbMediaDetails } from '../../serv
 import { isMovieDetails } from '../../utils/tmdbUtils';
 import { useWatchlistItems } from '../../hooks/useWatchlistItems';
 import { logger } from '../../utils/logger';
+import Modal from '../common/Modal';
 
 interface MediaRecommendationModalProps {
   isOpen: boolean;
@@ -170,31 +171,28 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
   const error = recommendationsError || itemsError;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm"> {/* Increased z-index to maximum */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* ... existing header ... */}        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <div className="flex items-center">
-            {previewMedia && (
-              <button
-                onClick={() => setPreviewMedia(null)}
-                className="mr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                aria-label="Back to recommendations"
-              >
-                <ArrowLeftIcon className="h-5 w-5" />
-              </button>
-            )}
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {previewMedia ? 'Media Preview' : 'AI Media Recommendations'}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            aria-label="Close recommendations modal"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidthClass="max-w-4xl"
+      title={
+        <div className="flex items-center gap-2">
+          {previewMedia && (
+            <button
+              onClick={() => setPreviewMedia(null)}
+              className="p-1 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="Back to recommendations"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+            </button>
+          )}
+          <span className="text-xl font-bold gradient-text">
+            {previewMedia ? 'Media Preview' : '✨ AI Recommendations'}
+          </span>
         </div>
+      }
+      subtitle={previewMedia ? undefined : "Tailored movies & series based on your watchlist"}
+    >
 
         <div className="p-4 flex-1 overflow-y-auto">
           {previewMedia ? (
@@ -446,8 +444,7 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
             Regenerate
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

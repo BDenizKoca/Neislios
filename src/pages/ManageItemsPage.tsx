@@ -17,13 +17,6 @@ import { PlusIcon, UserMinusIcon, UserGroupIcon } from '@heroicons/react/24/outl
 import TransferOwnershipModal from '../components/watchlists/TransferOwnershipModal';
 import { STORAGE_KEYS, storage } from '../utils/storage';
 
-// CSS to hide FAB on this page
-const hideFabStyle = `
-  .manage-list-page ~ button[aria-label] {
-    display: none !important;
-  }
-`;
-
 function ManageItemsPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -35,10 +28,8 @@ function ManageItemsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Initialize search term from sessionStorage
   const [searchTerm, setSearchTerm] = useState<string>(() => {
-    const saved = storage.session.get(STORAGE_KEYS.SEARCH_TERM.MANAGE_LIST);
-    return saved || '';
+    return storage.session.get(STORAGE_KEYS.SEARCH_TERM.MANAGE_LIST) || '';
   });
   
   const [searchResults, setSearchResults] = useState<TmdbSearchResult[]>([]);
@@ -49,33 +40,11 @@ function ManageItemsPage() {
   const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set());
   const [showTransferModal, setShowTransferModal] = useState(false);
 
-  // --- Drag and Drop Sensors ---
   const sensors = useSensors(
-    useSensor(PointerSensor), // Keep for mouse/stylus input
-    useSensor(TouchSensor, {
-      // Reduce delay to make dragging easier to initiate on touch
-      activationConstraint: {
-        delay: 150, // Reduced from 250ms
-        tolerance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
-
-  // Inject FAB hiding CSS
-  useEffect(() => {
-    // Create style element
-    const style = document.createElement('style');
-    style.innerHTML = hideFabStyle;
-    document.head.appendChild(style);
-
-    // Cleanup on unmount
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
 
   // --- Data Fetching ---
   const fetchWatchlistAndItems = useCallback(async () => {

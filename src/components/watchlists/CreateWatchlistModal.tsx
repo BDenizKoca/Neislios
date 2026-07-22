@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { useAuth } from '../../hooks/useAuth'; // Updated import path
-import { CheckIcon } from '@heroicons/react/24/solid'; // For selected color indication
+import { useAuth } from '../../hooks/useAuth';
+import { CheckIcon } from '@heroicons/react/24/solid';
 import { WATCHLIST_COLOR_PALETTE } from '../../constants/colors';
+import Modal from '../common/Modal';
 
 interface CreateWatchlistModalProps {
   isOpen: boolean;
   onClose: () => void;
   onWatchlistCreated: () => void;
 }
-
 
 const CreateWatchlistModal: React.FC<CreateWatchlistModalProps> = ({
   isOpen,
@@ -20,21 +20,20 @@ const CreateWatchlistModal: React.FC<CreateWatchlistModalProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
-  const [cardColor, setCardColor] = useState('#ffffff'); // Default to white
+  const [cardColor, setCardColor] = useState('#ffffff');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-      if (isOpen) {
-          setTitle('');
-          setDescription('');
-          setIsPublic(false);
-          setCardColor('#ffffff');
-          setError(null);
-          setLoading(false);
-      }
+    if (isOpen) {
+      setTitle('');
+      setDescription('');
+      setIsPublic(false);
+      setCardColor('#ffffff');
+      setError(null);
+      setLoading(false);
+    }
   }, [isOpen]);
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,82 +59,108 @@ const CreateWatchlistModal: React.FC<CreateWatchlistModalProps> = ({
 
       onWatchlistCreated();
       onClose();
-
-    } catch (err: unknown) { // Use unknown for catch block
+    } catch (err: unknown) {
       console.error("Error creating watchlist:", err);
-      setError(err instanceof Error ? err.message : 'Failed to create watchlist.'); // Check error type
+      setError(err instanceof Error ? err.message : 'Failed to create watchlist.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={`fixed inset-0 z-40 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md m-4 border border-gray-200 dark:border-gray-700 transform transition-all duration-300 ease-in-out ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Create New Watchlist</h2>
-          <button 
-            onClick={onClose} 
-            type="button"
-            aria-label="Close create watchlist modal"
-            title="Close"
-            className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Watchlist"
+      subtitle="Organize movies and shows to watch together"
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="create-title" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+            Title <span className="text-rose-500">*</span>
+          </label>
+          <input
+            id="create-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g., Sci-Fi Favorites, Friday Night Movies"
+            required
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-sm"
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Title */}
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Title <span className="text-red-500">*</span></label>
-            <input id="title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"/>
-          </div>
-          {/* Description */}
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Description</label>
-            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"/>
-          </div>
-           {/* Card Color Swatches */}
-           <div>
-             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Card Background Color</label>
-             <div className="flex flex-wrap gap-2">
-                {WATCHLIST_COLOR_PALETTE.map(color => (
-                    <button
-                        key={color}
-                        type="button"
-                        onClick={() => setCardColor(color)}
-                        className={`color-picker-button w-8 h-8 rounded-full border-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${cardColor === color ? 'ring-2 ring-offset-1 ring-primary' : 'border-gray-300 dark:border-gray-600'}`}
-                        data-color={color}
-                        aria-label={`Select color ${color}`}
-                    >
-                        {cardColor === color && <CheckIcon className={`h-5 w-5 ${color === '#ffffff' || color === '#eab308' || color === '#84cc16' ? 'text-black' : 'text-white'}`} />} {/* Adjust checkmark color for light backgrounds */}
-                    </button>
-                ))}
-             </div>
-           </div>
-          {/* Public/Private Toggle */}
-          <div className="flex items-center">
-            <input id="isPublic" type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"/>
-            <label htmlFor="isPublic" className="ml-2 block text-sm text-gray-900 dark:text-gray-200">Make Publicly Viewable</label>
-          </div>
+        <div>
+          <label htmlFor="create-description" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+            Description
+          </label>
+          <textarea
+            id="create-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What's this watchlist about?"
+            rows={3}
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-sm resize-none"
+          />
+        </div>
 
-          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-              Cancel
-            </button>
-            <button type="submit" disabled={loading} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50">
-              {loading ? 'Creating...' : 'Create Watchlist'}
-            </button>
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+            Card Theme Color
+          </label>
+          <div className="flex flex-wrap gap-2.5">
+            {WATCHLIST_COLOR_PALETTE.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setCardColor(color)}
+                style={{ backgroundColor: color }}
+                className={`w-8 h-8 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center transition-transform active:scale-90 ${
+                  cardColor === color ? 'ring-2 ring-offset-2 ring-violet-500 scale-110' : ''
+                }`}
+                aria-label={`Select color ${color}`}
+              >
+                {cardColor === color && (
+                  <CheckIcon className={`h-4 w-4 ${color === '#ffffff' || color === '#eab308' || color === '#84cc16' ? 'text-slate-950' : 'text-white'}`} />
+                )}
+              </button>
+            ))}
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-100/60 dark:bg-slate-800/40 border border-slate-200/40 dark:border-slate-800/40">
+          <input
+            id="create-isPublic"
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="h-4 w-4 text-violet-600 rounded border-slate-300 focus:ring-violet-500"
+          />
+          <label htmlFor="create-isPublic" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+            Make Publicly Viewable
+          </label>
+        </div>
+
+        {error && <p className="text-xs font-semibold text-rose-500">{error}</p>}
+
+        <div className="flex justify-end gap-3 pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md shadow-violet-600/20 transition-all disabled:opacity-50"
+          >
+            {loading ? 'Creating...' : 'Create Watchlist'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 
