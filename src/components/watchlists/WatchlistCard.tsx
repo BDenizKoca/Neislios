@@ -192,4 +192,4 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
   );
 };
 
-export default WatchlistCard;
+export default React.memo(WatchlistCard);

@@ -107,16 +107,16 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   <Link to={detailLink} onClick={handleNavigateToDetail} className="flex items-start flex-grow space-x-4 min-w-0">
           <div className="flex-shrink-0 w-16">
             {posterUrl ? (
-              <img src={posterUrl} alt={`${title} poster`} className="w-full h-auto object-cover rounded" />
+              <img src={posterUrl} alt={`${title} poster`} className="w-full h-auto object-cover rounded-xl" loading="lazy" decoding="async" />
             ) : (
-              <div className="w-16 h-24 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 text-xs text-center rounded">No Poster</div>
+              <div className="w-16 h-24 bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xs text-center rounded-xl font-semibold">No Poster</div>
             )}
           </div>
           <div className="flex-grow min-w-0">
-            <h3 className="text-md font-semibold text-gray-900 dark:text-white truncate" title={title}>
+            <h3 className="text-md font-bold text-slate-900 dark:text-slate-100 truncate" title={title}>
               {title}
             </h3>
-            <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400 mt-1 flex-wrap">
+            <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
               <span className="flex items-center"><CalendarDaysIcon className="h-3.5 w-3.5 mr-1 inline-block text-slate-400"/>{year}</span>
               {rating !== 'N/A' && <span className="flex items-center"><StarIcon className="h-3.5 w-3.5 mr-1 inline-block text-amber-400 fill-amber-400"/>{rating}</span>}
               {runtime && <span className="flex items-center"><ClockIcon className="h-3.5 w-3.5 mr-1 inline-block text-slate-400"/>{runtime}</span>}
@@ -165,4 +165,4 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   );
 };
 
-export default MediaListItem;
+export default React.memo(MediaListItem);

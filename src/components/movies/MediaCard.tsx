@@ -142,4 +142,4 @@ const MediaCard: React.FC<MediaCardProps> = ({
   );
 };
 
-export default MediaCard;
+export default React.memo(MediaCard);
