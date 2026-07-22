@@ -41,7 +41,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
     <>
       {/* Overlay */}
       <div 
-        className={`fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-slate-950/60 transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -50,7 +50,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
 
       {/* Menu Panel */}
       <aside 
-        className={`fixed top-0 left-0 z-50 h-full w-72 glass-modal p-6 flex flex-col justify-between transform transition-transform duration-300 ease-out shadow-2xl ${
+        className={`fixed top-0 left-0 z-50 h-full w-72 glass-modal p-6 flex flex-col justify-between transform transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         role="dialog" 

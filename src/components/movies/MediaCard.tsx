@@ -68,13 +68,13 @@ const MediaCard: React.FC<MediaCardProps> = ({
         )}
 
         {/* Media Type Badge */}
-        <span className="absolute top-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-950/70 text-slate-100 backdrop-blur-md uppercase tracking-wider">
+        <span className="absolute top-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-900 text-slate-100 uppercase tracking-wider">
           {mediaItem.media_type}
         </span>
 
         {/* Rating Badge */}
         {rating !== 'N/A' && (
-          <span className="absolute bottom-3 left-3 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/90 text-slate-950 backdrop-blur-md flex items-center gap-1 shadow-sm">
+          <span className="absolute bottom-3 left-3 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-500 text-slate-950 flex items-center gap-1">
             <StarIcon className="w-3 h-3 fill-slate-950 text-slate-950" />
             {rating}
           </span>
@@ -82,7 +82,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
         {/* Watched Indicator */}
         {isWatched && (
-          <div className="absolute bottom-3 right-3 bg-red-600 border border-white/20 text-white rounded-full p-2 shadow-lg backdrop-blur-md">
+          <div className="absolute bottom-3 right-3 bg-red-600 border border-white/20 text-white rounded-full p-2">
             <EyeIcon className="h-4 w-4 text-white" />
           </div>
         )}
@@ -92,7 +92,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
           {onAddToListClick && (
             <button
               onClick={handleAddClick}
-              className="p-2.5 bg-slate-950/80 hover:bg-red-600 text-white rounded-2xl shadow-lg backdrop-blur-md transition-all active:scale-95"
+              className="p-2.5 bg-slate-900 hover:bg-red-600 text-white rounded-xl transition-all active:scale-95 border border-slate-700"
               aria-label="Add to list"
               title="Add to list"
             >
@@ -102,10 +102,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
           {onToggleWatched && (
             <button
               onClick={handleWatchedClick}
-              className={`p-2.5 rounded-2xl shadow-lg backdrop-blur-md transition-all active:scale-95 ${
+              className={`p-2.5 rounded-xl transition-all active:scale-95 border border-slate-700 ${
                 isWatched
                   ? 'bg-red-600 text-white'
-                  : 'bg-slate-950/80 hover:bg-red-600 text-white'
+                  : 'bg-slate-900 hover:bg-red-600 text-white'
               }`}
               aria-label={isWatched ? 'Mark unwatched' : 'Mark watched'}
               title={isWatched ? 'Mark unwatched' : 'Mark watched'}

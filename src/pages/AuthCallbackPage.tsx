@@ -105,7 +105,7 @@ const AuthCallbackPage: React.FC = () => {
 
   return (
     <div className="flex justify-center items-center h-screen bg-slate-950 text-white">
-      <div className="text-center p-8 max-w-sm rounded-2xl border border-slate-800 bg-slate-900/80 shadow-2xl backdrop-blur-xl">
+      <div className="text-center p-8 max-w-sm rounded-2xl border border-slate-800 bg-slate-900">
         <h2 className="mb-2 text-2xl font-bold gradient-text">Completing Sign-In</h2>
         <p className="mb-6 text-sm text-slate-400">Please wait while we log you in...</p>
         <div className="flex justify-center">

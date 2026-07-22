@@ -45,14 +45,14 @@ export const Modal: React.FC<ModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-md transition-opacity animate-fade-in" 
+        className="fixed inset-0 bg-slate-950/70 transition-opacity animate-fade-in" 
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal Container with Max Height & Fixed Header/Footer */}
       <div 
-        className={`relative w-full ${maxWidthClass} max-h-[85vh] sm:max-h-[90vh] flex flex-col glass-modal rounded-3xl p-6 sm:p-8 shadow-2xl z-10 border border-slate-200/50 dark:border-slate-800/80 transform transition-all duration-200 ease-out animate-hype`}
+        className={`relative w-full ${maxWidthClass} max-h-[85vh] sm:max-h-[90vh] flex flex-col glass-modal rounded-2xl p-6 sm:p-8 z-10 border border-slate-200 dark:border-slate-800 transform transition-all duration-200 ease-out`}
         role="dialog"
         aria-modal="true"
       >
