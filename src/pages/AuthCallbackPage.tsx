@@ -76,13 +76,13 @@ const AuthCallbackPage: React.FC = () => {
         // Check URL search & hash parameters
         const hasAuthParams = window.location.search.includes('code=') || 
                               window.location.hash.includes('access_token=');
-        const hasError = window.location.search.includes('error=') || 
-                         window.location.hash.includes('error=');
+        const urlParams = new URLSearchParams(window.location.search);
+        const errorDesc = urlParams.get('error_description');
 
         if (hasError) {
-          navigate('/login');
+          const message = errorDesc || 'Google Authentication failed';
+          navigate(`/login?error=${encodeURIComponent(message)}`);
         } else if (!hasAuthParams && !processedRef.current) {
-          // If no auth parameters in URL and no session, redirect to login
           navigate('/login');
         }
       }

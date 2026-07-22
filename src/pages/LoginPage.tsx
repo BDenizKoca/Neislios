@@ -16,7 +16,7 @@ function LoginPage() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam) {
-      setError('Authentication failed. Please try signing in again.');
+      setError(decodeURIComponent(errorParam));
     }
   }, [searchParams]);
 
