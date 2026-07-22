@@ -71,11 +71,11 @@ function LoginPage() {
         )}
       </button>
 
-      <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white">Login</h2>
-        <form onSubmit={handleLogin} className="space-y-6">
+      <div className="w-full max-w-md p-8 space-y-6 glass-modal rounded-3xl">
+        <h2 className="text-2xl font-extrabold text-center text-slate-900 dark:text-slate-100">Login</h2>
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               Email address
             </label>
             <input
@@ -86,12 +86,12 @@ function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="mt-1 block w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100"
               placeholder="you@example.com"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               Password
             </label>
             <input
@@ -102,18 +102,18 @@ function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="mt-1 block w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100"
               placeholder="••••••••"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {error && <p className="text-sm font-medium text-red-500">{error}</p>}
 
           <div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-all active:scale-95 disabled:opacity-50"
+              className="btn-primary w-full justify-center"
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
@@ -122,10 +122,10 @@ function LoginPage() {
 
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+            <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+            <span className="px-3 bg-slate-50 dark:bg-slate-900 text-slate-400 text-xs uppercase font-semibold">
               Or continue with
             </span>
           </div>

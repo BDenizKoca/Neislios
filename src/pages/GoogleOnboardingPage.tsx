@@ -62,32 +62,30 @@ function GoogleOnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-[#0b0f17] px-4">
+      <div className="max-w-md w-full space-y-8 p-8 glass-modal rounded-3xl">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+          <h2 className="mt-2 text-center text-3xl font-extrabold text-slate-900 dark:text-slate-100">
             Welcome to Neislios!
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-center text-sm text-slate-500 dark:text-slate-400">
             Please choose a display name that your friends will see
           </p>
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="display-name" className="sr-only">Display Name</label>
-              <input
-                id="display-name"
-                name="display-name"
-                type="text"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Display Name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-            </div>
+          <div>
+            <label htmlFor="display-name" className="sr-only">Display Name</label>
+            <input
+              id="display-name"
+              name="display-name"
+              type="text"
+              required
+              className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100"
+              placeholder="Display Name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
           </div>
 
           {error && (

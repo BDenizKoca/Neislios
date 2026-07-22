@@ -112,7 +112,7 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-sm"
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
           />
         </div>
 
@@ -125,7 +125,7 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-sm resize-none"
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm resize-none"
           />
         </div>
 
@@ -141,7 +141,7 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
                 onClick={() => setCardColor(color)}
                 style={{ backgroundColor: color }}
                 className={`w-8 h-8 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center transition-transform active:scale-90 ${
-                  cardColor === color ? 'ring-2 ring-offset-2 ring-violet-500 scale-110' : ''
+                  cardColor === color ? 'ring-2 ring-offset-2 ring-red-500 scale-110' : ''
                 }`}
                 aria-label={`Select color ${color}`}
               >
@@ -159,7 +159,7 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
             type="checkbox"
             checked={isPublic}
             onChange={(e) => setIsPublic(e.target.checked)}
-            className="h-4 w-4 text-violet-600 rounded border-slate-300 focus:ring-violet-500"
+            className="h-4 w-4 accent-red-600 rounded cursor-pointer"
           />
           <label htmlFor="edit-isPublic" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
             Make Publicly Viewable
@@ -182,14 +182,14 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={loading || deleteLoading}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="btn-secondary text-sm"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || deleteLoading}
-              className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md shadow-violet-600/20 transition-all disabled:opacity-50"
+              className="btn-primary text-sm"
             >
               {loading ? 'Saving...' : 'Save Changes'}
             </button>

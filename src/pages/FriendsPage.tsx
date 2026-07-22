@@ -271,13 +271,13 @@ function FriendsPage() {
 
       {/* Outgoing Requests */}
       {outgoingRequests.length > 0 && (
-        <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-          <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Sent Requests ({outgoingRequests.length})</h3>
+        <div className="glass-panel p-6 rounded-2xl">
+          <h3 className="text-lg font-bold mb-3 text-slate-900 dark:text-slate-100">Sent Requests ({outgoingRequests.length})</h3>
           <ul className="space-y-2">
             {outgoingRequests.map(req => (
-              <li key={req.id} className="flex items-center justify-between p-2 border-b dark:border-gray-700">
-                <Link to={`/user/${req.receiver?.id}`} className="hover:underline dark:text-gray-200">{req.receiver?.display_name || 'Unknown User'}</Link>
-                <button onClick={() => handleCancel(req.id)} disabled={actionLoading[req.id]} className="text-xs bg-gray-500 hover:bg-gray-600 text-white py-1 px-2 rounded disabled:opacity-50">
+              <li key={req.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-800/50">
+                <Link to={`/user/${req.receiver?.id}`} className="hover:underline font-semibold text-sm text-slate-800 dark:text-slate-200">{req.receiver?.display_name || 'Unknown User'}</Link>
+                <button onClick={() => handleCancel(req.id)} disabled={actionLoading[req.id]} className="btn-secondary text-xs py-1 px-3">
                   {actionLoading[req.id] ? '...' : 'Cancel'}
                 </button>
               </li>
@@ -287,14 +287,14 @@ function FriendsPage() {
       )}
 
       {/* Current Friends */}
-      <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-        <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Your Friends ({friends.length})</h3>
-        {friends.length === 0 && <p className="text-gray-500 dark:text-gray-400">You haven't added any friends yet.</p>}
+      <div className="glass-panel p-6 rounded-2xl">
+        <h3 className="text-lg font-bold mb-3 text-slate-900 dark:text-slate-100">Your Friends ({friends.length})</h3>
+        {friends.length === 0 && <p className="text-slate-500 dark:text-slate-400 text-sm">You haven't added any friends yet.</p>}
         <ul className="space-y-2">
           {friends.map(f => (
-            <li key={f.friend.id} className="flex items-center justify-between p-2 border-b dark:border-gray-700">
-              <Link to={`/user/${f.friend.id}`} className="hover:underline dark:text-gray-200">{f.friend.display_name}</Link>
-              <button onClick={() => handleRemove(f.friend.id)} disabled={actionLoading[f.friend.id]} className="text-xs bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded disabled:opacity-50">
+            <li key={f.friend.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-800/50">
+              <Link to={`/user/${f.friend.id}`} className="hover:underline font-semibold text-sm text-slate-800 dark:text-slate-200">{f.friend.display_name}</Link>
+              <button onClick={() => handleRemove(f.friend.id)} disabled={actionLoading[f.friend.id]} className="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold py-1 px-3 rounded-xl border border-rose-500/20 transition-all disabled:opacity-50">
                 {actionLoading[f.friend.id] ? '...' : 'Remove'}
               </button>
             </li>

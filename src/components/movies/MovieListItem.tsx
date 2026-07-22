@@ -91,7 +91,7 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   };
 
   return (
-    <div className="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 space-x-2">
+    <div className="flex items-center p-4 glass-panel rounded-2xl hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 gap-3">
         {/* Drag Handle (receives listeners) */}
         {showDragHandle && (
             <div

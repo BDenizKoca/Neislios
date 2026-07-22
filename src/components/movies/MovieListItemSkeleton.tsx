@@ -3,7 +3,7 @@ import Skeleton from 'react-loading-skeleton';
 
 const MovieListItemSkeleton: React.FC = () => {
   return (
-    <div className="flex items-start p-4 bg-white dark:bg-gray-800 rounded-lg shadow space-x-4">
+    <div className="flex items-start p-4 glass-panel rounded-2xl space-x-4">
       {/* Poster Skeleton */}
       <div className="flex-shrink-0 w-16">
         <Skeleton height={96} className="rounded" /> {/* Approximate height of poster */}

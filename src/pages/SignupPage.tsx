@@ -138,14 +138,14 @@ function SignupPage() {
               required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="mt-1 block w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100"
               placeholder="Your Name"
             />
           </div>
 
           {/* Avatar Picker */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-3">
               Choose Your Avatar (Optional)
             </label>
             <AvatarPicker 
@@ -153,14 +153,14 @@ function SignupPage() {
               onPick={setAvatarUrl}
               className="justify-center"
             />
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 text-center">
               {avatarUrl ? 'Avatar selected!' : 'A default avatar will be assigned if none selected'}
             </p>
           </div>
 
           {/* Email Input */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               Email address
             </label>
             <input
@@ -171,13 +171,13 @@ function SignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="mt-1 block w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100"
               placeholder="you@example.com"
             />
           </div>
           {/* Password Input */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               Password
             </label>
             <input
@@ -186,13 +186,13 @@ function SignupPage() {
               type="password"
               autoComplete="new-password"
               required
-              minLength={6} // Supabase default minimum password length
+              minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="mt-1 block w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100"
               placeholder="••••••••"
             />
-             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Minimum 6 characters</p>
+             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Minimum 6 characters</p>
           </div>
 
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

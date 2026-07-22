@@ -3,7 +3,7 @@ import Skeleton from 'react-loading-skeleton';
 
 const WatchlistCardSkeleton: React.FC = () => {
   return (
-    <div className="rounded-lg shadow-md p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex flex-col justify-between h-full">
+    <div className="glass-panel rounded-3xl p-6 flex flex-col justify-between h-full">
       <div>
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center space-x-1.5">
