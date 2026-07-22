@@ -87,8 +87,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
           </div>
         )}
 
-        {/* Hover Action Overlay Buttons */}
-        <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Action Overlay Buttons */}
+        <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-100 transition-opacity duration-200">
           {onAddToListClick && (
             <button
               onClick={handleAddClick}
