@@ -146,7 +146,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
             </div>
             <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500 rounded-full transition-all duration-100"
+                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-100"
                 style={{ width: `${(spinProgress / SPIN_DURATION) * 100}%` }}
               />
             </div>
@@ -155,16 +155,16 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
           <div className={`transition-opacity duration-300 ${showPickerContent ? 'opacity-100' : 'opacity-0'}`}>
             {randomPick ? (
               <div className="space-y-4">
-                <div className="p-6 rounded-3xl bg-gradient-to-br from-violet-500/10 via-indigo-500/10 to-pink-500/10 border border-violet-500/30 text-center animate-hype">
-                  <span className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400 block mb-1">
-                    Winner Pick
+                <div className="p-6 rounded-3xl bg-gradient-to-br from-red-500/10 via-rose-500/10 to-amber-500/10 border border-red-500/30 text-center animate-hype shadow-lg shadow-red-600/10">
+                  <span className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400 block mb-1">
+                    🎉 Winner Pick
                   </span>
                   <Link
                     to={`/${randomPick.media_type}/${randomPick.id}`}
                     onClick={onClose}
                     className="block group"
                   >
-                    <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-violet-500 transition-colors">
+                    <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-red-500 transition-colors">
                       {isMovieDetails(randomPick) ? randomPick.title : randomPick.name}
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -176,13 +176,13 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={startRandomPick}
-                    className="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-md shadow-violet-600/20 transition-all text-sm"
+                    className="flex-1 btn-primary"
                   >
                     🔄 Reroll
                   </button>
                   <button
                     onClick={onClose}
-                    className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
+                    className="flex-1 btn-secondary"
                   >
                     Done
                   </button>

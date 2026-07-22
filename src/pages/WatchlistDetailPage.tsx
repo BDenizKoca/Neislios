@@ -406,7 +406,7 @@ function WatchlistDetailPage() {
   const canAccess = userRole === 'owner' || userRole === 'editor' || userRole === 'viewer';
 
   return (
-    <div ref={pageRef} className="container mx-auto p-4 h-full">
+    <div ref={pageRef} className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full">
       {/* Watchlist Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">
@@ -437,23 +437,22 @@ function WatchlistDetailPage() {
               disabled={checkingAIEligibility} // Disable while checking
               title="Get AI Recommendations"
             >
-              <LightBulbIcon className="h-5 w-5 mr-1" />
+              <LightBulbIcon className="h-5 w-5 mr-1 text-red-500" />
               {checkingAIEligibility ? 'Checking...' : 'AI Recs'}
             </button>
           )}
-          {/* Manage/View Buttons - Conditionally Rendered */}
           {canAccess && (
             <>
               <button
                 onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/manage`)}
-                className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                className="btn-secondary text-xs sm:text-sm py-2 px-3"
               >
                 {userRole === 'viewer' ? 'View List' : 'Manage List'}
               </button>
               {userRole === 'owner' && (
                 <button
                   onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/collaborators`)}
-                  className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                  className="btn-secondary text-xs sm:text-sm py-2 px-3"
                 >
                   Collaborators
                 </button>
@@ -462,21 +461,21 @@ function WatchlistDetailPage() {
           )}
         </div>
         
-        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <p>Owner: {watchlist.owner?.display_name || 'Unknown'}</p>
-          {userRole && <p>Your Role: <span className="font-medium capitalize">{userRole}</span></p>}
+        <div className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+          <p>Owner: <span className="font-semibold text-slate-700 dark:text-slate-200">{watchlist.owner?.display_name || 'Unknown'}</span></p>
+          {userRole && <p>Your Role: <span className="font-semibold capitalize text-red-600 dark:text-red-400">{userRole}</span></p>}
         </div>
       </div>
 
       {/* Controls (Sort, Filter) */}
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded">
-          <div className="flex items-center">
-              <input id="hideWatchedToggle" type="checkbox" checked={hideWatched} onChange={(e) => setHideWatched(e.target.checked)} className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"/>
-              <label htmlFor="hideWatchedToggle" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">Hide Watched</label>
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-6 p-4 glass-panel rounded-2xl">
+          <div className="flex items-center gap-2">
+              <input id="hideWatchedToggle" type="checkbox" checked={hideWatched} onChange={(e) => setHideWatched(e.target.checked)} className="h-4 w-4 accent-red-600 rounded cursor-pointer"/>
+              <label htmlFor="hideWatchedToggle" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">Hide Watched</label>
           </div>
-          <div className="flex items-center">
-               <label htmlFor="sortOrder" className="mr-2 text-sm text-gray-900 dark:text-gray-300">Sort by:</label>
-               <select id="sortOrder" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="text-sm p-1 border rounded dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-primary" aria-label="Sort movies by">
+          <div className="flex items-center gap-2">
+               <label htmlFor="sortOrder" className="text-sm font-medium text-slate-700 dark:text-slate-300">Sort by:</label>
+               <select id="sortOrder" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="text-sm py-1.5 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Sort movies by">
                   <option value="item_order">Manual Order</option>
                   <option value="added_at_asc">Added Date (Oldest)</option>
                   <option value="added_at_desc">Added Date (Newest)</option>

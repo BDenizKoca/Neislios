@@ -423,10 +423,10 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
         </div>
 
         {/* ... existing footer (Close, Regenerate buttons) ... */}
-         <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+         <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 mr-2"
+            className="btn-secondary text-sm"
           >
             Close
           </button>
@@ -438,10 +438,10 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
                   .finally(() => setIsGenerating(false));
               }
             }}
-            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+            className="btn-primary text-sm flex items-center gap-2"
             disabled={isLoading || !items || items.length < 10}
           >
-            Regenerate
+            <span>✨ Regenerate</span>
           </button>
         </div>
     </Modal>

@@ -303,7 +303,7 @@ function HomePage() {
                 {!loading && (
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                     isActive
-                      ? 'bg-slate-100 dark:bg-slate-700 text-violet-600 dark:text-violet-400'
+                      ? 'bg-red-500/10 text-red-600 dark:text-red-400'
                       : 'bg-slate-200/50 dark:bg-slate-800/50 text-slate-500'
                   }`}>
                     {t.count}
