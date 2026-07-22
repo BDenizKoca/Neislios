@@ -224,7 +224,7 @@ function FriendsPage() {
   // Removed main error display, relying on toasts
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Add Friend Search Section */}
       <div className="glass-panel p-6 rounded-2xl">
         <h3 className="text-lg font-bold mb-3 text-slate-900 dark:text-slate-100">Add Friends</h3>

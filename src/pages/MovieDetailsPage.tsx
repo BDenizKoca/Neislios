@@ -229,7 +229,7 @@ function MovieDetailsPage() {
   const cast = mediaDetails.credits?.cast?.slice(0, 6) || [];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
        {error && !loading && <p className="text-center p-3 text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl mb-4 text-sm font-medium">{error}</p>}
 
        {/* Top Section */}

@@ -469,7 +469,7 @@ function ManageItemsPage() {
   if (!watchlist) return <div className="p-4 text-center">Watchlist not found or permission denied.</div>;
 
   return (
-    <div ref={pageRef} className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full manage-list-page">
+    <div ref={pageRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full manage-list-page">
       <h2 className="text-2xl font-bold mb-1 gradient-text">
         {userRole === 'viewer' ? 'View List' : 'Manage List'}
       </h2>

@@ -188,7 +188,7 @@ function ManageCollaboratorsPage() {
   if (!watchlist) return <div className="text-center p-4">Watchlist not found or access denied.</div>;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <h2 className="text-2xl font-bold gradient-text">Manage Collaborators for "{watchlist.title}"</h2>
 
       <div className="glass-panel p-6 rounded-2xl">

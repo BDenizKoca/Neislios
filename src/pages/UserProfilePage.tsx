@@ -116,7 +116,7 @@ function UserProfilePage() {
   if (!profile) return <div className="text-center p-4">Profile not found.</div>;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
        {/* Profile Header */}
        <div className="flex items-center gap-4 p-6 glass-panel rounded-2xl">
             {profile.avatar_url ? (
