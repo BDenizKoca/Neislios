@@ -192,7 +192,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }, [resetFabPosition]);
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans">
+    <div className="flex h-screen bg-slate-100 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans">
       <SideMenu isOpen={isMenuOpen} onClose={closeMenu} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
