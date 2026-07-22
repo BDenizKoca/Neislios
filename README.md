@@ -49,7 +49,7 @@ My girlfriend and I were unable find an app or site like this and I absolutely l
 ---
 
 ## Usage  
-1. Sign in with email or Google (Supabase Auth - sign up is mail only).  
+1. Sign in or sign up with 1-click Google Auth or Email.  
 2. Create a watchlist and invite friends.  
 3. Add movies/series from TMDB.  
 4. Reorder, sort, or use the random picker to decide what to watch.  
@@ -95,7 +95,7 @@ My girlfriend and I were unable find an app or site like this and I absolutely l
 
 ## Future Plans
 
-I mostly consider this project done, as it accomplishes everything I've outlined in the original desing document. So feature-complete but open to contributions.
+I mostly consider this project done, as it accomplishes everything I've outlined in the original design document. So feature-complete but open to contributions.
 
 ---
 
