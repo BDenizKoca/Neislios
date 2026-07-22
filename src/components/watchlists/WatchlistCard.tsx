@@ -6,6 +6,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Watchlist } from '../../types/watchlist';
 import { useAuth } from '../../hooks/useAuth';
 
+import { useWatchlistPreviewPosters } from '../../hooks/useWatchlistPreviewPosters';
+
 interface WatchlistCardProps {
   watchlist: Watchlist;
   onToggleFavorite: (watchlistId: string, isCurrentlyFavorite: boolean) => void;
@@ -21,6 +23,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const posters = useWatchlistPreviewPosters(watchlist.id);
   const isOwner = user?.id === watchlist.owner_id;
   const [swipeFeedback, setSwipeFeedback] = useState<'favorite' | 'delete' | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -81,7 +84,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
       {...handlers}
       data-no-swipe-navigate="true"
       onClick={handleCardClick}
-      className="group relative rounded-3xl p-6 border cursor-pointer transition-all duration-200 flex flex-col justify-between h-56 overflow-hidden glass-panel hover:border-red-500/40 dark:hover:border-red-500/40 shadow-sm hover:shadow-xl hover:-translate-y-1"
+      className="group relative rounded-3xl p-5 border cursor-pointer transition-all duration-200 flex flex-col justify-between min-h-[240px] overflow-hidden glass-panel hover:border-red-500/40 dark:hover:border-red-500/40 shadow-sm hover:shadow-xl hover:-translate-y-1"
     >
       {/* Card Theme Accent Bar & Tint Overlay */}
       {cardBgColor && (
@@ -99,7 +102,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
 
       {/* Top Header */}
       <div>
-        <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-2 min-w-0">
             <span className="p-1.5 rounded-xl bg-slate-200/50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 shrink-0">
               {watchlist.is_public ? (
@@ -144,9 +147,28 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
         </div>
 
         {/* Description */}
-        <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mt-1.5 leading-relaxed font-medium">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 line-clamp-1 font-medium mb-2.5">
           {watchlist.description || 'No description provided.'}
         </p>
+
+        {/* Poster Previews Row */}
+        {posters.length > 0 ? (
+          <div className="flex items-center gap-2 overflow-hidden py-1">
+            {posters.slice(0, 4).map((posterUrl, idx) => (
+              <img
+                key={idx}
+                src={posterUrl}
+                alt="Watchlist item preview"
+                className="w-10 h-14 sm:w-11 sm:h-16 object-cover rounded-xl shadow-md border border-slate-200/60 dark:border-slate-700/60 shrink-0 transform transition-transform group-hover:scale-105"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="h-14 flex items-center text-xs text-slate-400/80 font-medium italic">
+            No media items added yet
+          </div>
+        )}
       </div>
 
       {/* Swipe Feedback Overlay */}
