@@ -284,9 +284,9 @@ function HomePage() {
   ];
 
   return (
-    <div {...swipeHandlers} className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Desktop Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 sm:p-8 rounded-3xl">
+    <div {...swipeHandlers} className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      {/* Desktop Hero Banner (Hidden on Mobile PWA to maximize screen space) */}
+      <div className="hidden sm:flex sm:items-center justify-between gap-4 glass-panel p-6 sm:p-8 rounded-3xl">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Your Watchlists
@@ -299,40 +299,53 @@ function HomePage() {
         <button
           type="button"
           onClick={() => setIsCreateModalOpen(true)}
-          className="btn-primary self-start sm:self-auto shadow-lg shadow-red-600/20"
+          className="btn-primary shadow-lg shadow-red-600/20"
         >
           <PlusIcon className="w-5 h-5" />
           <span>Create Watchlist</span>
         </button>
       </div>
 
-      {/* Modern Glass Tab Bar */}
-      <div className="flex p-1.5 space-x-1 glass-panel rounded-2xl max-w-xl">
-        {tabs.map((t) => {
-          const isActive = activeTab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
-                isActive
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              <span>{t.label}</span>
-              {!loading && (
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+      {/* Navigation Controls Bar (Tabs + Mobile Create Button) */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex p-1.5 space-x-1 glass-panel rounded-2xl flex-1 sm:flex-initial sm:min-w-[380px] max-w-xl">
+          {tabs.map((t) => {
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 px-2.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                   isActive
-                    ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                    : 'bg-slate-200/50 dark:bg-slate-800/50 text-slate-500'
-                }`}>
-                  {t.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <span className="truncate">{t.label}</span>
+                {!loading && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    isActive
+                      ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                      : 'bg-slate-200/50 dark:bg-slate-800/50 text-slate-500'
+                  }`}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Mobile-Only Compact Create Button */}
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="sm:hidden btn-primary text-xs px-3 py-2.5 rounded-xl shrink-0 shadow-md shadow-red-600/20"
+          aria-label="Create Watchlist"
+        >
+          <PlusIcon className="w-4 h-4" />
+          <span>New</span>
+        </button>
       </div>
 
       {/* Tab Content */}

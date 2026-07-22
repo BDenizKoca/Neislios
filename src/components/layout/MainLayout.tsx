@@ -4,18 +4,12 @@ import SideMenu from './SideMenu';
 import { 
   Bars3Icon, 
   XMarkIcon, 
-  PlusIcon, 
-  SparklesIcon, 
-  HomeIcon, 
   ArrowLeftIcon, 
-  MagnifyingGlassIcon,
-  LightBulbIcon 
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
-import { FloatingActionButton, Position } from '../common/index';
 import CreateWatchlistModal from '../watchlists/CreateWatchlistModal';
 import MediaRecommendationModal from '../recommendations/MediaRecommendationModal';
 import { logger } from '../../utils/logger';
-import { useLayoutActions } from '../../hooks/useLayoutActions';
 import { useHeader } from '../../hooks/useHeader';
 import { useWatchlistAI } from '../../hooks/useWatchlistAI';
 
@@ -26,19 +20,12 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [fabPosition, setFabPosition] = useState<Position>(() => {
-    const savedPosition = localStorage.getItem('fabPosition');
-    return savedPosition ? JSON.parse(savedPosition) : { right: 24, bottom: 24 };
-  });
-  const [isDragging, setIsDragging] = useState(false);
   const [showAIRecommendModal, setShowAIRecommendModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { headerTitle, setHeaderTitle } = useHeader(); 
   const mainContentRef = useRef<HTMLElement>(null);
   const currentPathRef = useRef(location.pathname);
-
-  const { triggerRandomPick, isRandomPickModalOpen } = useLayoutActions();
 
   const getWatchlistIdFromPath = useCallback((pathname: string): string | undefined => {
     if (pathname.startsWith('/watchlist/') && 
@@ -51,20 +38,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const currentWatchlistId = getWatchlistIdFromPath(location.pathname);
   const { checkListEligibleForAI } = useWatchlistAI(currentWatchlistId);
-
-  useEffect(() => {
-    const handleWatchlistUpdate = (event: CustomEvent) => {
-      const { watchlistId } = event.detail;
-      if (watchlistId === currentWatchlistId) {
-        // Watchlist updated trigger
-      }
-    };
-
-    window.addEventListener('watchlist-updated', handleWatchlistUpdate as EventListener);
-    return () => {
-      window.removeEventListener('watchlist-updated', handleWatchlistUpdate as EventListener);
-    };
-  }, [currentWatchlistId]);
 
   useEffect(() => {
     const savedModalState = sessionStorage.getItem('recommendation-modal-open');
@@ -119,56 +92,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
 
-  const getFabConfig = useCallback(() => {
-    let config = {
-      icon: <HomeIcon className="h-6 w-6" />,
-      action: () => navigate('/'),
-      label: "Go to Home"
-    };
-    
-    if (location.pathname === '/') {
-      config = {
-        icon: <PlusIcon className="h-6 w-6" />,
-        action: () => setIsCreateModalOpen(true),
-        label: "Create new watchlist"
-      };
-    } else if (
-      location.pathname.startsWith('/watchlist/') && 
-      !location.pathname.includes('/manage') && 
-      !location.pathname.includes('/collaborators')
-    ) {
-      const showAIOption = () => {
-        checkListEligibleForAI().then((isEligible: boolean) => {
-          if (isEligible) {
-            setShowAIRecommendModal(true);
-          } else {
-            logger.info("List not eligible for AI recommendations");
-          }
-        }).catch((error) => {
-          logger.error("Error checking AI eligibility:", error);
-        });
-      };
-
-      config = {
-        icon: <LightBulbIcon className="h-6 w-6" />,
-        action: showAIOption,
-        label: "Get AI recommendations"
-      };
-
-      if (triggerRandomPick) {
-        config = {
-          icon: <SparklesIcon className="h-6 w-6" />,
-          action: triggerRandomPick,
-          label: "Pick random item"
-        };
-      }
-    }
-    
-    return config;
-  }, [location.pathname, navigate, triggerRandomPick, checkListEligibleForAI]);
-  
-  const { icon: fabIcon, action: fabAction, label: fabLabel } = getFabConfig();
-  const isFabDisabled = isCreateModalOpen || showAIRecommendModal || isRandomPickModalOpen;
   const handleCloseCreateModal = useCallback(() => setIsCreateModalOpen(false), []);
   
   const handleWatchlistCreated = useCallback(() => {
@@ -180,16 +103,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
-
-  const resetFabPosition = useCallback(() => {
-    const defaultPosition: Position = { right: 24, bottom: 24 };
-    setFabPosition(defaultPosition);
-    localStorage.setItem('fabPosition', JSON.stringify(defaultPosition));
-  }, []);
-  
-  const handleFabDoubleClick = useCallback(() => {
-    resetFabPosition();
-  }, [resetFabPosition]);
 
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans">
@@ -254,30 +167,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <main ref={mainContentRef} className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-[#0b0f17] scroll-smooth">
           {children || <Outlet />}
         </main>
-
-        {/* Floating Action Button */}
-        {!location.pathname.includes('/manage') && !isFabDisabled && (
-          <FloatingActionButton
-            onClick={fabAction}
-            icon={fabIcon}
-            ariaLabel={fabLabel}
-            position={fabPosition}
-            onPositionChange={(newPosition: Position) => {
-              setFabPosition(newPosition);
-              localStorage.setItem('fabPosition', JSON.stringify(newPosition));
-            }}
-            isDraggable={true}
-            onDoubleClick={handleFabDoubleClick}
-            onLongPress={() => setIsDragging(true)}
-            onDragEnd={() => setIsDragging(false)}
-            isDragging={isDragging}
-            style={{
-              transition: isDragging ? 'none' : 'all 0.3s ease',
-              cursor: isDragging ? 'grabbing' : (isFabDisabled ? 'not-allowed' : 'pointer'),
-              opacity: isDragging ? 0.8 : (isFabDisabled ? 0.5 : 1),
-            }}
-          />
-        )}
 
         {/* Modals */}
         <CreateWatchlistModal

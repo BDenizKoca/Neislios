@@ -23,7 +23,7 @@ import ShareListModal from '../components/watchlists/ShareListModal';
 import ExportListModal from '../components/watchlists/ExportListModal';
 import { computeWatchlistStats } from '../utils/watchlistStats';
 import { isMovieDetails } from '../utils/tmdbUtils';
-import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import CollaboratorAvatars from '../components/watchlists/CollaboratorAvatars';
 import { sortWatchlistItems } from '../utils/sortUtils';
 
@@ -97,6 +97,7 @@ function WatchlistDetailPage() {
   const [sortedAndFilteredItems, setSortedAndFilteredItems] = useState<WatchlistItemWithDetails[]>([]);
   const [isAIEligible, setIsAIEligible] = useState(false);
   const [showAIRecommendModal, setShowAIRecommendModal] = useState(false);
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
 
   // DnD Sensors
   const sensors = useSensors(
@@ -265,37 +266,51 @@ function WatchlistDetailPage() {
   return (
     <div ref={pageRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full space-y-5">
       {/* Watchlist Header Panel */}
-      <div className="p-5 sm:p-6 glass-panel rounded-3xl space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="p-4 sm:p-6 glass-panel rounded-3xl space-y-3.5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Title, Description & Meta */}
-          <div className="space-y-2 flex-1">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight break-words">
-                {watchlist.title}
-              </h1>
-              {members && members.length > 0 && (
-                <CollaboratorAvatars 
-                  members={members}
-                  ownerId={watchlist.owner_id}
-                  maxVisible={4}
-                  size="sm"
-                  textColor="text-slate-600 dark:text-slate-400"
-                />
-              )}
+          <div className="space-y-1.5 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight break-words">
+                  {watchlist.title}
+                </h1>
+                {members && members.length > 0 && (
+                  <CollaboratorAvatars 
+                    members={members}
+                    ownerId={watchlist.owner_id}
+                    maxVisible={4}
+                    size="sm"
+                    textColor="text-slate-600 dark:text-slate-400"
+                  />
+                )}
+              </div>
+
+              {/* Mobile Info Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setShowMobileDetails(!showMobileDetails)}
+                className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                aria-label="Toggle details"
+              >
+                {showMobileDetails ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+              </button>
             </div>
 
-            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-2xl">
-              {watchlist.description || 'No description provided.'}
-            </p>
-
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium pt-0.5">
-              Owner: <span className="font-semibold text-slate-700 dark:text-slate-200">{watchlist.owner?.display_name || 'Unknown'}</span>
+            {/* Description & Owner (Collapsible on Mobile, Always visible on Desktop) */}
+            <div className={`${showMobileDetails ? 'block' : 'hidden sm:block'} space-y-1.5 pt-1`}>
+              <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-2xl">
+                {watchlist.description || 'No description provided.'}
+              </p>
+              <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Owner: <span className="font-semibold text-slate-700 dark:text-slate-200">{watchlist.owner?.display_name || 'Unknown'}</span>
+              </div>
             </div>
           </div>
 
           {/* Progress Card (Right aligned on desktop, tight & compact) */}
           {watchlistItems.length > 0 && (
-            <div className="w-full lg:w-80 p-3.5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2 shrink-0">
+            <div className="w-full lg:w-80 p-3 sm:p-3.5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-1.5 shrink-0">
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
                   <CheckCircleIcon className="w-4 h-4 text-emerald-500" />
@@ -305,7 +320,7 @@ function WatchlistDetailPage() {
                   {stats.percentage}%
                 </span>
               </div>
-              <div className="h-2.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-2 sm:h-2.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-red-600 rounded-full transition-all duration-500"
                   style={{ width: `${stats.percentage}%` }}
@@ -321,21 +336,29 @@ function WatchlistDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+        <div className="flex flex-wrap gap-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
+          <button
+            onClick={handlePickRandom}
+            className="btn-primary text-xs sm:text-sm px-3.5 py-2 shadow-md shadow-red-600/20"
+          >
+            <SparklesIcon className="h-4 w-4" />
+            <span>Random Pick</span>
+          </button>
+
           {isAIEligible && (
             <button
               onClick={() => setShowAIRecommendModal(true)}
-              className="btn-primary text-xs sm:text-sm px-4 py-2"
+              className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
               disabled={checkingAIEligibility}
             >
-              <LightBulbIcon className="h-4 w-4" />
-              <span>{checkingAIEligibility ? 'Checking...' : 'AI Recommendations'}</span>
+              <LightBulbIcon className="h-4 w-4 text-amber-500" />
+              <span>{checkingAIEligibility ? 'Checking...' : 'AI Recommend'}</span>
             </button>
           )}
 
           <button
             onClick={() => setShowShareModal(true)}
-            className="btn-secondary text-xs sm:text-sm px-4 py-2"
+            className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
           >
             <ShareIcon className="h-4 w-4 text-red-500" />
             <span>Share</span>
@@ -343,7 +366,7 @@ function WatchlistDetailPage() {
 
           <button
             onClick={() => setShowExportModal(true)}
-            className="btn-secondary text-xs sm:text-sm px-4 py-2"
+            className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
           >
             <ArrowDownTrayIcon className="h-4 w-4 text-slate-400" />
             <span>Export</span>
@@ -353,14 +376,14 @@ function WatchlistDetailPage() {
             <>
               <button
                 onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/manage`)}
-                className="btn-secondary text-xs sm:text-sm px-4 py-2"
+                className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
               >
                 {userRole === 'viewer' ? 'View List' : 'Manage List'}
               </button>
               {userRole === 'owner' && (
                 <button
                   onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/collaborators`)}
-                  className="btn-secondary text-xs sm:text-sm px-4 py-2"
+                  className="btn-secondary text-xs sm:text-sm px-3.5 py-2"
                 >
                   Collaborators
                 </button>
