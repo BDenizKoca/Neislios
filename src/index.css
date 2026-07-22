@@ -28,7 +28,7 @@
 }
 
 .gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-500 dark:from-violet-400 dark:via-indigo-300 dark:to-pink-400;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 dark:from-red-500 dark:via-rose-400 dark:to-amber-400;
 }
 
 /* Hide FAB when modals are open */

@@ -1,7 +1,8 @@
 import type { Config } from 'tailwindcss'
-import aspectRatio from '@tailwindcss/aspect-ratio'; // Import the plugin
+import aspectRatio from '@tailwindcss/aspect-ratio';
+
 export default {
-  darkMode: 'class', // Enable class-based dark mode
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -9,14 +10,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#a9312c', // Define the new primary color
-        // You might want complementary shades:
-        // 'primary-dark': '#8a2823',
-        // 'primary-light': '#c04a44',
+        primary: {
+          DEFAULT: '#e50914',
+          dark: '#b81d24',
+          light: '#f43f5e',
+          hover: '#dc2626',
+        },
       }
     },
   },
   plugins: [
-     aspectRatio, // Use the imported plugin
+     aspectRatio,
   ],
 } satisfies Config
