@@ -188,28 +188,27 @@ function ManageCollaboratorsPage() {
   if (!watchlist) return <div className="text-center p-4">Watchlist not found or access denied.</div>;
 
   return (
-    <div className="p-4 space-y-6">
-      <h2 className="text-2xl font-bold">Manage Collaborators for "{watchlist.title}"</h2>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <h2 className="text-2xl font-bold gradient-text">Manage Collaborators for "{watchlist.title}"</h2>
 
-      {/* Note: Friend Search Section would be added here when implemented */}
-      <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-        <h3 className="text-lg font-semibold mb-2">Add Editor</h3>
+      <div className="glass-panel p-6 rounded-2xl">
+        <h3 className="text-lg font-bold mb-3 text-slate-900 dark:text-slate-100">Add Editor</h3>
         <input
           type="text"
           placeholder="Search your friends to add as editor..."
           value={friendSearchTerm}
           onChange={(e) => setFriendSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-2.5 mb-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
         />
-        {searchError && <p className="text-sm text-red-500 dark:text-red-400 mb-2">{searchError}</p>}
+        {searchError && <p className="text-sm text-red-500 mb-2">{searchError}</p>}
         <div className="max-h-40 overflow-y-auto space-y-1 pr-2">
             {friendSearchResults.map(friend => (
-                 <div key={friend.id} className="flex items-center justify-between p-1">
-                    <span className="text-sm">{friend.display_name}</span>
+                 <div key={friend.id} className="flex items-center justify-between p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-800/50">
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{friend.display_name}</span>
                     <button
                         onClick={() => handleAddCollaborator(friend.id)}
                         disabled={actionLoading[`add-${friend.id}`]}
-                        className="text-xs bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded disabled:opacity-50"
+                        className="btn-primary text-xs py-1.5 px-3"
                     >
                          {actionLoading[`add-${friend.id}`] ? '...' : 'Add'}
                     </button>

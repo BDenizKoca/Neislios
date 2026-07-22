@@ -116,16 +116,15 @@ function UserProfilePage() {
   if (!profile) return <div className="text-center p-4">Profile not found.</div>;
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
        {/* Profile Header */}
-       <div className="flex items-center space-x-4 mb-6 p-4 bg-white dark:bg-gray-800 rounded shadow">
+       <div className="flex items-center gap-4 p-6 glass-panel rounded-2xl">
             {profile.avatar_url ? (
                 <img 
                   src={profile.avatar_url} 
                   alt={`${profile.display_name}'s Avatar`} 
-                  className="h-20 w-20 rounded-full object-cover"
+                  className="h-20 w-20 rounded-full object-cover shadow-lg border-2 border-red-500/30"
                   onError={(e) => {
-                    // Fallback to deterministic avatar if main image fails
                     const target = e.target as HTMLImageElement;
                     target.src = fallbackAvatar(profile.id);
                   }}
@@ -134,30 +133,22 @@ function UserProfilePage() {
                 <img 
                   src={fallbackAvatar(profile.id)} 
                   alt={`${profile.display_name}'s Avatar`} 
-                  className="h-20 w-20 rounded-full object-cover"
+                  className="h-20 w-20 rounded-full object-cover shadow-lg border-2 border-red-500/30"
                 />
             )}
             <div>
-                <h1 className="text-3xl font-bold">{profile.display_name}</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{profile.display_name}</h1>
                 {/* Friend Status / Actions */}
                 {!isOwnProfile && user && (
-                    <div className="mt-2">                        {isFriend ? (
-                             <>
-                                <span className="text-sm text-green-600 dark:text-green-400 font-medium">Already Friends</span>
-                                {/* Note: Remove Friend button would require additional API */}
-                             </>
+                    <div className="mt-2">
+                        {isFriend ? (
+                             <span className="text-xs text-emerald-500 font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">Already Friends</span>
                         ) : friendRequestStatus === 'sent' ? (
-                             <>
-                                <span className="text-sm text-gray-500 dark:text-gray-400">Friend Request Sent</span>
-                                {/* Note: Cancel Request button would require additional API */}
-                             </>
+                             <span className="text-xs text-slate-400 font-semibold px-2.5 py-1 rounded-full bg-slate-800">Friend Request Sent</span>
                         ) : friendRequestStatus === 'received' ? (
-                             <>
-                                <span className="text-sm text-yellow-600 dark:text-yellow-400">Friend Request Received</span>
-                                {/* Note: Accept/Decline buttons would require additional API */}
-                             </>
+                             <span className="text-xs text-amber-400 font-semibold px-2.5 py-1 rounded-full bg-amber-500/10">Friend Request Received</span>
                         ) : (
-                             <button onClick={handleSendRequest} className="text-sm bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded">
+                             <button onClick={handleSendRequest} className="btn-primary text-xs py-1.5 px-3">
                                 Add Friend
                              </button>
                         )}
