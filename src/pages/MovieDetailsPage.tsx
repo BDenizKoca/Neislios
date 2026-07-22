@@ -229,67 +229,63 @@ function MovieDetailsPage() {
   const cast = mediaDetails.credits?.cast?.slice(0, 6) || [];
 
   return (
-    <div className="p-4 dark:bg-gray-900 min-h-screen">
-       {error && !loading && <p className="text-center p-2 text-red-600 bg-red-100 rounded mb-4">{error}</p>}
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+       {error && !loading && <p className="text-center p-3 text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl mb-4 text-sm font-medium">{error}</p>}
 
        {/* Top Section */}
-       <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-6">
-            {/* Added flex column and center alignment for poster and title */}
-            <div className="md:w-1/4 flex flex-col items-center flex-shrink-0 mx-auto md:mx-0">
+       <div className="flex flex-col md:flex-row gap-6 mb-6">
+            <div className="md:w-1/3 flex flex-col items-center flex-shrink-0 mx-auto md:mx-0">
                 {posterUrl ? (
-                    <img src={posterUrl} alt={`${title} poster`} className="w-48 md:w-full h-auto rounded-lg shadow-md" />
+                    <img src={posterUrl} alt={`${title} poster`} className="w-48 md:w-full h-auto rounded-2xl shadow-xl border border-slate-800" />
                 ) : (
-                    <div className="w-48 h-72 md:w-full md:h-auto md:aspect-[2/3] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 rounded-lg shadow-md">No Poster</div>
+                    <div className="w-48 h-72 md:w-full md:h-auto md:aspect-[2/3] bg-slate-800 flex items-center justify-center text-slate-400 rounded-2xl shadow-xl">No Poster</div>
                 )}
-                {/* Display Full Title Below Poster */}
-                <h1 className="text-lg md:text-xl font-semibold mt-2 dark:text-white text-center">{title}</h1>
+                <h1 className="text-lg md:text-2xl font-bold mt-3 text-slate-900 dark:text-slate-100 text-center">{title}</h1>
             </div>
-            <div className="md:w-3/4 flex flex-col">
-                {/* Removed redundant h1 title */}
-                {mediaDetails.tagline && <p className="text-md italic text-gray-600 dark:text-gray-400 mt-1">{mediaDetails.tagline}</p>}
-                <div className="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400 mt-2 mb-2">
-                    <span className="flex items-center"><CalendarDaysIcon className="h-4 w-4 mr-1"/>{year}</span>
-                    {mediaDetails.vote_average > 0 && <span className="flex items-center"><StarIcon className="h-4 w-4 mr-1 text-yellow-500"/>{mediaDetails.vote_average.toFixed(1)}</span>}
-                    {runtime && <span className="flex items-center"><ClockIcon className="h-4 w-4 mr-1"/>{runtime}</span>}
-                    {isTvDetails(mediaDetails) && mediaDetails.number_of_seasons && <span className="flex items-center"><TvIcon className="h-4 w-4 mr-1"/>{mediaDetails.number_of_seasons} Season{mediaDetails.number_of_seasons > 1 ? 's' : ''}</span>}
+            <div className="md:w-2/3 flex flex-col justify-center">
+                {mediaDetails.tagline && <p className="text-base italic text-slate-500 dark:text-slate-400 mt-1">{mediaDetails.tagline}</p>}
+                <div className="flex items-center flex-wrap gap-4 text-sm text-slate-500 dark:text-slate-400 mt-3 mb-3">
+                    <span className="flex items-center"><CalendarDaysIcon className="h-4 w-4 mr-1 text-slate-400"/>{year}</span>
+                    {mediaDetails.vote_average > 0 && <span className="flex items-center"><StarIcon className="h-4 w-4 mr-1 text-amber-400"/>{mediaDetails.vote_average.toFixed(1)}</span>}
+                    {runtime && <span className="flex items-center"><ClockIcon className="h-4 w-4 mr-1 text-slate-400"/>{runtime}</span>}
+                    {isTvDetails(mediaDetails) && mediaDetails.number_of_seasons && <span className="flex items-center"><TvIcon className="h-4 w-4 mr-1 text-slate-400"/>{mediaDetails.number_of_seasons} Season{mediaDetails.number_of_seasons > 1 ? 's' : ''}</span>}
                 </div>
                  {mediaDetails.genres && mediaDetails.genres.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="flex flex-wrap gap-2 mb-4">
                         {mediaDetails.genres.map(genre => (
-                            <span key={genre.id} className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-2 py-0.5 rounded-full">{genre.name}</span>
+                            <span key={genre.id} className="text-xs bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 font-medium px-3 py-1 rounded-full">{genre.name}</span>
                         ))}
                     </div>
                  )}
                  {imdbUrl && (
-                    <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-1.5 px-4 rounded-lg text-sm mt-1 w-fit">
+                    <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-black font-semibold py-2 px-4 rounded-xl text-sm transition-all shadow-md w-fit">
                         <ArrowTopRightOnSquareIcon className="h-4 w-4"/> View on IMDb
                     </a>
                  )}
             </div>
        </div>
-       {/* Title moved under poster */}
 
         {/* Overview */}
-        <div className="mt-4">
-            <h2 className="text-xl font-semibold mb-1 dark:text-white">Overview</h2>
-            <p className="text-gray-700 dark:text-gray-300 text-sm">{mediaDetails.overview || 'No overview available.'}</p>
+        <div className="mt-6 glass-panel p-6 rounded-2xl">
+            <h2 className="text-xl font-bold mb-2 text-slate-900 dark:text-slate-100">Overview</h2>
+            <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{mediaDetails.overview || 'No overview available.'}</p>
         </div>
 
         {/* Cast Section */}
         {cast.length > 0 && (
-            <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-2 dark:text-white">Cast</h2>
+            <div className="mt-8">
+                <h2 className="text-xl font-bold mb-3 text-slate-900 dark:text-slate-100">Cast</h2>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
                     {cast.map((member) => (
                         <div key={member.id} className="text-center">
                             <img
                                 src={getProfilePictureUrl(member.profile_path, 'w185') || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random&size=185`}
                                 alt={member.name}
-                                className="w-full h-auto aspect-[2/3] object-cover rounded-md shadow mb-1"
+                                className="w-full h-auto aspect-[2/3] object-cover rounded-xl shadow mb-2"
                                 loading="lazy"
                             />
-                            <p className="text-sm font-medium dark:text-gray-200 truncate" title={member.name}>{member.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={member.character}>{member.character}</p>
+                            <p className="text-xs sm:text-sm font-semibold dark:text-slate-200 truncate" title={member.name}>{member.name}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate" title={member.character}>{member.character}</p>
                         </div>
                     ))}
                 </div>
@@ -297,17 +293,17 @@ function MovieDetailsPage() {
         )}
 
         {/* Actions */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-             <button onClick={handleToggleWatched} className={`py-2.5 px-4 rounded-lg shadow flex items-center justify-center text-sm font-medium ${isWatched ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'}`}>
-                {isWatched ? <EyeIcon className="h-5 w-5 mr-2"/> : <EyeSlashIcon className="h-5 w-5 mr-2"/>}
+        <div className="mt-8 grid grid-cols-2 gap-4">
+             <button onClick={handleToggleWatched} className={isWatched ? 'btn-secondary text-sm flex items-center justify-center gap-2' : 'btn-primary text-sm flex items-center justify-center gap-2'}>
+                {isWatched ? <EyeIcon className="h-5 w-5 text-red-500"/> : <EyeSlashIcon className="h-5 w-5"/>}
                 {isWatched ? 'Watched' : 'Mark Watched'}
-            </button>            {/* Contextual Add/Remove Button */}
+            </button>
             {!loadingEditableLists && isFromWatchlist && contextWatchlistId && containingEditableLists.includes(contextWatchlistId) ? (
-                 <button onClick={() => handleRemoveFromList(contextWatchlistId)} className="py-2.5 px-4 rounded-lg shadow flex items-center justify-center text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200">
-                    <ListBulletIcon className="h-5 w-5 mr-2"/> Remove from List
+                 <button onClick={() => handleRemoveFromList(contextWatchlistId)} className="btn-secondary text-sm flex items-center justify-center gap-2">
+                    <ListBulletIcon className="h-5 w-5"/> Remove from List
                  </button>
             ) : (
-                 <button onClick={handleOpenAddToListModal} className="py-2.5 px-4 rounded-lg shadow flex items-center justify-center text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200">
+                 <button onClick={handleOpenAddToListModal} className="btn-secondary text-sm flex items-center justify-center gap-2">
                     <ListBulletIcon className="h-5 w-5 mr-2"/> Add to List
                  </button>
             )}

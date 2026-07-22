@@ -110,18 +110,16 @@ function SettingsPage() {
 
   // --- Render ---
   return (
-    <div className="p-4 max-w-md mx-auto">
-      {/* Removed redundant h2 title */}
-
+    <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
       <div className="space-y-6">
         {/* Appearance Section */}
-        <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-          <h3 className="text-lg font-semibold mb-3 border-b pb-2 dark:border-gray-700 dark:text-gray-100">Appearance</h3>
+        <div className="glass-panel p-6 rounded-2xl">
+          <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-slate-800 dark:text-slate-100">Appearance</h3>
           <div className="flex items-center justify-between">
-            <span className="text-gray-700 dark:text-gray-300">Dark Mode</span>
+            <span className="text-slate-700 dark:text-slate-300 font-medium">Dark Mode</span>
             <button
               onClick={toggleDarkMode}
-              className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${isDarkMode ? 'bg-primary' : 'bg-gray-200'}`}
+              className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${isDarkMode ? 'bg-red-600' : 'bg-slate-300'}`}
               aria-label={`Toggle dark mode. Currently ${isDarkMode ? 'enabled' : 'disabled'}`}
               title={`Toggle dark mode. Currently ${isDarkMode ? 'enabled' : 'disabled'}`}
               type="button"
@@ -132,8 +130,8 @@ function SettingsPage() {
         </div>
 
         {/* Account Section */}
-        <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-          <h3 className="text-lg font-semibold mb-3 border-b pb-2 dark:border-gray-700 dark:text-gray-100">Account</h3>
+        <div className="glass-panel p-6 rounded-2xl">
+          <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-slate-800 dark:text-slate-100">Account</h3>
           <div className="space-y-4">
             {/* Removed Edit Display Name link */}
 

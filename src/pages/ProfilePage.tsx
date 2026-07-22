@@ -108,18 +108,15 @@ function ProfilePage() {
   if (!profile) return <div className="text-center p-4">Could not load profile.</div>;
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      {/* Removed redundant h2 title */}
-
+    <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
       {/* Avatar Display */}
       <div className="flex justify-center mb-6">
         {profile.avatar_url ? (
             <img 
               src={profile.avatar_url} 
               alt="User Avatar" 
-              className="h-24 w-24 rounded-full object-cover shadow-md"
+              className="h-28 w-28 rounded-full object-cover shadow-xl border-2 border-red-500/30"
               onError={(e) => {
-                // Fallback to deterministic avatar if main image fails
                 const target = e.target as HTMLImageElement;
                 target.src = fallbackAvatar(user?.id || user?.email || '');
               }}
@@ -128,7 +125,7 @@ function ProfilePage() {
             <img 
               src={fallbackAvatar(user?.id || user?.email || '')} 
               alt="Default Avatar" 
-              className="h-24 w-24 rounded-full object-cover shadow-md"
+              className="h-28 w-28 rounded-full object-cover shadow-xl border-2 border-red-500/30"
             />
         )}
       </div>
@@ -136,8 +133,8 @@ function ProfilePage() {
       {/* Display Info & Edit Forms */}
       <div className="space-y-6">
           {/* Display Info */}
-          <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-             <p className="mb-2 dark:text-gray-300"><strong>Email:</strong> {user?.email || 'N/A'}</p>
+          <div className="glass-panel p-6 rounded-2xl">
+             <p className="mb-2 text-slate-700 dark:text-slate-300"><strong>Email:</strong> {user?.email || 'N/A'}</p>
              <p className="mb-2 dark:text-gray-300"><strong>Current Display Name:</strong> {profile.display_name}</p>
              {/* Avatar URL Form */}
              <form onSubmit={handleUpdateAvatar} className="space-y-4 pt-4 border-t dark:border-gray-600">

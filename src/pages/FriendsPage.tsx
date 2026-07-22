@@ -224,22 +224,22 @@ function FriendsPage() {
   // Removed main error display, relying on toasts
 
   return (
-    <div className="space-y-8 p-4"> {/* Added padding */}
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Add Friend Search Section */}
-      <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-        <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Add Friends</h3>
+      <div className="glass-panel p-6 rounded-2xl">
+        <h3 className="text-lg font-bold mb-3 text-slate-900 dark:text-slate-100">Add Friends</h3>
         <input
           type="text" placeholder="Search by Display Name (min 3 chars)..."
           value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
+          className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
         />
-        <div className="mt-4 space-y-2 max-h-60 overflow-y-auto pr-2"> {/* Added max height and scroll */}
-            {searchLoading && <p className="text-gray-500 dark:text-gray-400 text-sm">Searching...</p>}
-            {searchError && !searchLoading && <p className="text-sm text-red-600 dark:text-red-400">{searchError}</p>}
+        <div className="mt-4 space-y-2 max-h-60 overflow-y-auto pr-2">
+            {searchLoading && <p className="text-slate-500 dark:text-slate-400 text-sm">Searching...</p>}
+            {searchError && !searchLoading && <p className="text-sm text-red-500">{searchError}</p>}
             {searchResults.map(profile => (
-                <div key={profile.id} className="flex items-center justify-between p-2 border-b dark:border-gray-700">
-                    <Link to={`/user/${profile.id}`} className="hover:underline dark:text-gray-200">{profile.display_name}</Link> {/* Link profile name */}
-                    <button onClick={() => handleSendRequest(profile.id)} disabled={actionLoading[profile.id]} className="text-xs bg-primary hover:bg-opacity-80 text-white py-1 px-2 rounded disabled:opacity-50"> {/* Use primary color */}
+                <div key={profile.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-800/50">
+                    <Link to={`/user/${profile.id}`} className="hover:underline font-semibold text-sm text-slate-800 dark:text-slate-200">{profile.display_name}</Link>
+                    <button onClick={() => handleSendRequest(profile.id)} disabled={actionLoading[profile.id]} className="btn-primary text-xs py-1.5 px-3">
                         {actionLoading[profile.id] ? '...' : 'Send Request'}
                     </button>
                 </div>
@@ -249,8 +249,8 @@ function FriendsPage() {
 
       {/* Incoming Requests */}
       {incomingRequests.length > 0 && (
-        <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-          <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Incoming Requests ({incomingRequests.length})</h3>
+        <div className="glass-panel p-6 rounded-2xl">
+          <h3 className="text-lg font-bold mb-3 text-slate-900 dark:text-slate-100">Incoming Requests ({incomingRequests.length})</h3>
           <ul className="space-y-2">
             {incomingRequests.map(req => (
               <li key={req.id} className="flex items-center justify-between p-2 border-b dark:border-gray-700">

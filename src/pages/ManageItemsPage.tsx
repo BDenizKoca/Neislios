@@ -469,22 +469,20 @@ function ManageItemsPage() {
   if (!watchlist) return <div className="p-4 text-center">Watchlist not found or permission denied.</div>;
 
   return (
-    <div ref={pageRef} className="p-4 h-full manage-list-page"> {/* Added pageRef, removed duplicate scroll */}
-      
-      {/* Removed redundant Back to Watchlist link */}
-      <h2 className="text-2xl font-bold mb-1">
+    <div ref={pageRef} className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full manage-list-page">
+      <h2 className="text-2xl font-bold mb-1 gradient-text">
         {userRole === 'viewer' ? 'View List' : 'Manage List'}
       </h2>
-      <h3 className="text-lg text-gray-600 dark:text-gray-400 mb-4">{watchlist.title}</h3>
+      <h3 className="text-lg text-slate-600 dark:text-slate-400 mb-6 font-medium">{watchlist.title}</h3>
 
       {/* List Management Actions */}
       <div className="mb-6 flex flex-wrap gap-3">
         {userRole === 'owner' && (
           <button
             onClick={handleTransferOwnership}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md flex items-center gap-2 text-sm"
+            className="btn-secondary text-sm flex items-center gap-2"
           >
-            <UserGroupIcon className="h-4 w-4" />
+            <UserGroupIcon className="h-4 w-4 text-amber-500" />
             Transfer Ownership
           </button>
         )}
