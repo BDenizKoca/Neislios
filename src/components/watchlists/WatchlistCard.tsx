@@ -108,7 +108,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
                 <LockClosedIcon className="h-4 w-4" title="Private Watchlist" />
               )}
             </span>
-            <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+            <h3 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
               {watchlist.title}
             </h3>
           </div>
@@ -144,7 +144,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
         </div>
 
         {/* Description */}
-        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+        <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mt-1.5 leading-relaxed font-medium">
           {watchlist.description || 'No description provided.'}
         </p>
       </div>
@@ -162,29 +162,29 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
       )}
 
       {/* Footer Details */}
-      <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs">
+      <div className="pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs sm:text-sm">
         <div className="flex items-center space-x-2 min-w-0">
           {watchlist.owner?.avatar_url ? (
             <img
               src={watchlist.owner.avatar_url}
               alt={watchlist.owner.display_name || 'Owner avatar'}
-              className="h-5 w-5 rounded-full object-cover border border-white/20 shrink-0"
+              className="h-6 w-6 rounded-full object-cover border border-white/20 shrink-0"
             />
           ) : (
-            <div className="h-5 w-5 rounded-full bg-violet-600/20 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-[10px] shrink-0">
+            <div className="h-6 w-6 rounded-full bg-red-600/10 text-red-500 flex items-center justify-center font-bold text-xs shrink-0">
               {(watchlist.owner?.display_name || 'U')[0].toUpperCase()}
             </div>
           )}
           <Link
             to={`/user/${watchlist.owner?.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-slate-700 dark:text-slate-300 font-medium truncate hover:underline hover:text-violet-500"
+            className="text-slate-800 dark:text-slate-200 font-semibold truncate hover:underline hover:text-red-500"
           >
             {watchlist.owner?.display_name || 'Unknown'}
           </Link>
         </div>
 
-        <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 capitalize shrink-0">
+        <span className="text-xs px-3 py-1 rounded-xl font-bold bg-slate-200/60 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 capitalize shrink-0">
           {watchlist.member_role || 'Viewer'}
         </span>
       </div>

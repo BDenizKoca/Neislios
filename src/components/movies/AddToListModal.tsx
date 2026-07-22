@@ -143,7 +143,7 @@ const AddToListModal: React.FC<AddToListModalProps> = ({
                   type="checkbox"
                   checked={selectedLists.has(list.id)}
                   onChange={() => handleCheckboxChange(list.id)}
-                  className="h-4 w-4 text-violet-600 rounded border-slate-300 focus:ring-violet-500"
+                  className="h-4 w-4 text-red-600 rounded border-slate-300 focus:ring-red-500"
                 />
                 <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{list.title}</span>
               </label>
@@ -164,7 +164,7 @@ const AddToListModal: React.FC<AddToListModalProps> = ({
             type="button"
             onClick={handleAddItems}
             disabled={loading || selectedLists.size === 0}
-            className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md shadow-violet-600/20 transition-all disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-md shadow-red-600/20 transition-all disabled:opacity-50"
           >
             {loading ? 'Adding...' : `Add to ${selectedLists.size} ${selectedLists.size === 1 ? 'List' : 'Lists'}`}
           </button>

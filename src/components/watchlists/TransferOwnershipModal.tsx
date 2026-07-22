@@ -62,7 +62,7 @@ function TransferOwnershipModal({
                       onClick={() => setSelectedMemberId(member.id)}
                       className={`w-full p-3 rounded-2xl border transition-all text-left flex items-center justify-between ${
                         isSelected
-                          ? 'border-violet-500 bg-violet-500/10 text-slate-900 dark:text-slate-100'
+                          ? 'border-red-500 bg-red-500/10 text-slate-900 dark:text-slate-100'
                           : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
                     >
@@ -74,14 +74,14 @@ function TransferOwnershipModal({
                             className="h-8 w-8 rounded-full object-cover border border-white/20"
                           />
                         ) : (
-                          <div className="h-8 w-8 rounded-full bg-violet-600/20 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-xs">
+                          <div className="h-8 w-8 rounded-full bg-red-600/20 text-red-600 dark:text-red-400 flex items-center justify-center font-bold text-xs">
                             {member.display_name.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <span className="font-semibold text-sm">{member.display_name}</span>
                       </div>
                       {isSelected && (
-                        <div className="w-4 h-4 rounded-full bg-violet-600 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-red-600 flex items-center justify-center">
                           <div className="w-1.5 h-1.5 rounded-full bg-white" />
                         </div>
                       )}
@@ -114,7 +114,7 @@ function TransferOwnershipModal({
                 type="button"
                 onClick={() => setShowConfirmation(true)}
                 disabled={!selectedMemberId || eligibleMembers.length === 0}
-                className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md shadow-violet-600/20 transition-all disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-md shadow-red-600/20 transition-all disabled:opacity-50"
               >
                 Continue
               </button>

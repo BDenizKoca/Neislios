@@ -32,11 +32,11 @@
 }
 
 .btn-primary {
-  @apply bg-red-600 hover:bg-red-700 active:scale-95 text-white font-semibold rounded-xl px-4 py-2.5 transition-all shadow-md shadow-red-600/20 disabled:opacity-50 disabled:pointer-events-none;
+  @apply bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm sm:text-base rounded-2xl px-5 sm:px-6 py-2.5 sm:py-3 transition-all shadow-md shadow-red-600/25 disabled:opacity-50 disabled:pointer-events-none inline-flex items-center justify-center gap-2;
 }
 
 .btn-secondary {
-  @apply bg-slate-800/80 hover:bg-slate-700/80 active:scale-95 text-slate-200 font-semibold rounded-xl px-4 py-2.5 transition-all border border-slate-700/60 disabled:opacity-50 disabled:pointer-events-none;
+  @apply bg-slate-200/80 hover:bg-slate-300/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 active:scale-95 text-slate-800 dark:text-slate-200 font-bold text-sm sm:text-base rounded-2xl px-5 sm:px-6 py-2.5 sm:py-3 transition-all border border-slate-300/80 dark:border-slate-700/60 disabled:opacity-50 disabled:pointer-events-none inline-flex items-center justify-center gap-2;
 }
 
 /* Hide FAB when modals are open */
@@ -110,39 +110,48 @@ body.modal-open .floating-action-button {
   animation: hype-animation 0.5s ease-out forwards;
 }
 
-/* Enhanced Slot Machine Animation */
+/* Slot Machine Animation Fix for Web Desktop & Mobile */
 .slot-machine-container {
   position: relative;
+  height: 140px;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-}
-
-.slot-reel {
-  position: relative;
-  width: 100%;
-  height: 300px;
-  transform-style: preserve-3d;
-}
-
-@keyframes slot-spin {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(var(--reel-translation, -500%)); }
-}
-
-.animate-slot-spin {
-  animation: slot-spin 1.5s linear infinite;
-}
-
-.slot-item {
-  position: absolute;
-  width: 100%;
-  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  transition: all 0.2s ease;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+}
+
+.slot-reel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  will-change: transform;
+}
+
+.animate-slot-spin {
+  animation: slot-spin 0.6s linear infinite;
+}
+
+@keyframes slot-spin {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.slot-item {
+  height: 48px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .slot-final-pick {
@@ -151,7 +160,7 @@ body.modal-open .floating-action-button {
 
 @keyframes highlight-pick {
   0% { transform: scale(1); }
-  50% { transform: scale(1.1); text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
-  100% { transform: scale(1); text-shadow: 0 0 15px rgba(255, 255, 255, 0.3); }
+  50% { transform: scale(1.08); text-shadow: 0 0 10px rgba(229, 9, 20, 0.4); }
+  100% { transform: scale(1); }
 }
 

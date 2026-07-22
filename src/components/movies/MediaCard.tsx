@@ -82,7 +82,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
         {/* Watched Indicator */}
         {isWatched && (
-          <div className="absolute bottom-3 right-3 bg-violet-600 border border-white/20 text-white rounded-full p-2 shadow-lg backdrop-blur-md">
+          <div className="absolute bottom-3 right-3 bg-red-600 border border-white/20 text-white rounded-full p-2 shadow-lg backdrop-blur-md">
             <EyeIcon className="h-4 w-4 text-white" />
           </div>
         )}
@@ -92,7 +92,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
           {onAddToListClick && (
             <button
               onClick={handleAddClick}
-              className="p-2.5 bg-slate-950/80 hover:bg-violet-600 text-white rounded-2xl shadow-lg backdrop-blur-md transition-all active:scale-95"
+              className="p-2.5 bg-slate-950/80 hover:bg-red-600 text-white rounded-2xl shadow-lg backdrop-blur-md transition-all active:scale-95"
               aria-label="Add to list"
               title="Add to list"
             >
@@ -104,8 +104,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
               onClick={handleWatchedClick}
               className={`p-2.5 rounded-2xl shadow-lg backdrop-blur-md transition-all active:scale-95 ${
                 isWatched
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-slate-950/80 hover:bg-violet-600 text-white'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-slate-950/80 hover:bg-red-600 text-white'
               }`}
               aria-label={isWatched ? 'Mark unwatched' : 'Mark watched'}
               title={isWatched ? 'Mark unwatched' : 'Mark watched'}
@@ -119,7 +119,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
       {/* Card Info Section */}
       <div className="p-4 flex flex-col justify-between flex-1">
         <div>
-          <Link to={detailLink} onClick={handleNavigate} className="block group-hover:text-violet-500 transition-colors">
+          <Link to={detailLink} onClick={handleNavigate} className="block group-hover:text-red-500 transition-colors">
             <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 line-clamp-1" title={title}>
               {title}
             </h3>

@@ -74,7 +74,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
           {/* User Brief */}
           {user && (
             <div className="my-6 p-3.5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/50 flex items-center gap-3 border border-slate-200/50 dark:border-slate-700/50">
-              <div className="w-10 h-10 rounded-full bg-violet-600/20 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-sm">
+              <div className="w-10 h-10 rounded-full bg-red-600/20 text-red-600 dark:text-red-400 flex items-center justify-center font-bold text-sm">
                 {(user.email || 'U')[0].toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
@@ -91,7 +91,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className="flex items-center gap-3.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400 rounded-2xl transition-all"
+                className="flex items-center gap-3.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 rounded-2xl transition-all"
               >
                 {item.icon}
                 <span>{item.label}</span>

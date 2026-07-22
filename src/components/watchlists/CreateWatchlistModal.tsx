@@ -86,7 +86,7 @@ const CreateWatchlistModal: React.FC<CreateWatchlistModalProps> = ({
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Sci-Fi Favorites, Friday Night Movies"
             required
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-sm"
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
           />
         </div>
 

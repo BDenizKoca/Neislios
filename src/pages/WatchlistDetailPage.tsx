@@ -11,19 +11,22 @@ import MediaListItem from '../components/movies/MovieListItem';
 import MovieListItemSkeleton from '../components/movies/MovieListItemSkeleton';
 import Skeleton from 'react-loading-skeleton';
 import toast from 'react-hot-toast';
-import { useLayoutActions } from '../hooks/useLayoutActions'; // Updated import path
-import { useHeader } from '../hooks/useHeader'; // Updated import path
-import { useWatchlistDetails } from '../hooks/useWatchlistDetails'; // Import hook
-import { useWatchlistItems, WatchlistItemWithDetails } from '../hooks/useWatchlistItems'; // Import hook
-import { useWatchlistMembers } from '../hooks/useWatchlistMembers'; // Import hook
+import { useLayoutActions } from '../hooks/useLayoutActions';
+import { useHeader } from '../hooks/useHeader';
+import { useWatchlistDetails } from '../hooks/useWatchlistDetails';
+import { useWatchlistItems, WatchlistItemWithDetails } from '../hooks/useWatchlistItems';
+import { useWatchlistMembers } from '../hooks/useWatchlistMembers';
 import { RandomItemPickerModal } from '../components/watchlists/RandomItemPickerModal';
-import { useWatchlistAI } from '../hooks/useWatchlistAI'; // Import AI hook
-import MediaRecommendationModal from '../components/recommendations/MediaRecommendationModal'; // Import AI modal
-import { LightBulbIcon } from '@heroicons/react/24/outline'; // Import icon
+import { useWatchlistAI } from '../hooks/useWatchlistAI';
+import MediaRecommendationModal from '../components/recommendations/MediaRecommendationModal';
+import ShareListModal from '../components/watchlists/ShareListModal';
+import ExportListModal from '../components/watchlists/ExportListModal';
+import { computeWatchlistStats } from '../utils/watchlistStats';
+import { isMovieDetails } from '../utils/tmdbUtils';
+import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import CollaboratorAvatars from '../components/watchlists/CollaboratorAvatars';
 import { sortWatchlistItems } from '../utils/sortUtils';
 
-// Storage keys for state persistence
 const SCROLL_STORAGE_KEY = 'watchlistDetailScrollPosition';
 
 function WatchlistDetailPage() {
@@ -34,9 +37,7 @@ function WatchlistDetailPage() {
   const { registerRandomPickTrigger } = useLayoutActions();
   const { setHeaderTitle } = useHeader();
 
-  // Custom navigation function that saves scroll position before navigating
   const navigateWithScrollSave = useCallback((to: string) => {
-    // Save scroll position from the main layout's scroll container
     const mainElement = document.querySelector('main');
     if (mainElement) {
       const currentScroll = mainElement.scrollTop;
@@ -45,20 +46,18 @@ function WatchlistDetailPage() {
     navigate(to);
   }, [navigate]);
 
-  // --- Use Custom Hooks for Data Fetching ---
   const {
     watchlist,
     userRole,
     loading: loadingDetails,
     error: errorDetails,
-    // refetch: refetchDetails // If needed later
   } = useWatchlistDetails(watchlistId);
 
   const {
     items: watchlistItems,
     loading: loadingItems,
     error: errorItems,
-    refetch: refetchItems // Uncommented to enable real-time updates
+    refetch: refetchItems
   } = useWatchlistItems(watchlistId);
 
   const {
@@ -66,18 +65,14 @@ function WatchlistDetailPage() {
     membersWatchedMediaMap,
     loading: loadingMembers,
     error: errorMembers,
-    // refetch: refetchMembers // If needed later
   } = useWatchlistMembers(watchlistId);
 
-  const { loading: checkingAIEligibility, error: errorAIEligibility, checkListEligibleForAI } = useWatchlistAI(watchlistId); // Use AI hook
+  const { loading: checkingAIEligibility, error: errorAIEligibility } = useWatchlistAI(watchlistId);
 
-  // Listen for watchlist update events to refresh data
   useEffect(() => {
     const handleWatchlistUpdate = (event: CustomEvent) => {
       const { watchlistId: updatedWatchlistId } = event.detail;
       if (updatedWatchlistId === watchlistId) {
-        console.log('Watchlist update detected, refreshing watchlist items...');
-        // Force a refresh of the watchlist items
         if (typeof refetchItems === 'function') {
           refetchItems();
         }
@@ -91,146 +86,78 @@ function WatchlistDetailPage() {
   }, [watchlistId, refetchItems]);
 
   // --- Local UI State ---
-  const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set()); // User's watched status
+  const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set());
   const [hideWatched, setHideWatched] = useState(false);
   const [sortBy, setSortBy] = useState<string>('item_order');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [showRandomPickModal, setShowRandomPickModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [sortedAndFilteredItems, setSortedAndFilteredItems] = useState<WatchlistItemWithDetails[]>([]);
-  const [isAIEligible, setIsAIEligible] = useState(false); // State for AI eligibility
-  const [showAIRecommendModal, setShowAIRecommendModal] = useState(false); // State for AI modal
+  const [isAIEligible, setIsAIEligible] = useState(false);
+  const [showAIRecommendModal, setShowAIRecommendModal] = useState(false);
 
-  // --- Drag and Drop Sensors ---
+  // DnD Sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        delay: 1000, // 1 second hold to activate drag
-        tolerance: 5,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 1000, // 1 second hold to activate drag
-        tolerance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // --- Drag End Handler ---
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
-    if (!over || !watchlistId || !user) return;
-
-    if (active.id !== over.id) {
-      const oldIndex = sortedAndFilteredItems.findIndex(item => item.id === active.id);
-      const newIndex = sortedAndFilteredItems.findIndex(item => item.id === over.id);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        // Optimistically update the UI
-        const newItems = arrayMove(sortedAndFilteredItems, oldIndex, newIndex);
-        setSortedAndFilteredItems(newItems);
-
-        try {
-          // Update the database with new positions
-          const updates = newItems.map((item, index) => ({
-            id: item.id,
-            item_order: index + 1, // 1-based ordering
-          }));
-
-          const { error } = await supabase
-            .from('watchlist_items')
-            .upsert(updates, {
-              onConflict: 'id'
-            });
-
-          if (error) throw error;
-
-          // Emit update event for real-time sync
-          const watchlistUpdateEvent = new CustomEvent('watchlist-updated', { 
-            detail: { watchlistId }
-          });
-          window.dispatchEvent(watchlistUpdateEvent);
-          
-        } catch (error) {
-          console.error('Error updating item order:', error);
-          toast.error('Failed to save new order');
-          // Revert the optimistic update by refetching
-          if (typeof refetchItems === 'function') {
-            refetchItems();
-          }
-        }
-      }
-    }
-  }, [sortedAndFilteredItems, watchlistId, user, refetchItems]);
-
-  // --- Check AI Eligibility ---
-  useEffect(() => {
-    if (watchlistId) {
-      checkListEligibleForAI().then(eligible => {
-        setIsAIEligible(eligible);
-      }).catch(err => {
-        console.error("Error checking AI eligibility:", err);
-        setIsAIEligible(false);
+    if (over && active.id !== over.id) {
+      setSortedAndFilteredItems((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
       });
     }
-  }, [watchlistId, checkListEligibleForAI]);
+  };
 
-  // --- Restore Recommendation Modal State ---
   useEffect(() => {
-    if (watchlistId) {
-      // Only restore if we have both modal open flag AND saved recommendations
-      const savedModalState = sessionStorage.getItem('recommendation-modal-open');
-      const savedRecommendations = sessionStorage.getItem('recommendation-modal-state');
-      
-      if (savedModalState === watchlistId && savedRecommendations) {
-        try {
-          const parsed = JSON.parse(savedRecommendations);
-          // Only restore if the saved data is recent (within 5 minutes) and for this watchlist
-          if (parsed.watchlistId === watchlistId && 
-              parsed.recommendations && 
-              parsed.recommendations.length > 0 &&
-              Date.now() - parsed.timestamp < 300000) {
-            console.log('Restoring recommendation modal state for watchlist:', watchlistId);
-            setShowAIRecommendModal(true);
-            // Remove the restoration flag so it doesn't auto-open again
-            sessionStorage.removeItem('recommendation-modal-open');
-          }
-        } catch {
-          console.warn('Failed to parse saved recommendation state');
-          // Clean up invalid state
-          sessionStorage.removeItem('recommendation-modal-open');
-          sessionStorage.removeItem('recommendation-modal-state');
-        }
-      }
+    if (watchlistItems && watchlistItems.length >= 10) {
+      setIsAIEligible(true);
+    } else {
+      setIsAIEligible(false);
     }
-  }, [watchlistId]);
+  }, [watchlistItems]);
 
-  // --- Sorting Logic ---
+  // In-memory Filter & Sort
   const sortAndFilterItems = useCallback(() => {
-    const sorted = sortWatchlistItems(watchlistItems, sortBy, hideWatched, watchedMedia);
+    let sorted = sortWatchlistItems(watchlistItems, sortBy, hideWatched, watchedMedia);
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      sorted = sorted.filter(item => {
+        if (!item.tmdbDetails) return false;
+        const title = isMovieDetails(item.tmdbDetails) ? item.tmdbDetails.title : item.tmdbDetails.name;
+        return title.toLowerCase().includes(term);
+      });
+    }
+
+    if (selectedGenre !== 'all') {
+      sorted = sorted.filter(item => {
+        if (!item.tmdbDetails?.genres) return false;
+        return item.tmdbDetails.genres.some(g => g.name.toLowerCase() === selectedGenre.toLowerCase());
+      });
+    }
+
     setSortedAndFilteredItems(sorted);
-  }, [watchlistItems, sortBy, hideWatched, watchedMedia]);
+  }, [watchlistItems, sortBy, hideWatched, watchedMedia, searchTerm, selectedGenre]);
 
   useEffect(() => {
     sortAndFilterItems();
-  }, [sortAndFilterItems]); // This effect depends on the callback above
+  }, [sortAndFilterItems]);
 
-  // --- Set Header Title ---
   useEffect(() => {
     if (watchlist?.title) {
       setHeaderTitle(watchlist.title);
     }
-    // Cleanup function to reset title if component unmounts or watchlist changes
     return () => setHeaderTitle('');
   }, [watchlist, setHeaderTitle]);
 
-
-  // --- Removed Data Fetching Logic (now in hooks) ---
-
-  // Fetch current user's watched media
   useEffect(() => {
     const fetchWatched = async () => {
       if (!user) return;
@@ -243,12 +170,10 @@ function WatchlistDetailPage() {
     fetchWatched();
   }, [user]);
 
-  // --- Action Handlers ---
   const handleToggleWatched = async (item: TmdbMediaDetails, currentState: boolean) => {
     if (!user || !item) return;
     const mediaId = `${item.media_type === 'movie' ? 'tmdb:movie' : 'tmdb:tv'}:${item.id}`;
 
-    // Use functional update for optimistic UI change
     setWatchedMedia(prev => {
         const newSet = new Set(prev);
         if (currentState) {
@@ -273,7 +198,6 @@ function WatchlistDetailPage() {
         toast.success(currentState ? 'Marked as unwatched.' : 'Marked as watched.', { id: toastId });
     } catch (err: unknown) {
         console.error("Supabase Error (Toggle Watched):", err);
-        // Revert UI state using functional update
         setWatchedMedia(prev => {
             const revertedSet = new Set(prev);
             if (currentState) {
@@ -287,106 +211,40 @@ function WatchlistDetailPage() {
     }
   };
 
-  // --- Random Picker Trigger ---
-  // This function now just opens the modal
   const handlePickRandom = useCallback(() => {
-    // Check if there are items to pick from before opening
     const availableItems = sortedAndFilteredItems.filter(item => item.tmdbDetails);
     if (availableItems.length === 0) {
-      toast.error("No available items to pick from (check filters).");
+      toast.error("No available items to pick from.");
       return;
     }
-    setShowRandomPickModal(true); // Open the modal
-  }, [sortedAndFilteredItems]); // Depends on the items available
+    setShowRandomPickModal(true);
+  }, [sortedAndFilteredItems]);
 
-  // Function to close the modal, passed to the modal component
-  const closeRandomPickModal = () => {
-    setShowRandomPickModal(false);
-  };
-
-  // --- Register/Unregister Random Pick Trigger ---
   useEffect(() => {
-    // Register trigger when component mounts or handler changes
     registerRandomPickTrigger(handlePickRandom);
     return () => {
-      // Unregister trigger when component unmounts
       registerRandomPickTrigger(null);
     };
   }, [registerRandomPickTrigger, handlePickRandom]);
 
-  // --- Combined Loading and Error Handling ---
   const isLoading = loadingDetails || loadingItems || loadingMembers;
-  // Prioritize details error, then items, then members
   const overallError = errorDetails || errorItems || errorMembers || errorAIEligibility;
+  const stats = computeWatchlistStats(watchlistItems, watchedMedia);
 
-  // --- Scroll Position Tracking ---
-  useEffect(() => {
-    const handleScroll = () => {
-      const mainElement = document.querySelector('main');
-      if (mainElement) {
-        const newPosition = mainElement.scrollTop;
-        sessionStorage.setItem(SCROLL_STORAGE_KEY, newPosition.toString());
-      }
-    };
+  // Extract unique genres across items
+  const availableGenres = Array.from(
+    new Set(
+      watchlistItems
+        .flatMap(item => item.tmdbDetails?.genres?.map(g => g.name) || [])
+        .filter(Boolean)
+    )
+  ).sort();
 
-    const mainElement = document.querySelector('main');
-    if (mainElement) {
-      mainElement.addEventListener('scroll', handleScroll, { passive: true });
-      return () => mainElement.removeEventListener('scroll', handleScroll);
-    }
-  }, []);
-
-  // --- Restore Scroll Position ---
-  useEffect(() => {
-    if (!isLoading && sortedAndFilteredItems.length > 0) {
-      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (savedPosition) {
-        const position = parseInt(savedPosition, 10);
-        if (position > 0) {
-          setTimeout(() => {
-            const mainElement = document.querySelector('main');
-            if (mainElement) {
-              mainElement.scrollTop = position;
-            }
-          }, 300);
-        }
-      }
-    }
-  }, [isLoading, sortedAndFilteredItems.length]);
-
-  // --- Handle Browser Back/Forward ---
-  useEffect(() => {
-    const handlePopState = () => {
-      const savedPosition = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (savedPosition) {
-        const position = parseInt(savedPosition, 10);
-        if (position > 0) {
-          setTimeout(() => {
-            const mainElement = document.querySelector('main');
-            if (mainElement) {
-              mainElement.scrollTop = position;
-            }
-          }, 300);
-        }
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-
-  // --- Render ---
-  if (isLoading && !watchlist) { // Show skeleton only on initial load
+  if (isLoading && !watchlist) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-4 max-w-5xl">
         <Skeleton height={30} width={200} className="mb-4" />
         <Skeleton height={20} width={150} className="mb-4" />
-        <div className="mb-4 flex flex-wrap gap-2">
-          <Skeleton height={36} width={140} />
-          <Skeleton height={36} width={180} />
-        </div>
-        <Skeleton height={24} width={100} className="mb-3" />
         <div className="space-y-3">
           {[...Array(8)].map((_, i) => <MovieListItemSkeleton key={i} />)}
         </div>
@@ -395,64 +253,112 @@ function WatchlistDetailPage() {
   }
 
   if (overallError) {
-    return <div className="text-red-500 p-4">Error loading watchlist: {overallError}</div>;
+    return <div className="text-rose-500 p-6 text-center font-bold">Error loading watchlist: {overallError}</div>;
   }
 
   if (!watchlist) {
-    return <div className="p-4">Watchlist not found.</div>;
+    return <div className="p-6 text-center text-slate-500 font-semibold">Watchlist not found.</div>;
   }
 
-  // Determine if the current user can access the manage page
   const canAccess = userRole === 'owner' || userRole === 'editor' || userRole === 'viewer';
 
   return (
-    <div ref={pageRef} className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full">
-      {/* Watchlist Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">
-          {watchlist.title}
-        </h1>
-        <p className="mb-4 text-gray-600 dark:text-gray-400">{watchlist.description || 'No description.'}</p>
-        
-        {/* Collaborator Avatars */}
-        {members && members.length > 0 && (
-          <div className="mb-4">
+    <div ref={pageRef} className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full space-y-6">
+      {/* Watchlist Header Panel */}
+      <div className="p-6 sm:p-8 glass-panel rounded-3xl space-y-5">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mb-2 tracking-tight break-words">
+            {watchlist.title}
+          </h1>
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-3xl">
+            {watchlist.description || 'No description provided.'}
+          </p>
+        </div>
+
+        {/* Watchlist Progress & Completion Banner */}
+        {watchlistItems.length > 0 && (
+          <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+            <div className="flex items-center justify-between text-xs sm:text-sm font-bold">
+              <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                <CheckCircleIcon className="w-4 h-4 text-emerald-500" />
+                <span>{stats.watched} of {stats.total} Watched</span>
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-red-600/10 text-red-600 dark:text-red-400 font-extrabold text-xs">
+                {stats.percentage}% Completed
+              </span>
+            </div>
+            <div className="h-3 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-red-600 rounded-full transition-all duration-500"
+                style={{ width: `${stats.percentage}%` }}
+              />
+            </div>
+            {stats.formattedRuntime !== '0m' && (
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Total runtime: {stats.formattedRuntime} • {stats.movieCount} Movies, {stats.tvCount} TV Shows
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Collaborators & Meta */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+          {members && members.length > 0 && (
             <CollaboratorAvatars 
               members={members}
               ownerId={watchlist.owner_id}
               maxVisible={5}
               size="md"
-              textColor="text-gray-600 dark:text-gray-400"
+              textColor="text-slate-600 dark:text-slate-400"
             />
+          )}
+
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Owner: <span className="font-semibold text-slate-700 dark:text-slate-200">{watchlist.owner?.display_name || 'Unknown'}</span>
           </div>
-        )}
-        
-        {/* Action Buttons - Centered and below description */}
-        <div className="flex flex-wrap justify-center gap-2 mb-4">
-          {/* AI Recommendation Button - Conditionally Rendered */}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3 pt-2">
           {isAIEligible && (
             <button
               onClick={() => setShowAIRecommendModal(true)}
-              className="btn-primary text-xs sm:text-sm flex items-center gap-1.5"
+              className="btn-primary"
               disabled={checkingAIEligibility}
-              title="Get AI Recommendations"
             >
-              <LightBulbIcon className="h-4 w-4" />
-              <span>{checkingAIEligibility ? 'Checking...' : 'AI Recs'}</span>
+              <LightBulbIcon className="h-5 w-5" />
+              <span>{checkingAIEligibility ? 'Checking...' : 'AI Recommendations'}</span>
             </button>
           )}
+
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="btn-secondary"
+          >
+            <ShareIcon className="h-5 w-5 text-red-500" />
+            <span>Share</span>
+          </button>
+
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="btn-secondary"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 text-slate-400" />
+            <span>Export</span>
+          </button>
+
           {canAccess && (
             <>
               <button
                 onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/manage`)}
-                className="btn-secondary text-xs sm:text-sm py-2 px-3"
+                className="btn-secondary"
               >
                 {userRole === 'viewer' ? 'View List' : 'Manage List'}
               </button>
               {userRole === 'owner' && (
                 <button
                   onClick={() => navigateWithScrollSave(`/watchlist/${watchlistId}/collaborators`)}
-                  className="btn-secondary text-xs sm:text-sm py-2 px-3"
+                  className="btn-secondary"
                 >
                   Collaborators
                 </button>
@@ -460,98 +366,148 @@ function WatchlistDetailPage() {
             </>
           )}
         </div>
-        
-        <div className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-          <p>Owner: <span className="font-semibold text-slate-700 dark:text-slate-200">{watchlist.owner?.display_name || 'Unknown'}</span></p>
-          {userRole && <p>Your Role: <span className="font-semibold capitalize text-red-600 dark:text-red-400">{userRole}</span></p>}
+      </div>
+
+      {/* Instant In-Memory Filter & Controls Bar */}
+      <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center">
+        {/* Search Input */}
+        <div className="relative w-full md:w-72">
+          <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search in this list..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
+        </div>
+
+        {/* Genre & Hide Watched Controls */}
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+          {availableGenres.length > 0 && (
+            <select
+              value={selectedGenre}
+              onChange={(e) => setSelectedGenre(e.target.value)}
+              className="text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold"
+            >
+              <option value="all">All Genres</option>
+              {availableGenres.map(genre => (
+                <option key={genre} value={genre}>{genre}</option>
+              ))}
+            </select>
+          )}
+
+          <div className="flex items-center gap-2">
+            <input
+              id="hideWatchedToggle"
+              type="checkbox"
+              checked={hideWatched}
+              onChange={(e) => setHideWatched(e.target.checked)}
+              className="h-4 w-4 accent-red-600 rounded cursor-pointer"
+            />
+            <label htmlFor="hideWatchedToggle" className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+              Hide Watched
+            </label>
+          </div>
+
+          <select
+            id="sortOrder"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold"
+          >
+            <option value="item_order">Manual Order</option>
+            <option value="added_at_asc">Added (Oldest)</option>
+            <option value="added_at_desc">Added (Newest)</option>
+            <option value="title_asc">Title (A-Z)</option>
+            <option value="title_desc">Title (Z-A)</option>
+            <option value="rating_desc">Rating (High-Low)</option>
+            <option value="rating_asc">Rating (Low-High)</option>
+          </select>
         </div>
       </div>
 
-      {/* Controls (Sort, Filter) */}
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-6 p-4 glass-panel rounded-2xl">
-          <div className="flex items-center gap-2">
-              <input id="hideWatchedToggle" type="checkbox" checked={hideWatched} onChange={(e) => setHideWatched(e.target.checked)} className="h-4 w-4 accent-red-600 rounded cursor-pointer"/>
-              <label htmlFor="hideWatchedToggle" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">Hide Watched</label>
-          </div>
-          <div className="flex items-center gap-2">
-               <label htmlFor="sortOrder" className="text-sm font-medium text-slate-700 dark:text-slate-300">Sort by:</label>
-               <select id="sortOrder" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="text-sm py-1.5 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Sort movies by">
-                  <option value="item_order">Manual Order</option>
-                  <option value="added_at_asc">Added Date (Oldest)</option>
-                  <option value="added_at_desc">Added Date (Newest)</option>
-                  <option value="title_asc">Title (A-Z)</option>
-                  <option value="title_desc">Title (Z-A)</option>
-                  <option value="rating_desc">Rating (High-Low)</option>
-                  <option value="rating_asc">Rating (Low-High)</option>
-               </select>
-          </div>
-     </div>
-
       {/* Watchlist Items */}
-      <h3 className="text-xl font-semibold mb-3">Items ({sortedAndFilteredItems.length})</h3>
-      {/* Display item/member specific errors if needed, separate from the main loading/error state */}
-      {errorItems && <p className="text-center p-2 text-orange-600">Could not load all item details.</p>}
-      {errorMembers && <p className="text-center p-2 text-orange-600">Could not load member watched status.</p>}
-      {watchlistItems.length === 0 && !isLoading ? ( // Use combined loading state
-        <p className="text-gray-500 dark:text-gray-400">No items added yet.</p>
-      ) : sortedAndFilteredItems.length === 0 && !isLoading ? ( // Use combined loading state
-        <p className="text-gray-500 dark:text-gray-400">No items match the current filter.</p>
-      ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-          modifiers={[restrictToVerticalAxis]}
-        >
-          <SortableContext items={sortedAndFilteredItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
-              {sortedAndFilteredItems.map(item => {
-                const addedByUser = members.find(m => m.id === item.added_by_user_id);
-                const memberWatcherIds = membersWatchedMediaMap.get(item.media_id) || new Set<string>();
-                const membersWhoWatched = members.filter(m => memberWatcherIds.has(m.id));
-                
-                return (
-                  <SortableItem key={item.id} id={item.id}>
-                    {({ attributes, listeners, ref, className }) => (
-                      <div
-                        ref={ref}
-                        className={className}
-                        {...attributes}
-                        {...listeners}
-                        style={{ touchAction: 'manipulation' }}
-                      >
-                      {item.tmdbDetails ? (
-                        <MediaListItem
-                          mediaItem={item.tmdbDetails}
-                          isWatched={watchedMedia.has(item.media_id)}
-                          onToggleWatched={handleToggleWatched}
-                          addedBy={addedByUser}
-                          watchedByMembers={membersWhoWatched}
-                          watchlistId={watchlistId}
-                        />
-                      ) : (
-                        <div className="p-3 border rounded dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-500 flex items-center space-x-2">
-                          <Skeleton circle height={24} width={24} />
-                          <span>Could not load details for {item.media_id}</span>
+      <div>
+        <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 mb-3">
+          Items ({sortedAndFilteredItems.length})
+        </h3>
+
+        {watchlistItems.length === 0 && !isLoading ? (
+          <p className="text-slate-500 dark:text-slate-400 font-medium">No items added yet.</p>
+        ) : sortedAndFilteredItems.length === 0 && !isLoading ? (
+          <p className="text-slate-500 dark:text-slate-400 font-medium">No items match the current search filter.</p>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis]}
+          >
+            <SortableContext items={sortedAndFilteredItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {sortedAndFilteredItems.map(item => {
+                  const addedByUser = members.find(m => m.id === item.added_by_user_id);
+                  const memberWatcherIds = membersWatchedMediaMap.get(item.media_id) || new Set<string>();
+                  const membersWhoWatched = members.filter(m => memberWatcherIds.has(m.id));
+                  
+                  return (
+                    <SortableItem key={item.id} id={item.id}>
+                      {({ attributes, listeners, ref, className }) => (
+                        <div
+                          ref={ref}
+                          className={className}
+                          {...attributes}
+                          {...listeners}
+                          style={{ touchAction: 'manipulation' }}
+                        >
+                        {item.tmdbDetails ? (
+                          <MediaListItem
+                            mediaItem={item.tmdbDetails}
+                            isWatched={watchedMedia.has(item.media_id)}
+                            onToggleWatched={handleToggleWatched}
+                            addedBy={addedByUser}
+                            watchedByMembers={membersWhoWatched}
+                            watchlistId={watchlistId}
+                          />
+                        ) : (
+                          <div className="p-3 border rounded dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-500 flex items-center space-x-2">
+                            <Skeleton circle height={24} width={24} />
+                            <span>Could not load details for {item.media_id}</span>
+                          </div>
+                        )}
                         </div>
                       )}
-                      </div>
-                    )}
-                  </SortableItem>
-                );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+                    </SortableItem>
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
 
       {/* Modals */}
       <RandomItemPickerModal
         isOpen={showRandomPickModal}
-        onClose={closeRandomPickModal}
-        items={sortedAndFilteredItems} // Pass the items to be picked from
+        onClose={() => setShowRandomPickModal(false)}
+        items={sortedAndFilteredItems}
+        watchedMediaIds={watchedMedia}
       />
-      {/* AI Recommendation Modal */}
+
+      <ShareListModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        watchlist={watchlist}
+      />
+
+      <ExportListModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        watchlist={watchlist}
+        items={watchlistItems}
+      />
+
       {watchlistId && (
         <MediaRecommendationModal
           isOpen={showAIRecommendModal}

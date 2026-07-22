@@ -10,10 +10,10 @@ interface RandomItemPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   items: WatchlistItemWithDetails[];
+  watchedMediaIds?: Set<string>;
 }
 
 const SPIN_DURATION = 2000;
-const ITEM_HEIGHT = 86;
 const PROGRESS_UPDATE_INTERVAL = 25;
 
 const vibrate = (pattern: number | number[]) => {
@@ -32,15 +32,19 @@ const extractTitles = (items: WatchlistItemWithDetails[]): string[] => {
   );
 };
 
-export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPickerModalProps) {
+export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds }: RandomItemPickerModalProps) {
   const [randomPick, setRandomPick] = useState<TmdbMediaDetails | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [showPickerContent, setShowPickerContent] = useState(false);
   const [spinProgress, setSpinProgress] = useState(0);
   const [availableTitles, setAvailableTitles] = useState<string[]>([]);
-  const [reelTranslation, setReelTranslation] = useState<number>(0);
   const [isVisuallySpinning, setIsVisuallySpinning] = useState(false);
   const [triggerReroll, setTriggerReroll] = useState(0);
+
+  // Smart Filters
+  const [unwatchedOnly, setUnwatchedOnly] = useState(false);
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<'all' | 'movie' | 'tv'>('all');
+  const [under120Only, setUnder120Only] = useState(false);
 
   const startRandomPick = () => setTriggerReroll(prev => prev + 1);
 
@@ -52,7 +56,6 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
       setShowPickerContent(false);
       setSpinProgress(0);
       setAvailableTitles([]);
-      setReelTranslation(0);
       return;
     }
 
@@ -60,18 +63,38 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
     setShowPickerContent(false);
     setSpinProgress(0);
     setAvailableTitles([]);
-    setReelTranslation(0);
 
-    const availableItems = items.filter(item => item.tmdbDetails);
+    // Apply smart filters
+    let filteredItems = items.filter(item => item.tmdbDetails);
 
-    if (availableItems.length === 0) {
-      toast.error("No available items to pick from.");
+    if (unwatchedOnly && watchedMediaIds) {
+      filteredItems = filteredItems.filter(item => !watchedMediaIds.has(item.media_id));
+    }
+
+    if (mediaTypeFilter !== 'all') {
+      filteredItems = filteredItems.filter(item => {
+        if (!item.tmdbDetails) return false;
+        return mediaTypeFilter === 'movie' ? isMovieDetails(item.tmdbDetails) : !isMovieDetails(item.tmdbDetails);
+      });
+    }
+
+    if (under120Only) {
+      filteredItems = filteredItems.filter(item => {
+        if (item.tmdbDetails && isMovieDetails(item.tmdbDetails)) {
+          return item.tmdbDetails.runtime ? item.tmdbDetails.runtime <= 120 : true;
+        }
+        return true;
+      });
+    }
+
+    if (filteredItems.length === 0) {
+      toast.error("No items match your filter criteria.");
       setShowPickerContent(true);
       return;
     }
 
-    if (availableItems.length === 1) {
-      const singleItemDetails = availableItems[0].tmdbDetails;
+    if (filteredItems.length === 1) {
+      const singleItemDetails = filteredItems[0].tmdbDetails;
       if (singleItemDetails) {
         setRandomPick(singleItemDetails);
         setShowPickerContent(true);
@@ -86,9 +109,8 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
     setIsVisuallySpinning(true);
     vibrateSpinStart();
 
-    const titles = extractTitles(availableItems);
+    const titles = extractTitles(filteredItems);
     setAvailableTitles(titles);
-    setReelTranslation(-titles.length * ITEM_HEIGHT);
 
     const startTime = Date.now();
     const progressInterval = setInterval(() => {
@@ -100,8 +122,8 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
       if (progress >= SPIN_DURATION) {
         clearInterval(progressInterval);
 
-        const randomIndex = Math.floor(Math.random() * availableItems.length);
-        const selectedItem = availableItems[randomIndex];
+        const randomIndex = Math.floor(Math.random() * filteredItems.length);
+        const selectedItem = filteredItems[randomIndex];
 
         setTimeout(() => {
           setIsVisuallySpinning(false);
@@ -111,34 +133,85 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
           }
           setIsSpinning(false);
           setShowPickerContent(true);
-        }, 150);
+        }, 300);
       }
     }, PROGRESS_UPDATE_INTERVAL);
 
     return () => clearInterval(progressInterval);
-  }, [isOpen, items, triggerReroll]);
+  }, [isOpen, triggerReroll, items, unwatchedOnly, mediaTypeFilter, under120Only, watchedMediaIds]);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Random Selector"
-      subtitle="Select a random title from your watchlist"
-      maxWidthClass="max-w-md"
+      maxWidthClass="max-w-lg"
+      title="Random Item Picker"
+      subtitle="Can't decide what to watch? Let randomness pick!"
     >
-      <div className="text-center py-2">
+      <div className="space-y-5">
+        {/* Smart Filter Pills */}
+        {!isSpinning && (
+          <div className="space-y-2 pb-2 border-b border-slate-100 dark:border-slate-800/60">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+              Filter Options
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setUnwatchedOnly(!unwatchedOnly)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  unwatchedOnly
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-slate-200/60 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {unwatchedOnly ? '✓ Unwatched Only' : '+ Unwatched Only'}
+              </button>
+
+              <button
+                onClick={() => setMediaTypeFilter(mediaTypeFilter === 'movie' ? 'all' : 'movie')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  mediaTypeFilter === 'movie'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-slate-200/60 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {mediaTypeFilter === 'movie' ? '✓ Movies Only' : 'Movies Only'}
+              </button>
+
+              <button
+                onClick={() => setMediaTypeFilter(mediaTypeFilter === 'tv' ? 'all' : 'tv')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  mediaTypeFilter === 'tv'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-slate-200/60 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {mediaTypeFilter === 'tv' ? '✓ TV Series Only' : 'TV Series Only'}
+              </button>
+
+              <button
+                onClick={() => setUnder120Only(!under120Only)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  under120Only
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-slate-200/60 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {under120Only ? '✓ Under 2 Hours' : 'Under 2 Hours'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {isSpinning || isVisuallySpinning ? (
           <div className="flex flex-col items-center">
-            <h3 className="text-lg font-bold mb-4 gradient-text animate-pulse">
+            <h3 className="text-lg font-bold mb-4 text-red-600 dark:text-red-500 animate-pulse">
               Selecting title...
             </h3>
-            <div className="slot-machine-container h-48 mb-6 w-full glass-panel rounded-2xl p-4">
-              <div
-                className={`slot-reel ${isVisuallySpinning ? 'animate-slot-spin' : ''}`}
-                style={{ '--reel-translation': `${reelTranslation}px` } as React.CSSProperties}
-              >
-                {availableTitles.map((title, index) => (
-                  <div key={`slot-${index}`} className="slot-item h-12 flex items-center justify-center font-bold text-slate-800 dark:text-slate-200">
+            <div className="slot-machine-container h-44 mb-6 w-full glass-panel rounded-2xl p-4 overflow-hidden relative">
+              <div className={`slot-reel ${isVisuallySpinning ? 'animate-slot-spin' : ''}`}>
+                {[...availableTitles, ...availableTitles].map((title, index) => (
+                  <div key={`slot-${index}`} className="slot-item text-slate-800 dark:text-slate-200">
                     {title}
                   </div>
                 ))}
@@ -155,8 +228,8 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
           <div className={`transition-opacity duration-300 ${showPickerContent ? 'opacity-100' : 'opacity-0'}`}>
             {randomPick ? (
               <div className="space-y-4">
-                <div className="p-6 rounded-3xl bg-slate-900 border border-red-500/40 text-center animate-hype shadow-xl shadow-red-600/10">
-                  <span className="text-xs font-bold uppercase tracking-wider text-red-500 block mb-1">
+                <div className="p-6 rounded-3xl glass-modal border border-red-500/40 text-center animate-hype shadow-xl shadow-red-600/10">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-red-500 block mb-1">
                     Selected Pick
                   </span>
                   <Link
@@ -167,22 +240,22 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
                     <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-red-500 transition-colors">
                       {isMovieDetails(randomPick) ? randomPick.title : randomPick.name}
                     </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
                       {isMovieDetails(randomPick) ? randomPick.release_date?.substring(0, 4) : randomPick.first_air_date?.substring(0, 4)}
                     </p>
                   </Link>
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex justify-center gap-4 pt-4 mt-2">
                   <button
                     onClick={startRandomPick}
-                    className="flex-1 btn-primary"
+                    className="btn-primary min-w-[120px]"
                   >
                     Reroll
                   </button>
                   <button
                     onClick={onClose}
-                    className="flex-1 btn-secondary"
+                    className="btn-secondary min-w-[120px]"
                   >
                     Done
                   </button>
@@ -190,10 +263,10 @@ export function RandomItemPickerModal({ isOpen, onClose, items }: RandomItemPick
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">No available items to pick from.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 font-medium">No available items match your current filter selection.</p>
                 <button
                   onClick={onClose}
-                  className="px-6 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-semibold"
+                  className="btn-secondary px-6 py-2.5"
                 >
                   Close
                 </button>
