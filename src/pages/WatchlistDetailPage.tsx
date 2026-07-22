@@ -293,10 +293,14 @@ function WatchlistDetailPage() {
           <button
             type="button"
             onClick={() => setShowMobileDetails(!showMobileDetails)}
-            className="sm:hidden p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 bg-slate-800/40 border border-slate-700/60 shrink-0"
+            className="sm:hidden p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 bg-slate-200/80 dark:bg-slate-800/60 border border-slate-300/80 dark:border-slate-700/60 shrink-0 transition-colors"
             aria-label="Toggle details"
           >
-            {showMobileDetails ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+            {showMobileDetails ? (
+              <ChevronUpIcon className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+            ) : (
+              <ChevronDownIcon className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+            )}
           </button>
         </div>
 

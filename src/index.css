@@ -18,9 +18,17 @@
   }
 }
 
-/* Glassmorphism & UI Design System Utilities */
 .glass-panel {
-  @apply bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/80 shadow-sm;
+  @apply bg-slate-100/90 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .glass-modal {

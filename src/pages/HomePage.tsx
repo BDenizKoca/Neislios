@@ -257,7 +257,7 @@ function HomePage() {
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 p-4 sm:p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 py-2">
         {lists.map(list => {
           const onDeleteHandler = (activeTab === 'yourLists' && list.owner_id === user?.id)
             ? handleDeleteWatchlist

@@ -164,7 +164,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main ref={mainContentRef} className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-[#0b0f17] scroll-smooth">
+        <main ref={mainContentRef} className="flex-1 overflow-x-hidden overflow-y-auto no-scrollbar bg-slate-100 dark:bg-[#0b0f17] scroll-smooth">
           {children || <Outlet />}
         </main>
 
