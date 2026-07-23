@@ -175,23 +175,47 @@ export class MediaScoringService {
     return keywordScore;
   }
 
-  selectTopWithRandomness<T extends { score: number }>(
+  selectWithRouletteWheel<T extends { score: number }>(
     items: T[],
     count: number,
-    guaranteedRatio = 0.5
+    temperature: number = 1.0
   ): T[] {
     if (items.length <= count) return items;
 
-    const guaranteedCount = Math.ceil(count * guaranteedRatio);
-    const guaranteed = items.slice(0, guaranteedCount);
+    // Normalize scores so the highest score is 1.0
+    const maxScore = Math.max(...items.map(i => i.score));
+    
+    // Create a pool with exponential probability weights (Softmax-style)
+    let pool = items.map(item => {
+      const normalizedScore = maxScore > 0 ? item.score / maxScore : 0;
+      return {
+        item,
+        // Math.exp creates a probability curve that heavily favors high scores 
+        // without making lower scores impossible.
+        weight: Math.exp(normalizedScore / temperature)
+      };
+    });
 
-    const remainingCount = count - guaranteedCount;
-    const candidatePool = items.slice(guaranteedCount, Math.min(count * 2, items.length));
-    const randomSelection = candidatePool
-      .sort(() => Math.random() - 0.5)
-      .slice(0, remainingCount);
+    const selected: T[] = [];
+    
+    for (let i = 0; i < count && pool.length > 0; i++) {
+      const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
+      let randomVal = Math.random() * totalWeight;
+      
+      let selectedIndex = 0;
+      for (let j = 0; j < pool.length; j++) {
+        randomVal -= pool[j].weight;
+        if (randomVal <= 0) {
+          selectedIndex = j;
+          break;
+        }
+      }
+      
+      selected.push(pool[selectedIndex].item);
+      pool.splice(selectedIndex, 1);
+    }
 
-    return [...guaranteed, ...randomSelection];
+    return selected;
   }
 }
 

@@ -95,13 +95,17 @@ export const useAIRecommendations = () => {
         return [];
       }
 
-      // Use dedicated mediaScoringService
+      // Use dedicated mediaScoringService with random weight jitter for freshness
       const scoredCandidates = await mediaScoringService.scoreMedia(candidatePool, {
         genreFrequency,
         keywordFrequency,
+        popularityWeight: 0.15 + (Math.random() * 0.3), // Jitter between 0.15 - 0.45
+        genreWeight: 0.25 + (Math.random() * 0.3),      // Jitter between 0.25 - 0.55
+        keywordWeight: 0.15 + (Math.random() * 0.3),    // Jitter between 0.15 - 0.45
       });
 
-      const selected = mediaScoringService.selectTopWithRandomness(scoredCandidates, 10, 0.5);
+      // Softmax (Roulette Wheel) temperature 0.5 provides a great balance of relevance and discovery
+      const selected = mediaScoringService.selectWithRouletteWheel(scoredCandidates, 10, 0.5);
 
       const finalRecommendations: MediaRecommendation[] = selected.map(c => {
         const title = c.media_type === 'movie'
