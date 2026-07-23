@@ -18,13 +18,12 @@ type SpinPhase = 'idle' | 'spinning' | 'slowing' | 'landed';
 
 const ITEM_HEIGHT = 48;
 const REEL_LENGTH = 44;
-const TARGET_INDEX = 35;
+const TARGET_INDEX = 30;
 const TOTAL_REEL_HEIGHT = REEL_LENGTH * ITEM_HEIGHT;
-const TARGET_OFFSET = TARGET_INDEX * ITEM_HEIGHT - 48;
-const SPIN_SPEED = 3200;
-const SPIN_DURATION = 1100;
-const SLOW_DURATION = 1250;
-const MIN_SLOW_TRAVEL = 1200;
+const TARGET_OFFSET = TARGET_INDEX * ITEM_HEIGHT - ITEM_HEIGHT; // Center row alignment
+const SPIN_SPEED = 2800; // Fast spin speed in px/s
+const SPIN_DURATION = 1000; // Duration of fast spin in ms
+const SLOW_DURATION = 1400; // Duration of deceleration easing in ms
 
 const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
 
@@ -103,6 +102,18 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
     });
   }, [items, unwatchedOnly, mediaTypeFilter, under120Only, watchedMediaIds]);
 
+  // Populate initial reel from available filtered items on open or filter change
+  useEffect(() => {
+    if (filteredItems.length > 0 && !isSpinning && !hasSpun) {
+      const titlesPool = filteredItems.map(getItemTitle);
+      const initialReel: string[] = [];
+      for (let i = 0; i < REEL_LENGTH; i++) {
+        initialReel.push(titlesPool[i % titlesPool.length]);
+      }
+      setReelList(initialReel);
+    }
+  }, [filteredItems, isSpinning, hasSpun]);
+
   useEffect(() => {
     if (!isOpen) {
       clearAllTimers();
@@ -136,11 +147,10 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
           slowStartOffsetRef.current = offsetRef.current;
           slowStartTimeRef.current = now;
 
-          let target = TARGET_OFFSET;
-          while (target <= slowStartOffsetRef.current + MIN_SLOW_TRAVEL) {
-            target += TOTAL_REEL_HEIGHT;
-          }
-          targetOffsetRef.current = target;
+          const startMod = offsetRef.current % TOTAL_REEL_HEIGHT;
+          const distToTarget = (TARGET_OFFSET - startMod + TOTAL_REEL_HEIGHT) % TOTAL_REEL_HEIGHT;
+          const totalSlowDist = distToTarget + 2 * TOTAL_REEL_HEIGHT; // 2 full extra rotations for smooth deceleration
+          targetOffsetRef.current = offsetRef.current + totalSlowDist;
         }
       }
 
@@ -150,11 +160,10 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
         const eased = easeOutCubic(progress);
         const current = slowStartOffsetRef.current + (targetOffsetRef.current - slowStartOffsetRef.current) * eased;
         offsetRef.current = current;
-        setDisplayOffset(current);
+        setDisplayOffset(current % TOTAL_REEL_HEIGHT);
 
         if (progress >= 1) {
-          offsetRef.current = targetOffsetRef.current;
-          setDisplayOffset(targetOffsetRef.current);
+          setDisplayOffset(TARGET_OFFSET);
           cancelAnimationFrame(rafRef.current!);
           rafRef.current = null;
 
@@ -231,9 +240,10 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
     runAnimation();
   };
 
-  const doubledReel = useMemo(() => {
+  // Tripled reel guarantees seamless infinite scrolling without any end-of-reel gaps
+  const tripledReel = useMemo(() => {
     if (reelList.length === 0) return [];
-    return [...reelList, ...reelList];
+    return [...reelList, ...reelList, ...reelList];
   }, [reelList]);
 
   return (
@@ -325,22 +335,24 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
           </div>
         </div>
 
-        <div className="relative">
+        {/* Stable container prevents scrollbar triggers & layout jumps */}
+        <div className="relative overflow-hidden min-h-[144px] flex items-center justify-center">
           {(!hasSpun || isSpinning) && (
             <div className="relative slot-machine-container w-full glass-panel rounded-3xl overflow-hidden border border-red-500/30 shadow-2xl">
+              {/* Highlight Window & Center Marker with crisp vector SVG arrows */}
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-12 bg-red-600/15 border-y-2 border-red-500/50 z-10 pointer-events-none flex items-center justify-between px-4 shadow-[0_0_20px_rgba(239,68,68,0.25)]">
-                <span className="text-red-500 font-black text-sm animate-pulse">{'\u25b6'}</span>
-                <span className="text-red-500 font-black text-sm animate-pulse">{'\u25c0'}</span>
+                <svg className="w-3.5 h-3.5 text-red-500 fill-current animate-pulse drop-shadow-[0_0_6px_rgba(239,68,68,0.8)]" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                <svg className="w-3.5 h-3.5 text-red-500 fill-current animate-pulse drop-shadow-[0_0_6px_rgba(239,68,68,0.8)]" viewBox="0 0 24 24">
+                  <path d="M16 5v14l-11-7z" />
+                </svg>
               </div>
 
-              {!isSpinning && reelList.length === 0 ? (
+              {filteredItems.length === 0 ? (
                 <div className="z-30 text-center px-4">
-                  <SparklesIcon className="w-8 h-8 mx-auto mb-1 text-red-500 animate-pulse" />
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Ready to roll!
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Click the Roll button below to start the spin.
+                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                    No matching items available.
                   </p>
                 </div>
               ) : (
@@ -352,13 +364,15 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
                     transition: 'none',
                   }}
                 >
-                  {doubledReel.map((title, idx) => {
+                  {tripledReel.map((title, idx) => {
                     const modIdx = idx % REEL_LENGTH;
                     const isWinningItem = spinPhase === 'landed' && modIdx === TARGET_INDEX;
                     return (
                       <div
                         key={idx}
-                        className={`slot-item px-4 text-slate-800 dark:text-slate-100 truncate ${isWinningItem ? 'text-red-600 dark:text-red-400 text-lg font-black slot-final-pick' : ''}`}
+                        className={`slot-item px-4 text-slate-800 dark:text-slate-100 truncate ${
+                          isWinningItem ? 'text-red-600 dark:text-red-400 text-lg font-black slot-final-pick' : ''
+                        }`}
                       >
                         {title}
                       </div>
@@ -370,7 +384,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
           )}
 
           {hasSpun && !isSpinning && randomPick && (
-            <div className="p-6 rounded-3xl glass-modal border border-red-500/40 text-center animate-hype shadow-xl shadow-red-600/10 space-y-2">
+            <div className="w-full p-5 sm:p-6 rounded-3xl glass-modal border border-red-500/40 text-center animate-hype shadow-xl shadow-red-600/10 space-y-2">
               <span className="text-xs font-extrabold uppercase tracking-wider text-red-500 block">
                 {'\uD83C\uDF89'} Selected Pick
               </span>
@@ -429,3 +443,4 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
 }
 
 export default RandomItemPickerModal;
+
