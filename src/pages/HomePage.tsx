@@ -312,7 +312,7 @@ function HomePage() {
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 px-2.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 px-2.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold transition-colors duration-75 ${
                   isActive
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
