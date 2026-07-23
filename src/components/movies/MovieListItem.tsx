@@ -91,11 +91,11 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   };
 
   return (
-    <div className="flex items-center p-4 glass-panel rounded-2xl hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 gap-3">
+    <div className="group relative flex items-stretch glass-panel rounded-2xl overflow-hidden hover:border-red-500/40 dark:hover:border-red-500/40 transition-all duration-200 min-h-[110px]">
         {/* Drag Handle (receives listeners) */}
         {showDragHandle && (
             <div
-                className="drag-handle flex-shrink-0 cursor-grab text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                className="drag-handle flex-shrink-0 cursor-grab text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 self-center"
                 title="Drag to reorder"
                 {...attributes}
                 {...listeners}
@@ -103,17 +103,17 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
                 <Bars3Icon className="h-5 w-5" />
             </div>
         )}
-        {/* Link wraps only the clickable content area */}
-  <Link to={detailLink} onClick={handleNavigateToDetail} className="flex items-start flex-grow space-x-4 min-w-0">
-          <div className="flex-shrink-0 w-16">
+        {/* Link wraps content and poster */}
+        <Link to={detailLink} onClick={handleNavigateToDetail} className="flex items-stretch flex-grow min-w-0">
+          <div className="flex-shrink-0 w-24 sm:w-28 relative bg-slate-200 dark:bg-slate-800 self-stretch">
             {posterUrl ? (
-              <img src={posterUrl} alt={`${title} poster`} className="w-full h-auto object-cover rounded-xl" loading="lazy" decoding="async" />
+              <img src={posterUrl} alt={`${title} poster`} className="w-full h-full object-cover rounded-none" loading="lazy" decoding="async" />
             ) : (
-              <div className="w-16 h-24 bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xs text-center rounded-xl font-semibold">No Poster</div>
+              <div className="w-full h-full min-h-[110px] bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xs text-center font-semibold p-2">No Poster</div>
             )}
           </div>
-          <div className="flex-grow min-w-0">
-            <h3 className="text-md font-bold text-slate-900 dark:text-slate-100 truncate" title={title}>
+          <div className="flex-grow p-3 sm:p-4 min-w-0 flex flex-col justify-center">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors" title={title}>
               {title}
             </h3>
             <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
@@ -137,7 +137,7 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
         </Link>
 
         {/* Action Buttons (outside the link) */}
-        <div className="flex flex-col sm:flex-row items-center flex-shrink-0 space-y-1 sm:space-y-0 sm:space-x-2">
+        <div className="flex flex-col sm:flex-row items-center flex-shrink-0 p-3 pl-0 space-y-1 sm:space-y-0 sm:space-x-2 self-center">
             {onToggleWatched && (
                 <button
                     onClick={handleWatchedToggleClick}

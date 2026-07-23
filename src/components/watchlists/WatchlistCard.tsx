@@ -49,7 +49,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
       {/* Card Theme Accent Bar */}
       {cardBgColor && (
         <div 
-          className="absolute top-0 left-0 right-0 h-1.5 rounded-t-3xl" 
+          className="absolute top-0 left-0 right-0 h-2.5 rounded-t-3xl" 
           style={{ backgroundColor: cardBgColor }} 
         />
       )}
@@ -113,7 +113,7 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
                 key={idx}
                 src={posterUrl}
                 alt="Watchlist item preview"
-                className="w-10 h-14 sm:w-11 sm:h-16 object-cover rounded-xl shadow-md border border-slate-200/60 dark:border-slate-700/60 shrink-0 transform transition-transform group-hover:scale-105"
+                className="w-12 h-18 sm:w-14 sm:h-20 object-cover rounded-none shadow-md border border-slate-300/80 dark:border-slate-700/80 shrink-0 transform transition-transform group-hover:scale-105"
                 loading="lazy"
               />
             ))}
