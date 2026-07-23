@@ -23,11 +23,168 @@ import ShareListModal from '../components/watchlists/ShareListModal';
 import ExportListModal from '../components/watchlists/ExportListModal';
 import { computeWatchlistStats } from '../utils/watchlistStats';
 import { isMovieDetails } from '../utils/tmdbUtils';
-import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon, CheckIcon } from '@heroicons/react/24/outline';
 import CollaboratorAvatars from '../components/watchlists/CollaboratorAvatars';
 import { sortWatchlistItems } from '../utils/sortUtils';
 
 const SCROLL_STORAGE_KEY = 'watchlistDetailScrollPosition';
+
+const sortOptions = [
+  { value: 'item_order', label: 'Manual Order' },
+  { value: 'added_at_desc', label: 'Added (Newest)' },
+  { value: 'added_at_asc', label: 'Added (Oldest)' },
+  { value: 'title_asc', label: 'Title (A-Z)' },
+  { value: 'title_desc', label: 'Title (Z-A)' },
+  { value: 'rating_desc', label: 'Rating (High-Low)' },
+  { value: 'rating_asc', label: 'Rating (Low-High)' },
+];
+
+const GenreMultiSelectDropdown: React.FC<{
+  availableGenres: string[];
+  selectedGenres: string[];
+  onChange: (genres: string[]) => void;
+}> = ({ availableGenres, selectedGenres, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleGenre = (genre: string) => {
+    if (selectedGenres.includes(genre)) {
+      onChange(selectedGenres.filter(g => g !== genre));
+    } else {
+      onChange([...selectedGenres, genre]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    onChange([]);
+  };
+
+  let labelText = 'All Genres';
+  if (selectedGenres.length === 1) {
+    labelText = selectedGenres[0];
+  } else if (selectedGenres.length > 1) {
+    labelText = `${selectedGenres.length} Genres`;
+  }
+
+  return (
+    <div className="relative inline-block text-left w-full sm:w-auto" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between gap-2 text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-[#131b2a] text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 w-full hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors"
+      >
+        <span className="truncate">{labelText}</span>
+        <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#131b2a] border border-slate-300 dark:border-slate-700/80 shadow-2xl z-50 p-2 space-y-1 max-h-64 overflow-y-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={handleSelectAll}
+            className={`w-full text-left px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl flex items-center justify-between transition-colors ${
+              selectedGenres.length === 0
+                ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+            }`}
+          >
+            <span>All Genres</span>
+            {selectedGenres.length === 0 && <CheckIcon className="w-4 h-4 text-red-600 dark:text-red-400" />}
+          </button>
+          
+          <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
+
+          {availableGenres.map((genre) => {
+            const isSelected = selectedGenres.includes(genre);
+            return (
+              <label
+                key={genre}
+                className="flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleGenre(genre)}
+                  className="h-4 w-4 accent-red-600 rounded cursor-pointer"
+                />
+                <span className="truncate">{genre}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SortByDropdown: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentOption = sortOptions.find((o) => o.value === value) || sortOptions[0];
+
+  return (
+    <div className="relative inline-block text-left w-full sm:w-auto" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between gap-2 text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-[#131b2a] text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 w-full hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors"
+      >
+        <span className="truncate">{currentOption.label}</span>
+        <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-white dark:bg-[#131b2a] border border-slate-300 dark:border-slate-700/80 shadow-2xl z-50 p-2 space-y-1">
+          {sortOptions.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl flex items-center justify-between transition-colors ${
+                  isSelected
+                    ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <span>{option.label}</span>
+                {isSelected && <CheckIcon className="w-4 h-4 text-red-600 dark:text-red-400" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 function WatchlistDetailPage() {
   const { id: watchlistId } = useParams<{ id: string }>();
@@ -90,7 +247,7 @@ function WatchlistDetailPage() {
   const [hideWatched, setHideWatched] = useState(false);
   const [sortBy, setSortBy] = useState<string>('item_order');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState<string>('all');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [showRandomPickModal, setShowRandomPickModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -138,15 +295,16 @@ function WatchlistDetailPage() {
       });
     }
 
-    if (selectedGenre !== 'all') {
+    if (selectedGenres.length > 0) {
       sorted = sorted.filter(item => {
         if (!item.tmdbDetails?.genres) return false;
-        return item.tmdbDetails.genres.some(g => g.name.toLowerCase() === selectedGenre.toLowerCase());
+        const itemGenreNames = item.tmdbDetails.genres.map(g => g.name.toLowerCase());
+        return selectedGenres.some(sg => itemGenreNames.includes(sg.toLowerCase()));
       });
     }
 
     setSortedAndFilteredItems(sorted);
-  }, [watchlistItems, sortBy, hideWatched, watchedMedia, searchTerm, selectedGenre]);
+  }, [watchlistItems, sortBy, hideWatched, watchedMedia, searchTerm, selectedGenres]);
 
   useEffect(() => {
     sortAndFilterItems();
@@ -421,32 +579,17 @@ function WatchlistDetailPage() {
         {/* Structured Filter Controls Layout */}
         <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 shrink-0">
           {availableGenres.length > 0 && (
-            <select
-              value={selectedGenre}
-              onChange={(e) => setSelectedGenre(e.target.value)}
-              className="text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold truncate"
-            >
-              <option value="all">All Genres</option>
-              {availableGenres.map(genre => (
-                <option key={genre} value={genre}>{genre}</option>
-              ))}
-            </select>
+            <GenreMultiSelectDropdown
+              availableGenres={availableGenres}
+              selectedGenres={selectedGenres}
+              onChange={setSelectedGenres}
+            />
           )}
 
-          <select
-            id="sortOrder"
+          <SortByDropdown
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold truncate"
-          >
-            <option value="item_order">Manual Order</option>
-            <option value="added_at_asc">Added (Oldest)</option>
-            <option value="added_at_desc">Added (Newest)</option>
-            <option value="title_asc">Title (A-Z)</option>
-            <option value="title_desc">Title (Z-A)</option>
-            <option value="rating_desc">Rating (High-Low)</option>
-            <option value="rating_asc">Rating (Low-High)</option>
-          </select>
+            onChange={setSortBy}
+          />
 
           <label 
             htmlFor="hideWatchedToggle" 
