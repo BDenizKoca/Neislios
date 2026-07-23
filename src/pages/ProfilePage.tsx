@@ -65,15 +65,14 @@ function ProfilePage() {
     const toastId = toast.loading('Updating display name...');
 
     try {
-      // Use upsert to bypass potentially missing UPDATE policy (same as GoogleOnboarding)
+      // Use standard update since RLS policy is now fixed
       const { error: updateError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
+        .update({
           display_name: displayName.trim(),
-          avatar_url: profile?.avatar_url, // Keep existing avatar
           updated_at: new Date().toISOString(),
-        });
+        })
+        .eq('id', user.id);
 
       if (updateError) {
         // Fallback: RPC if upsert fails
@@ -105,15 +104,14 @@ function ProfilePage() {
     const toastId = toast.loading('Updating avatar...');
 
     try {
-      // Use upsert to bypass potentially missing UPDATE policy
+      // Use standard update since RLS policy is now fixed
       const { error: updateError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          display_name: profile?.display_name, // Keep existing display name
+        .update({
           avatar_url: avatarUrl.trim() || null,
           updated_at: new Date().toISOString(),
-        });
+        })
+        .eq('id', user.id);
 
       if (updateError) {
         // Fallback: RPC if upsert fails
