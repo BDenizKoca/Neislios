@@ -13,4 +13,11 @@ if (!supabaseAnonKey) {
 }
 
 // Create and export the Supabase client instance
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    lock: (_name, _acquireTimeout, fn) => fn(),
+  },
+});

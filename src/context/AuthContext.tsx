@@ -35,24 +35,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    setLoading(true); // Start loading
+    let mounted = true;
+    setLoading(true);
+
+    // Fallback safety timeout to prevent app getting stuck on Loading Application screen
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        setLoading(false);
+      }
+    }, 3000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false); // Finish loading after getting session
+      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
     }).catch(() => {
-      setLoading(false); // Finish loading even on error
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        // No need to setLoading here as initial load is handled above
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false); // Ensure loading is resolved on auth state change
+        }
       }
     );
 
     return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
       authListener?.subscription.unsubscribe();
     };
   }, []);
