@@ -244,10 +244,29 @@ function WatchlistDetailPage() {
 
   // --- Local UI State ---
   const [watchedMedia, setWatchedMedia] = useState<Set<string>>(new Set());
-  const [hideWatched, setHideWatched] = useState(false);
-  const [sortBy, setSortBy] = useState<string>('item_order');
+  const [hideWatched, setHideWatched] = useState(() => {
+    if (!watchlistId) return false;
+    const saved = localStorage.getItem(`watchlist_${watchlistId}_hideWatched`);
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [sortBy, setSortBy] = useState<string>(() => {
+    if (!watchlistId) return 'item_order';
+    return localStorage.getItem(`watchlist_${watchlistId}_sortBy`) || 'item_order';
+  });
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>(() => {
+    if (!watchlistId) return [];
+    const saved = localStorage.getItem(`watchlist_${watchlistId}_selectedGenres`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    if (!watchlistId) return;
+    localStorage.setItem(`watchlist_${watchlistId}_hideWatched`, JSON.stringify(hideWatched));
+    localStorage.setItem(`watchlist_${watchlistId}_sortBy`, sortBy);
+    localStorage.setItem(`watchlist_${watchlistId}_selectedGenres`, JSON.stringify(selectedGenres));
+  }, [watchlistId, hideWatched, sortBy, selectedGenres]);
+
   const [showRandomPickModal, setShowRandomPickModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -463,6 +482,28 @@ function WatchlistDetailPage() {
           </button>
         </div>
 
+        {/* Mobile Quick Action Buttons (Always visible on mobile even when accordion is closed) */}
+        <div className="flex gap-2.5 pt-1 sm:hidden">
+          <button
+            onClick={handlePickRandom}
+            className="btn-primary flex-1 text-xs px-3.5 py-2.5 justify-center shadow-md shadow-red-600/20"
+          >
+            <SparklesIcon className="h-4 w-4" />
+            <span>Random Pick</span>
+          </button>
+
+          {isAIEligible && (
+            <button
+              onClick={() => setShowAIRecommendModal(true)}
+              className="btn-secondary flex-1 text-xs px-3.5 py-2.5 justify-center"
+              disabled={checkingAIEligibility}
+            >
+              <LightBulbIcon className="h-4 w-4 text-amber-500" />
+              <span>{checkingAIEligibility ? 'Checking...' : 'AI Recommend'}</span>
+            </button>
+          )}
+        </div>
+
         {/* Collapsible Content Area (Always visible on Desktop, toggled on Mobile) */}
         <div className={`${showMobileDetails ? 'block' : 'hidden sm:block'} space-y-4 pt-1`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -507,7 +548,7 @@ function WatchlistDetailPage() {
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60">
             <button
               onClick={handlePickRandom}
-              className="btn-primary text-xs sm:text-sm px-3.5 py-2.5 justify-center shadow-md shadow-red-600/20"
+              className="hidden sm:flex btn-primary text-xs sm:text-sm px-3.5 py-2.5 justify-center shadow-md shadow-red-600/20"
             >
               <SparklesIcon className="h-4 w-4" />
               <span>Random Pick</span>
@@ -516,7 +557,7 @@ function WatchlistDetailPage() {
             {isAIEligible && (
               <button
                 onClick={() => setShowAIRecommendModal(true)}
-                className="btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
+                className="hidden sm:flex btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
                 disabled={checkingAIEligibility}
               >
                 <LightBulbIcon className="h-4 w-4 text-amber-500" />
