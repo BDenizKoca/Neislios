@@ -281,7 +281,7 @@ function HomePage() {
   ];
 
   return (
-    <div {...swipeHandlers} className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+    <div {...swipeHandlers} className="flex flex-col flex-1 min-h-full max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-24">
       {/* Desktop Hero Banner (Hidden on Mobile PWA to maximize screen space) */}
       <div className="hidden sm:flex sm:items-center justify-between gap-4 glass-panel p-6 sm:p-8 rounded-3xl">
         <div>
@@ -346,7 +346,7 @@ function HomePage() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-auto mt-2">
+      <div className="flex-1 mt-2">
         {activeTab === 'favorites' && renderListContent(favoriteLists)}
         {activeTab === 'yourLists' && renderListContent(yourLists)}
         {activeTab === 'sharedLists' && renderListContent(sharedLists)}
