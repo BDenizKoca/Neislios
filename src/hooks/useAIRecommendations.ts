@@ -150,15 +150,30 @@ export const useAIRecommendations = () => {
       return { ...item, representationScore };
     });
 
-    const sortedItems = scoredItems.sort((a, b) => b.representationScore - a.representationScore);
-    const guaranteedCount = Math.ceil(count / 2);
-    const guaranteed = sortedItems.slice(0, guaranteedCount);
+    const coreCount = 2;
+    const recentCount = 2;
+    const wildcardCount = Math.max(1, count - coreCount - recentCount);
 
-    const remainingCount = count - guaranteedCount;
-    const candidatePool = sortedItems.slice(guaranteedCount, Math.min(count * 2, sortedItems.length));
-    const randomSelection = candidatePool.sort(() => Math.random() - 0.5).slice(0, remainingCount);
+    // 1. Core Vibe (Highest math score)
+    const sortedByScore = [...scoredItems].sort((a, b) => b.representationScore - a.representationScore);
+    const coreVibe = sortedByScore.slice(0, coreCount);
+    const usedIds = new Set(coreVibe.map(i => i.id));
 
-    return [...guaranteed, ...randomSelection];
+    // 2. Recent Mood (First items in the list, typically the most recently added)
+    const recentMood = [];
+    for (const item of scoredItems) {
+      if (!usedIds.has(item.id)) {
+        recentMood.push(item);
+        usedIds.add(item.id);
+      }
+      if (recentMood.length >= recentCount) break;
+    }
+
+    // 3. True Wildcards (Completely random from the remaining watchlist)
+    const remainingItems = scoredItems.filter(item => !usedIds.has(item.id));
+    const wildcards = remainingItems.sort(() => Math.random() - 0.5).slice(0, wildcardCount);
+
+    return [...coreVibe, ...recentMood, ...wildcards];
   };
 
   return {
