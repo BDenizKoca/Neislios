@@ -341,10 +341,10 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
             <div className="relative slot-machine-container w-full glass-panel rounded-3xl overflow-hidden border border-red-500/30 shadow-2xl">
               {/* Highlight Window & Center Marker with crisp vector SVG arrows */}
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-12 bg-red-600/15 border-y-2 border-red-500/50 z-10 pointer-events-none flex items-center justify-between px-4 shadow-[0_0_20px_rgba(239,68,68,0.25)]">
-                <svg className="w-3.5 h-3.5 text-red-500 fill-current animate-pulse drop-shadow-[0_0_6px_rgba(239,68,68,0.8)]" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-3.5 h-3.5 text-red-500 fill-current animate-pulse drop-shadow-[0_0_6px_rgba(239,68,68,0.8)]" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                <svg className="w-3.5 h-3.5 text-red-500 fill-current animate-pulse drop-shadow-[0_0_6px_rgba(239,68,68,0.8)]" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-3.5 h-3.5 text-red-500 fill-current animate-pulse drop-shadow-[0_0_6px_rgba(239,68,68,0.8)]" viewBox="0 0 24 24">
                   <path d="M16 5v14l-11-7z" />
                 </svg>
               </div>
