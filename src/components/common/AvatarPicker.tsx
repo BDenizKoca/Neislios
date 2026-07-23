@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { avatarOptions } from '../../utils/avatars';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 interface AvatarPickerProps {
   id: string;
@@ -10,7 +11,8 @@ interface AvatarPickerProps {
 }
 
 export default function AvatarPicker({ id, displayName, size = 128, onPick, className = '' }: AvatarPickerProps) {
-  const options = avatarOptions(id, displayName, size);
+  const [seedSuffix, setSeedSuffix] = useState('');
+  const options = avatarOptions(id, displayName, size, seedSuffix);
   const [chosen, setChosen] = useState<string | null>(null);
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [errorStates, setErrorStates] = useState<Record<string, boolean>>({});
@@ -34,8 +36,19 @@ export default function AvatarPicker({ id, displayName, size = 128, onPick, clas
   };
 
   return (
-    <div className={`flex gap-3 items-center flex-wrap ${className}`}>
-      {options.map(option => {
+    <div className={`flex flex-col gap-3 ${className}`}>
+      <div className="flex justify-end mb-1">
+        <button
+          type="button"
+          onClick={() => setSeedSuffix(Math.random().toString(36).substring(7))}
+          className="text-sm font-medium text-primary flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+        >
+          <ArrowPathIcon className="w-4 h-4" />
+          Shuffle Avatars
+        </button>
+      </div>
+      <div className="flex gap-3 items-center flex-wrap justify-center">
+        {options.map(option => {
         const isLoading = loadingStates[option.url];
         const hasError = errorStates[option.url];
         const isChosen = chosen === option.url;
@@ -80,6 +93,7 @@ export default function AvatarPicker({ id, displayName, size = 128, onPick, clas
           </button>
         );
       })}
+    </div>
     </div>
   );
 }

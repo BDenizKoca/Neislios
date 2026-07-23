@@ -161,62 +161,67 @@ function ProfilePage() {
         )}
       </div>
 
-      {/* Display Info & Edit Forms */}
+      {/* Edit Forms Container */}
       <div className="space-y-6">
-          {/* Display Info */}
+          {/* Profile Info Summary */}
           <div className="glass-panel p-6 rounded-2xl">
-             <p className="mb-2 text-slate-700 dark:text-slate-300"><strong>Email:</strong> {user?.email || 'N/A'}</p>
-             <p className="mb-2 dark:text-gray-300"><strong>Current Display Name:</strong> {profile.display_name}</p>
-             {/* Avatar URL Form */}
-             <form onSubmit={handleUpdateAvatar} className="space-y-4 pt-4 border-t dark:border-gray-600">
-                 <h4 className="font-medium dark:text-gray-100">Update Avatar</h4>
-                 
-                 {/* Avatar Picker Option */}
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Choose from gallery:</label>
-                   <AvatarPicker 
-                     id={user?.id || ''}
-                     displayName={profile.display_name} 
-                     onPick={setAvatarUrl}
-                     className="justify-center"
-                   />
-                 </div>
-
-                 <div className="text-center text-sm text-gray-500 dark:text-gray-400">— OR —</div>
-
-                 {/* Manual URL Input */}
-                 <div>
-                    <label htmlFor="avatarUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Custom Image URL</label>
-                    <input 
-                      id="avatarUrl" 
-                      type="url" 
-                      placeholder="https://example.com/image.png" 
-                      value={avatarUrl} 
-                      onChange={(e) => setAvatarUrl(e.target.value)} 
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter a direct URL to a JPG, PNG, GIF, or WEBP image. Leave blank to remove.</p>
-                 </div>
-                 <button 
-                   type="submit" 
-                   disabled={updatingAvatar || avatarUrl.trim() === (profile.avatar_url || '')} 
-                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-                 >
-                    {updatingAvatar ? 'Saving...' : 'Update Avatar'}
-                  </button>
-             </form>
+             <p className="text-slate-700 dark:text-slate-300 mb-2"><strong>Email:</strong> {user?.email || 'N/A'}</p>
+             <p className="text-slate-700 dark:text-gray-300"><strong>Current Display Name:</strong> {profile.display_name}</p>
           </div>
 
           {/* Update Display Name Form */}
-          <form onSubmit={handleUpdateProfile} className="p-4 bg-white dark:bg-gray-800 rounded shadow space-y-4">
-             <h3 className="text-lg font-semibold dark:text-gray-100">Update Display Name</h3>
+          <form onSubmit={handleUpdateProfile} className="glass-panel p-6 rounded-2xl space-y-4">
+             <h3 className="text-lg font-semibold dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Update Display Name</h3>
              <div>
-                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-200">New Display Name <span className="text-red-500">*</span> (min 3 chars)</label>
+                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">New Display Name <span className="text-red-500">*</span></label>
                 <input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required minLength={3} className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"/>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Must be at least 3 characters long.</p>
              </div>
-             {/* Removed static error/success messages */}
              <button type="submit" disabled={updatingDisplayName || !displayName.trim() || displayName.trim() === profile.display_name} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50">
                 {updatingDisplayName ? 'Saving...' : 'Save Display Name'}
+              </button>
+          </form>
+
+          {/* Update Avatar Form */}
+          <form onSubmit={handleUpdateAvatar} className="glass-panel p-6 rounded-2xl space-y-5">
+             <h3 className="text-lg font-semibold dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Update Avatar</h3>
+             
+             {/* Avatar Picker Option */}
+             <div>
+               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Choose a style from gallery:</label>
+               <AvatarPicker 
+                 id={user?.id || ''}
+                 displayName={profile.display_name} 
+                 onPick={setAvatarUrl}
+               />
+             </div>
+
+             <div className="flex items-center">
+               <div className="flex-grow border-t border-gray-200 dark:border-gray-600"></div>
+               <span className="flex-shrink-0 mx-4 text-gray-400 dark:text-gray-500 text-sm">OR</span>
+               <div className="flex-grow border-t border-gray-200 dark:border-gray-600"></div>
+             </div>
+
+             {/* Manual URL Input */}
+             <div>
+                <label htmlFor="avatarUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Custom Image URL</label>
+                <input 
+                  id="avatarUrl" 
+                  type="url" 
+                  placeholder="https://example.com/image.png" 
+                  value={avatarUrl} 
+                  onChange={(e) => setAvatarUrl(e.target.value)} 
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter a direct URL to a JPG, PNG, GIF, or WEBP image. Leave blank to remove.</p>
+             </div>
+             
+             <button 
+               type="submit" 
+               disabled={updatingAvatar || avatarUrl.trim() === (profile.avatar_url || '')} 
+               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+             >
+                {updatingAvatar ? 'Saving...' : 'Update Avatar'}
               </button>
           </form>
       </div>

@@ -1,6 +1,6 @@
 // avatars.ts - Reliable Avatar Services with 100% CORS & Uptime
-export const avatarOptions = (idOrName: string, displayName?: string, _size = 128) => {
-  const encSeed = encodeURIComponent(idOrName || 'User');
+export const avatarOptions = (idOrName: string, displayName?: string, _size = 128, seedSuffix = '') => {
+  const encSeed = encodeURIComponent((idOrName || 'User') + seedSuffix);
   const nameToUse = (displayName && displayName.trim()) ? displayName.trim() : idOrName;
   const encName = encodeURIComponent(nameToUse || 'User');
 
@@ -10,6 +10,9 @@ export const avatarOptions = (idOrName: string, displayName?: string, _size = 12
     { label: 'Avataaars', url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encSeed}`, format: 'svg' },
     { label: 'Thumbs', url: `https://api.dicebear.com/7.x/thumbs/svg?seed=${encSeed}`, format: 'svg' },
     { label: 'Identicon', url: `https://api.dicebear.com/7.x/identicon/svg?seed=${encSeed}`, format: 'svg' },
+    { label: 'Adventurer', url: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encSeed}`, format: 'svg' },
+    { label: 'Emoji', url: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${encSeed}`, format: 'svg' },
+    { label: 'Pixel', url: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encSeed}`, format: 'svg' },
   ] as const;
 };
 
