@@ -53,6 +53,9 @@ export default function CollaboratorAvatars({
                 alt={`${member.display_name}'s avatar`}
                 className={`${avatarSize} rounded-full object-cover shadow-sm ring-2 ring-slate-900`}
                 title={member.display_name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.display_name)}&background=e50914&color=fff&bold=true`;
+                }}
               />
             ) : (
               <div

@@ -134,6 +134,9 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
               src={watchlist.owner.avatar_url}
               alt={watchlist.owner.display_name || 'Owner avatar'}
               className="h-6 w-6 rounded-full object-cover border border-white/20 shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watchlist.owner?.display_name || 'User')}&background=e50914&color=fff&bold=true`;
+              }}
             />
           ) : (
             <div className="h-6 w-6 rounded-full bg-red-600/10 text-red-500 flex items-center justify-center font-bold text-xs shrink-0">
