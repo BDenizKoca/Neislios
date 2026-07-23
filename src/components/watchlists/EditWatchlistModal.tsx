@@ -166,30 +166,30 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
           </label>
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/60 mt-4">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800 mt-4">
           <button
             type="button"
             onClick={handleDelete}
             disabled={loading || deleteLoading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 text-xs font-bold transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 text-xs font-bold transition-colors disabled:opacity-50 w-full sm:w-auto"
           >
             <TrashIcon className="w-4 h-4" />
             <span>{deleteLoading ? 'Deleting...' : 'Delete List'}</span>
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
             <button
               type="button"
               onClick={onClose}
               disabled={loading || deleteLoading}
-              className="btn-secondary text-sm"
+              className="btn-secondary text-sm flex-1 sm:flex-none justify-center"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || deleteLoading}
-              className="btn-primary text-sm"
+              className="btn-primary text-sm flex-1 sm:flex-none justify-center"
             >
               {loading ? 'Saving...' : 'Save Changes'}
             </button>

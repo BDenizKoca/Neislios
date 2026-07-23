@@ -298,35 +298,53 @@ function MovieSearchPage() {
     >
       {/* Removed redundant h2 title */}
 
-      {/* Search Type Toggle */}
-      <div className="mb-4 flex justify-center space-x-2 border-b dark:border-gray-700 pb-2">
-          <button onClick={() => setSearchType('media')} className={`py-2 px-4 rounded-t-md text-sm font-medium ${searchType === 'media' ? 'bg-white dark:bg-gray-800 border-x border-t dark:border-gray-700 text-primary dark:text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}>
-            Media
+      {/* Search Bar & Type Toggle */}
+      <div className="glass-panel p-4 rounded-2xl space-y-3 mb-6">
+        {/* Search Input */}
+        <div className="relative w-full">
+          <input
+            type="text"
+            placeholder={`Search ${searchType === 'media' ? 'Movies & TV Shows...' : 'Public Watchlists...'}`}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm font-medium"
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-200"
+              aria-label="Clear search"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Search Type Tabs */}
+        <div className="flex p-1 space-x-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl">
+          <button 
+            onClick={() => setSearchType('media')} 
+            className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              searchType === 'media' 
+                ? 'bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm border border-slate-200 dark:border-slate-700' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            Movies & TV Shows
           </button>
-           <button onClick={() => setSearchType('watchlists')} className={`py-2 px-4 rounded-t-md text-sm font-medium ${searchType === 'watchlists' ? 'bg-white dark:bg-gray-800 border-x border-t dark:border-gray-700 text-primary dark:text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}>
+          <button 
+            onClick={() => setSearchType('watchlists')} 
+            className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+              searchType === 'watchlists' 
+                ? 'bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm border border-slate-200 dark:border-slate-700' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
             Public Watchlists
           </button>
-      </div>
-
-      <div className="relative mb-4">
-        <input
-          type="text"
-          placeholder={`Search ${searchType === 'media' ? 'Movies & TV Shows...' : 'Public Watchlists...'}`}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-primary focus:border-primary"
-        />
-        {searchTerm && (
-          <button 
-            onClick={() => setSearchTerm('')}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            aria-label="Clear search"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </button>
-        )}
+        </div>
       </div>
 
       {loading && <p className="text-center">Loading results...</p>}

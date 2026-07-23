@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -23,7 +23,7 @@ import ShareListModal from '../components/watchlists/ShareListModal';
 import ExportListModal from '../components/watchlists/ExportListModal';
 import { computeWatchlistStats } from '../utils/watchlistStats';
 import { isMovieDetails } from '../utils/tmdbUtils';
-import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon, PlusIcon } from '@heroicons/react/24/outline';
 import CollaboratorAvatars from '../components/watchlists/CollaboratorAvatars';
 import { sortWatchlistItems } from '../utils/sortUtils';
 
@@ -262,6 +262,7 @@ function WatchlistDetailPage() {
   }
 
   const canAccess = userRole === 'owner' || userRole === 'editor' || userRole === 'viewer';
+  const canEdit = userRole === 'owner' || userRole === 'editor';
 
   return (
     <div ref={pageRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 h-full space-y-5">
@@ -404,26 +405,26 @@ function WatchlistDetailPage() {
       </div>
 
       {/* Instant In-Memory Filter & Controls Bar */}
-      <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div className="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         {/* Search Input */}
-        <div className="relative w-full md:w-72">
+        <div className="relative flex-1 min-w-0">
           <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
           <input
             type="text"
             placeholder="Search in this list..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500"
           />
         </div>
 
-        {/* Genre & Hide Watched Controls */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+        {/* Structured Filter Controls Layout */}
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 shrink-0">
           {availableGenres.length > 0 && (
             <select
               value={selectedGenre}
               onChange={(e) => setSelectedGenre(e.target.value)}
-              className="text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold"
+              className="text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold truncate"
             >
               <option value="all">All Genres</option>
               {availableGenres.map(genre => (
@@ -432,24 +433,11 @@ function WatchlistDetailPage() {
             </select>
           )}
 
-          <div className="flex items-center gap-2">
-            <input
-              id="hideWatchedToggle"
-              type="checkbox"
-              checked={hideWatched}
-              onChange={(e) => setHideWatched(e.target.checked)}
-              className="h-4 w-4 accent-red-600 rounded cursor-pointer"
-            />
-            <label htmlFor="hideWatchedToggle" className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-              Hide Watched
-            </label>
-          </div>
-
           <select
             id="sortOrder"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold"
+            className="text-xs sm:text-sm py-2 px-3 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 font-semibold truncate"
           >
             <option value="item_order">Manual Order</option>
             <option value="added_at_asc">Added (Oldest)</option>
@@ -459,14 +447,42 @@ function WatchlistDetailPage() {
             <option value="rating_desc">Rating (High-Low)</option>
             <option value="rating_asc">Rating (Low-High)</option>
           </select>
+
+          <label 
+            htmlFor="hideWatchedToggle" 
+            className="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <input
+              id="hideWatchedToggle"
+              type="checkbox"
+              checked={hideWatched}
+              onChange={(e) => setHideWatched(e.target.checked)}
+              className="h-4 w-4 accent-red-600 rounded cursor-pointer"
+            />
+            <span>Hide Watched</span>
+          </label>
         </div>
       </div>
 
-      {/* Watchlist Items */}
+      {/* Watchlist Items Header + Quick Manage List Button */}
       <div>
-        <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 mb-3">
-          Items ({sortedAndFilteredItems.length})
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
+              Items ({sortedAndFilteredItems.length})
+            </h3>
+            {canEdit && (
+              <Link
+                to={`/watchlist/${watchlist.id}/manage`}
+                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                title="Add or Manage Items"
+              >
+                <PlusIcon className="w-3.5 h-3.5" />
+                <span>+ Manage List</span>
+              </Link>
+            )}
+          </div>
+        </div>
 
         {watchlistItems.length === 0 && !isLoading ? (
           <p className="text-slate-500 dark:text-slate-400 font-medium">No items added yet.</p>
