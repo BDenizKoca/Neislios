@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { TmdbMediaDetails } from '../../services/tmdbService';
@@ -13,6 +13,12 @@ interface RandomItemPickerModalProps {
   items: WatchlistItemWithDetails[];
   watchedMediaIds?: Set<string>;
 }
+
+type SpinPhase = 'idle' | 'spinning' | 'slowing' | 'landed';
+
+const ITEM_HEIGHT = 48; // 48px per slot item height
+const REEL_LENGTH = 44; // Total dummy items in reel sequence
+const TARGET_INDEX = 35; // Index where winning item lands
 
 const vibrate = (pattern: number | number[]) => {
   if ('vibrate' in navigator) {
@@ -32,6 +38,7 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
   // State
   const [hasSpun, setHasSpun] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [spinPhase, setSpinPhase] = useState<SpinPhase>('idle');
   const [randomPick, setRandomPick] = useState<TmdbMediaDetails | null>(null);
 
   // Filters
@@ -42,7 +49,19 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
   // Reel animation state
   const [reelList, setReelList] = useState<string[]>([]);
   const [targetOffset, setTargetOffset] = useState<number>(0);
-  const ITEM_HEIGHT = 56; // 56px per slot item height
+
+  // Timers ref for safe cleanup
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearSpinTimers = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    timeoutsRef.current.forEach(t => clearTimeout(t));
+    timeoutsRef.current = [];
+  };
 
   // Filtered items computation
   const filteredItems = useMemo(() => {
@@ -71,15 +90,18 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
     });
   }, [items, unwatchedOnly, mediaTypeFilter, under120Only, watchedMediaIds]);
 
-  // Reset state on modal open
+  // Reset state on modal open/close
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      clearSpinTimers();
       setHasSpun(false);
       setIsSpinning(false);
+      setSpinPhase('idle');
       setRandomPick(null);
       setTargetOffset(0);
       setReelList([]);
     }
+    return () => clearSpinTimers();
   }, [isOpen]);
 
   const handleRoll = () => {
@@ -88,9 +110,12 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
       return;
     }
 
+    clearSpinTimers();
     setIsSpinning(true);
     setHasSpun(false);
     setRandomPick(null);
+    setSpinPhase('spinning');
+    setTargetOffset(0);
     vibrateSpinStart();
 
     // Select random winning item
@@ -98,11 +123,9 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
     const winnerItem = filteredItems[winnerIndex];
     const winnerTitle = getItemTitle(winnerItem);
 
-    // Build slot reel sequence (e.g. 24 items total, with target at index 20)
+    // Build slot reel sequence
     const titlesPool = filteredItems.map(getItemTitle);
     const dummyReel: string[] = [];
-    const REEL_LENGTH = 26;
-    const TARGET_INDEX = 21;
 
     for (let i = 0; i < REEL_LENGTH; i++) {
       if (i === TARGET_INDEX) {
@@ -114,25 +137,42 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
     }
 
     setReelList(dummyReel);
-    setTargetOffset(0);
 
-    // Trigger smooth CSS animation after DOM paints reel
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const finalY = -(TARGET_INDEX * ITEM_HEIGHT);
-        setTargetOffset(finalY);
-      });
-    });
+    // Rapid haptic vibration ticks during fast spin
+    intervalRef.current = setInterval(() => {
+      vibrate([12]);
+    }, 85);
 
-    // Handle end of spin (matches CSS transition duration 2.4s)
-    setTimeout(() => {
+    // Phase 1 -> Phase 2: Start deceleration spin at 1100ms
+    const t1 = setTimeout(() => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      const finalY = 48 - (TARGET_INDEX * ITEM_HEIGHT);
+      setSpinPhase('slowing');
+      setTargetOffset(finalY);
+
+      // Decelerating haptic ticks as reel slows down to lock position
+      const dt1 = setTimeout(() => vibrate([15]), 300);
+      const dt2 = setTimeout(() => vibrate([22]), 600);
+      const dt3 = setTimeout(() => vibrate([30]), 900);
+      const dt4 = setTimeout(() => vibrate([40]), 1100);
+      timeoutsRef.current.push(dt1, dt2, dt3, dt4);
+    }, 1100);
+
+    // Phase 2 -> Phase 3: Spin completes and lands on winner at 2350ms
+    const t2 = setTimeout(() => {
+      setSpinPhase('landed');
       setIsSpinning(false);
       setHasSpun(true);
       if (winnerItem.tmdbDetails) {
         setRandomPick(winnerItem.tmdbDetails);
         vibrateWin();
       }
-    }, 2400);
+    }, 2350);
+
+    timeoutsRef.current.push(t1, t2);
   };
 
   return (
@@ -231,15 +271,12 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
         <div className="relative">
           {/* Initial / Spinning State: Slot Machine Box */}
           {(!hasSpun || isSpinning) && (
-            <div className="relative h-36 w-full glass-panel rounded-3xl overflow-hidden border border-red-500/20 shadow-inner flex items-center justify-center">
+            <div className="relative slot-machine-container w-full glass-panel rounded-3xl overflow-hidden border border-red-500/30 shadow-2xl">
               {/* Highlight Window & Center Marker */}
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-14 bg-red-600/10 border-y border-red-500/30 z-10 pointer-events-none flex items-center justify-between px-4">
-                <span className="text-red-500 font-bold text-xs">▶</span>
-                <span className="text-red-500 font-bold text-xs">◀</span>
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-12 bg-red-600/15 border-y-2 border-red-500/50 z-10 pointer-events-none flex items-center justify-between px-4 shadow-[0_0_20px_rgba(239,68,68,0.25)]">
+                <span className="text-red-500 font-black text-sm animate-pulse">▶</span>
+                <span className="text-red-500 font-black text-sm animate-pulse">◀</span>
               </div>
-
-              {/* Gradient Mask Top/Bottom */}
-              <div className="absolute inset-0 z-20 pointer-events-none bg-gradient-to-b from-slate-900/80 via-transparent to-slate-900/80 dark:from-slate-950/85 dark:to-slate-950/85" />
 
               {!isSpinning && reelList.length === 0 ? (
                 <div className="z-30 text-center px-4">
@@ -253,20 +290,25 @@ export function RandomItemPickerModal({ isOpen, onClose, items, watchedMediaIds 
                 </div>
               ) : (
                 <div
-                  className="w-full flex flex-col items-center z-0 transition-transform duration-[2400ms]"
+                  className={`slot-reel ${spinPhase === 'spinning' ? 'animate-slot-spin' : ''}`}
                   style={{
-                    transform: `translateY(${targetOffset}px)`,
-                    transitionTimingFunction: 'cubic-bezier(0.08, 0.82, 0.17, 1.0)',
+                    transform: spinPhase === 'spinning' ? undefined : `translateY(${targetOffset}px)`,
+                    transition: spinPhase === 'slowing' ? 'transform 1250ms cubic-bezier(0.08, 0.82, 0.17, 1.0)' : 'none',
                   }}
                 >
-                  {reelList.map((title, idx) => (
-                    <div
-                      key={`reel-${idx}`}
-                      className="h-[56px] w-full flex items-center justify-center px-4 font-extrabold text-sm sm:text-base text-slate-800 dark:text-slate-100 truncate shrink-0"
-                    >
-                      {title}
-                    </div>
-                  ))}
+                  {reelList.map((title, idx) => {
+                    const isWinningItem = spinPhase === 'landed' && idx === TARGET_INDEX;
+                    return (
+                      <div
+                        key={`reel-${idx}`}
+                        className={`slot-item px-4 text-slate-800 dark:text-slate-100 truncate ${
+                          isWinningItem ? 'text-red-600 dark:text-red-400 text-lg font-black slot-final-pick' : ''
+                        }`}
+                      >
+                        {title}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
