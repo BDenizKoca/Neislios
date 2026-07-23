@@ -318,57 +318,81 @@ function MovieDetailsPage() {
               </div>
             )}
 
-            {/* Primary Action Buttons (Mark Watched, Add/Remove List, IMDb) */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
+            {/* Primary Action Buttons (Mark Watched & Add/Remove List strictly side by side, fixed equal columns to prevent layout shift) */}
+            <div className="grid grid-cols-2 gap-3 w-full sm:max-w-sm pt-2">
               <button
                 onClick={handleToggleWatched}
-                className={isWatched ? 'btn-secondary text-xs sm:text-sm px-4 py-2.5 flex items-center justify-center gap-2' : 'btn-primary text-xs sm:text-sm px-4 py-2.5 flex items-center justify-center gap-2'}
+                className={`w-full text-xs sm:text-sm font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                  isWatched ? 'btn-secondary' : 'btn-primary'
+                }`}
               >
-                {isWatched ? <EyeIcon className="h-4 w-4 text-red-500" /> : <EyeSlashIcon className="h-4 w-4" />}
-                <span>{isWatched ? 'Watched' : 'Mark Watched'}</span>
+                {isWatched ? <EyeIcon className="h-4 w-4 text-red-500 shrink-0" /> : <EyeSlashIcon className="h-4 w-4 shrink-0" />}
+                <span className="truncate">{isWatched ? 'Watched' : 'Mark Watched'}</span>
               </button>
 
               {!loadingEditableLists && isFromWatchlist && contextWatchlistId && containingEditableLists.includes(contextWatchlistId) ? (
                 <button
                   onClick={() => handleRemoveFromList(contextWatchlistId)}
-                  className="btn-secondary text-xs sm:text-sm px-4 py-2.5 flex items-center justify-center gap-2"
+                  className="btn-secondary w-full text-xs sm:text-sm font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2"
                 >
-                  <ListBulletIcon className="h-4 w-4" />
-                  <span>Remove from List</span>
+                  <ListBulletIcon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Remove from List</span>
                 </button>
               ) : (
                 <button
                   onClick={handleOpenAddToListModal}
-                  className="btn-secondary text-xs sm:text-sm px-4 py-2.5 flex items-center justify-center gap-2"
+                  className="btn-secondary w-full text-xs sm:text-sm font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2"
                 >
-                  <ListBulletIcon className="h-4 w-4" />
-                  <span>Add to List</span>
+                  <ListBulletIcon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Add to List</span>
                 </button>
-              )}
-
-              {imdbUrl && (
-                <a
-                  href={imdbUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-black font-extrabold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-md hover:shadow-lg shrink-0"
-                >
-                  <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                  <span>View on IMDb</span>
-                </a>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Overview Card */}
-      <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-2">
-        <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Overview</h2>
+      {/* Overview Card with Right-Aligned View on IMDb Button */}
+      <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Overview</h2>
+          {imdbUrl && (
+            <a
+              href={imdbUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-black font-extrabold py-2 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-md hover:shadow-lg shrink-0"
+            >
+              <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+              <span>View on IMDb</span>
+            </a>
+          )}
+        </div>
         <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-normal">
           {mediaDetails.overview || 'No overview available.'}
         </p>
       </div>
+
+      {/* Friends Who Watched Section (Only rendered if non-empty) */}
+      {!loadingFriends && friendsWhoWatched.length > 0 && (
+        <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-2">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Friends Who Watched</h2>
+          <div className="flex flex-wrap gap-2.5 pt-1">
+            {friendsWhoWatched.map(friend => (
+              <div key={friend.id} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60">
+                {friend.avatar_url ? (
+                  <img src={friend.avatar_url} alt={friend.display_name} className="w-5 h-5 rounded-full object-cover" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-red-600/20 text-red-500 font-bold text-[10px] flex items-center justify-center">
+                    {friend.display_name?.charAt(0) || 'U'}
+                  </div>
+                )}
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{friend.display_name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Cast Section */}
       {cast.length > 0 && (
@@ -390,31 +414,6 @@ function MovieDetailsPage() {
           </div>
         </div>
       )}
-
-      {/* Friends Who Watched */}
-      <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-2">
-        <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Friends Who Watched</h2>
-        {loadingFriends ? (
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Loading...</p>
-        ) : friendsWhoWatched.length > 0 ? (
-          <div className="flex flex-wrap gap-2.5 pt-1">
-            {friendsWhoWatched.map(friend => (
-              <div key={friend.id} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60">
-                {friend.avatar_url ? (
-                  <img src={friend.avatar_url} alt={friend.display_name} className="w-5 h-5 rounded-full object-cover" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-red-600/20 text-red-500 font-bold text-[10px] flex items-center justify-center">
-                    {friend.display_name?.charAt(0) || 'U'}
-                  </div>
-                )}
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{friend.display_name}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-slate-500 dark:text-slate-400 text-sm">None of your friends have marked this as watched yet.</p>
-        )}
-      </div>
 
       {/* Trailer Section */}
       {trailer && (
