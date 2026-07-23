@@ -139,19 +139,6 @@ body.modal-open .floating-action-button {
   will-change: transform;
 }
 
-.animate-slot-spin {
-  animation: slot-spin 0.22s linear infinite;
-}
-
-@keyframes slot-spin {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-50%);
-  }
-}
-
 .slot-item {
   height: 48px;
   width: 100%;
