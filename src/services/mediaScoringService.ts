@@ -38,19 +38,62 @@ export class MediaScoringService {
     candidates: TmdbSearchResult[],
     options: MediaScoringOptions
   ): Promise<ScoredMedia[]> {
-    const scoredCandidates: ScoredMedia[] = [];
     const weights = { ...this.defaultOptions, ...options };
+
+    // 1. Batch fetch keywords in parallel chunks to build dynamic candidate pool frequencies
+    const samplePool = candidates.slice(0, 40);
+    const candidateKeywordsMap = new Map<number, string[]>();
+    const keywordDocCount: Record<string, number> = {};
+
+    const chunkSize = 10;
+    for (let i = 0; i < samplePool.length; i += chunkSize) {
+      const chunk = samplePool.slice(i, i + chunkSize);
+      await Promise.all(
+        chunk.map(async (candidate) => {
+          try {
+            const keywordData = candidate.media_type === 'movie'
+              ? await tmdbService.getMovieKeywords(candidate.id)
+              : await tmdbService.getTvKeywords(candidate.id);
+            
+            const rawKeywords = 'keywords' in keywordData ? keywordData.keywords : keywordData.results;
+            const names = (rawKeywords || []).map((k: { name: string }) => k.name.toLowerCase());
+            
+            candidateKeywordsMap.set(candidate.id, names);
+
+            const uniqueNames = new Set(names);
+            uniqueNames.forEach(name => {
+              keywordDocCount[name] = (keywordDocCount[name] || 0) + 1;
+            });
+          } catch (error) {
+            logger.debug(`Failed to fetch keywords for ${candidate.id}:`, error);
+          }
+        })
+      );
+    }
+
+    const totalDocs = Math.max(1, samplePool.length);
+
+    // 2. Score candidates using dynamic Inverse Document Frequency (IDF)
+    const scoredCandidates: ScoredMedia[] = [];
 
     for (const candidate of candidates) {
       try {
-        const score = await this.calculateMediaScore(candidate, options, weights);
+        const candidateKeywords = candidateKeywordsMap.get(candidate.id) || [];
+        const score = this.calculateMediaScoreSync(
+          candidate,
+          candidateKeywords,
+          options,
+          weights,
+          keywordDocCount,
+          totalDocs
+        );
+
         scoredCandidates.push({
           ...candidate,
           score
         });
       } catch (error) {
         logger.warn(`Failed to score media ${candidate.id}:`, error);
-        // Assign a base score for items that failed to score
         scoredCandidates.push({
           ...candidate,
           score: candidate.popularity || 0
@@ -61,19 +104,27 @@ export class MediaScoringService {
     return scoredCandidates.sort((a, b) => b.score - a.score);
   }
 
-  private async calculateMediaScore(
+  private calculateMediaScoreSync(
     candidate: TmdbSearchResult,
+    candidateKeywords: string[],
     options: MediaScoringOptions,
-    weights: Required<Omit<MediaScoringOptions, 'genreFrequency' | 'keywordFrequency'>>
-  ): Promise<number> {
+    weights: Required<Omit<MediaScoringOptions, 'genreFrequency' | 'keywordFrequency'>>,
+    keywordDocCount: Record<string, number>,
+    totalDocs: number
+  ): number {
     let score = 0;
 
     // Calculate genre score
     const genreScore = this.calculateGenreScore(candidate, options.genreFrequency);
     score += genreScore * weights.genreWeight;
 
-    // Calculate keyword score
-    const keywordScore = await this.calculateKeywordScore(candidate, options.keywordFrequency);
+    // Calculate dynamic TF-IDF keyword score
+    const keywordScore = this.calculateDynamicKeywordScore(
+      candidateKeywords,
+      options.keywordFrequency,
+      keywordDocCount,
+      totalDocs
+    );
     score += keywordScore * weights.keywordWeight;
 
     // Add popularity score (normalized)
@@ -96,32 +147,32 @@ export class MediaScoringService {
     return genreScore;
   }
 
-  private async calculateKeywordScore(
-    candidate: TmdbSearchResult,
-    keywordFrequency: Record<string, number>
-  ): Promise<number> {
-    try {
-      let keywordData;
-      if (candidate.media_type === 'movie') {
-        keywordData = await tmdbService.getMovieKeywords(candidate.id);
-      } else {
-        keywordData = await tmdbService.getTvKeywords(candidate.id);
+  private calculateDynamicKeywordScore(
+    candidateKeywords: string[],
+    seedKeywordFrequency: Record<string, number>,
+    keywordDocCount: Record<string, number>,
+    totalDocs: number
+  ): number {
+    let keywordScore = 0;
+
+    candidateKeywords.forEach((kwName) => {
+      const seedFreq = seedKeywordFrequency[kwName] || seedKeywordFrequency[kwName.toLowerCase()] || 0;
+
+      if (seedFreq > 0) {
+        // Dynamic Inverse Document Frequency (IDF) Weighting:
+        // Compute frequency of this keyword within the candidate pool
+        const docFreq = keywordDocCount[kwName] || 1;
+        const freqRatio = docFreq / totalDocs;
+
+        // Keywords appearing in 100% of candidate items are penalized (down to 0.1x)
+        // Keywords appearing in < 5% of candidate items are boosted (up to 2.0x)
+        const idfMultiplier = Math.max(0.1, 2.0 - (1.9 * freqRatio));
+
+        keywordScore += seedFreq * idfMultiplier;
       }
+    });
 
-      let keywordScore = 0;
-      const keywords = 'keywords' in keywordData ? keywordData.keywords : keywordData.results;
-      
-      (keywords || []).forEach((keyword: { id: number; name: string }) => {
-        if (keywordFrequency[keyword.name]) {
-          keywordScore += keywordFrequency[keyword.name];
-        }
-      });
-
-      return keywordScore;
-    } catch (error) {
-      logger.debug(`Failed to get keywords for ${candidate.media_type} ${candidate.id}:`, error);
-      return 0;
-    }
+    return keywordScore;
   }
 
   selectTopWithRandomness<T extends { score: number }>(
