@@ -3,13 +3,14 @@ import { avatarOptions } from '../../utils/avatars';
 
 interface AvatarPickerProps {
   id: string;
+  displayName?: string;
   size?: number;
   onPick?: (url: string) => void;
   className?: string;
 }
 
-export default function AvatarPicker({ id, size = 128, onPick, className = '' }: AvatarPickerProps) {
-  const options = avatarOptions(id, size);
+export default function AvatarPicker({ id, displayName, size = 128, onPick, className = '' }: AvatarPickerProps) {
+  const options = avatarOptions(id, displayName, size);
   const [chosen, setChosen] = useState<string | null>(null);
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [errorStates, setErrorStates] = useState<Record<string, boolean>>({});

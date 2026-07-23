@@ -139,12 +139,12 @@ function ProfilePage() {
               className="h-28 w-28 rounded-full object-cover shadow-xl border-2 border-red-500/30"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = fallbackAvatar(user?.id || user?.email || '');
+                target.src = fallbackAvatar(user?.id || '', profile.display_name);
               }}
             />
         ) : (
             <img 
-              src={fallbackAvatar(user?.id || user?.email || '')} 
+              src={fallbackAvatar(user?.id || '', profile.display_name)} 
               alt="Default Avatar" 
               className="h-28 w-28 rounded-full object-cover shadow-xl border-2 border-red-500/30"
             />
@@ -165,7 +165,8 @@ function ProfilePage() {
                  <div>
                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Choose from gallery:</label>
                    <AvatarPicker 
-                     id={user?.id || user?.email || ''} 
+                     id={user?.id || ''}
+                     displayName={profile.display_name} 
                      onPick={setAvatarUrl}
                      className="justify-center"
                    />
