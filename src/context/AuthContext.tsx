@@ -60,19 +60,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // --- Authentication Functions ---
 
   const signInWithEmail = async (credentials: SignInWithPasswordCredentials) => {
-    setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword(credentials);
       if (error) throw error;
-      return { data, error }; // Return the full response object    } catch (error) {
+      return { data, error }; // Return the full response object
+    } catch (error) {
       throw error; // Re-throw error for the component to handle
-    } finally {
-      setLoading(false);
     }
   };
 
   const signUpWithEmail = async (credentials: SignUpData) => {
-    setLoading(true);
     // Display name is guaranteed by the SignUpData type structure now
     // No need for the explicit check here if the type is enforced correctly at the call site.
     try {
@@ -80,14 +77,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) throw error;
       // Note: Supabase might require email confirmation by default.
       // The user object might be null until confirmation.
-      return { data, error }; // Return the full response object    } catch (error) {
+      return { data, error }; // Return the full response object
+    } catch (error) {
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
   const signInWithGoogle = async () => {
-    setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -100,25 +95,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       });
       if (error) throw error;
-      return { data, error }; // Return the full response object    } catch (error) {
+      return { data, error }; // Return the full response object
+    } catch (error) {
       throw error;
-    } finally {
-      // Loading might need different handling for OAuth redirects
-      // setLoading(false); // Potentially remove this for OAuth
     }
   };
 
   const signOut = async () => {
-    setLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      return { error }; // Return the error object as per type
-      // State updates (session, user) are handled by onAuthStateChange listener    } catch (error) {
-      throw error;
+      if (error) console.warn("Supabase server signout returned an error:", error);
+    } catch (error) {
+      console.error("SignOut error:", error);
     } finally {
-      setLoading(false);
+      // Force clear local state so the user is never trapped
+      setSession(null);
+      setUser(null);
     }
+    return { error: null }; // Return expected type, forcing success path for UI
   };
 
   // --- Context Value ---

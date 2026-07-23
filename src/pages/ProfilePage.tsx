@@ -137,7 +137,7 @@ function ProfilePage() {
   if (!profile) return <div className="text-center p-4">Could not load profile.</div>;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32 space-y-6">
       {/* Avatar Display */}
       <div className="flex justify-center mb-6">
         {profile.avatar_url ? (

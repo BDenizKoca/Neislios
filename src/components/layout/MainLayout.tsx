@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import CreateWatchlistModal from '../watchlists/CreateWatchlistModal';
 import MediaRecommendationModal from '../recommendations/MediaRecommendationModal';
+import InstallAppBanner from '../common/InstallAppBanner';
 import { logger } from '../../utils/logger';
 import { useHeader } from '../../hooks/useHeader';
 import { useWatchlistAI } from '../../hooks/useWatchlistAI';
@@ -105,12 +106,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-slate-100 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans">
+    <div className="fixed inset-0 flex bg-slate-100 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 font-sans overflow-hidden">
       <SideMenu isOpen={isMenuOpen} onClose={closeMenu} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Modern Glass Top Bar */}
-        <header className="sticky top-0 z-30 glass-panel border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+        <header className="shrink-0 z-30 glass-panel border-b border-slate-200/60 dark:border-slate-800/60 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative flex justify-between items-center h-16">
               {/* Left Action */}
@@ -182,6 +183,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             watchlistId={currentWatchlistId}
           />
         )}
+
+        <InstallAppBanner />
       </div>
     </div>
   );
