@@ -54,52 +54,73 @@ function ProfilePage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !displayName.trim()) {
-        toast.error("Display name cannot be empty (min 3 chars enforced by DB).");
-        return;
+      toast.error("Display name cannot be empty (min 3 chars enforced by DB).");
+      return;
     }
     if (displayName.trim() === profile?.display_name) {
-        toast.error("Display name hasn't changed.");
-        return;
+      toast.error("Display name hasn't changed.");
+      return;
     }
     setUpdatingDisplayName(true);
     const toastId = toast.loading('Updating display name...');
 
     try {
+      // Primary: Direct update on profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ display_name: displayName.trim() })
+        .eq('id', user.id);
+
+      if (updateError) {
+        // Fallback: RPC if direct update fails
         const { error: rpcError } = await supabase.rpc('update_display_name', {
-            new_display_name: displayName.trim()
+          new_display_name: displayName.trim()
         });
         if (rpcError) throw rpcError;
-        toast.success("Display name updated successfully!", { id: toastId });
-        await fetchProfile(); // Re-fetch to update displayed name
-  } catch (err: unknown) { // Use unknown
-    logger.error("Error updating profile:", err);
-        toast.error(err instanceof Error ? err.message : 'Failed to update display name.', { id: toastId }); // Check error type
+      }
+
+      toast.success("Display name updated successfully!", { id: toastId });
+      await fetchProfile();
+    } catch (err: unknown) {
+      logger.error("Error updating profile:", err);
+      toast.error(err instanceof Error ? err.message : 'Failed to update display name.', { id: toastId });
     } finally {
-        setUpdatingDisplayName(false);
+      setUpdatingDisplayName(false);
     }
   };
 
   const handleUpdateAvatar = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     if (avatarUrl.trim() === (profile?.avatar_url || '')) {
-        toast.error("Avatar URL hasn't changed.");
-        return;
+      toast.error("Avatar URL hasn't changed.");
+      return;
     }
     setUpdatingAvatar(true);
-    const toastId = toast.loading('Updating avatar URL...');
+    const toastId = toast.loading('Updating avatar...');
 
     try {
+      // Primary: Direct update on profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl.trim() || null })
+        .eq('id', user.id);
+
+      if (updateError) {
+        // Fallback: RPC if direct update fails
         const { error: rpcError } = await supabase.rpc('update_avatar_url', {
-            new_avatar_url: avatarUrl.trim()
+          new_avatar_url: avatarUrl.trim()
         });
         if (rpcError) throw rpcError;
-        toast.success("Avatar URL updated successfully!", { id: toastId });
-        await fetchProfile(); // Re-fetch to update displayed avatar
-  } catch (err: unknown) { // Use unknown
-    logger.error("Error updating avatar URL:", err);
-        toast.error(err instanceof Error ? err.message : 'Failed to update avatar URL.', { id: toastId }); // Check error type
+      }
+
+      toast.success("Avatar updated successfully!", { id: toastId });
+      await fetchProfile();
+    } catch (err: unknown) {
+      logger.error("Error updating avatar URL:", err);
+      toast.error(err instanceof Error ? err.message : 'Failed to update avatar.', { id: toastId });
     } finally {
-        setUpdatingAvatar(false);
+      setUpdatingAvatar(false);
     }
   };
 
