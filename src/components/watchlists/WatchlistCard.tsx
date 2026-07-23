@@ -6,6 +6,7 @@ import { Watchlist } from '../../types/watchlist';
 import { useAuth } from '../../hooks/useAuth';
 
 import { useWatchlistPreviewPosters } from '../../hooks/useWatchlistPreviewPosters';
+import { fallbackAvatar } from '../../utils/avatars';
 
 interface WatchlistCardProps {
   watchlist: Watchlist;
@@ -129,20 +130,14 @@ const WatchlistCard: React.FC<WatchlistCardProps> = ({
       {/* Footer Details */}
       <div className="pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs sm:text-sm">
         <div className="flex items-center space-x-2 min-w-0">
-          {watchlist.owner?.avatar_url ? (
-            <img
-              src={watchlist.owner.avatar_url}
-              alt={watchlist.owner.display_name || 'Owner avatar'}
-              className="h-6 w-6 rounded-full object-cover border border-white/20 shrink-0"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watchlist.owner?.display_name || 'User')}&background=e50914&color=fff&bold=true`;
-              }}
-            />
-          ) : (
-            <div className="h-6 w-6 rounded-full bg-red-600/10 text-red-500 flex items-center justify-center font-bold text-xs shrink-0">
-              {(watchlist.owner?.display_name || 'U')[0].toUpperCase()}
-            </div>
-          )}
+          <img
+            src={watchlist.owner?.avatar_url || fallbackAvatar(watchlist.owner?.id || '', watchlist.owner?.display_name)}
+            alt={watchlist.owner?.display_name || 'Owner avatar'}
+            className="h-6 w-6 rounded-full object-cover border border-white/20 shrink-0"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = fallbackAvatar(watchlist.owner?.id || '', watchlist.owner?.display_name);
+            }}
+          />
           <Link
             to={`/user/${watchlist.owner?.id}`}
             onClick={(e) => e.stopPropagation()}

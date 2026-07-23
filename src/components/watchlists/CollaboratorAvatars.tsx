@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Profile } from '../../types/profile';
+import { fallbackAvatar } from '../../utils/avatars';
 
 interface CollaboratorAvatarsProps {
   members: Profile[];
@@ -47,24 +48,15 @@ export default function CollaboratorAvatars({
             key={member.id}
             className="relative group"
           >
-            {member.avatar_url ? (
-              <img
-                src={member.avatar_url}
-                alt={`${member.display_name}'s avatar`}
-                className={`${avatarSize} rounded-full object-cover shadow-sm ring-2 ring-slate-900`}
-                title={member.display_name}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.display_name)}&background=e50914&color=fff&bold=true`;
-                }}
-              />
-            ) : (
-              <div
-                className={`${avatarSize} rounded-full bg-slate-800 ring-2 ring-slate-900 border border-slate-700 flex items-center justify-center font-bold text-slate-200 shadow-sm`}
-                title={member.display_name}
-              >
-                {member.display_name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <img
+              src={member.avatar_url || fallbackAvatar(member.id, member.display_name)}
+              alt={`${member.display_name}'s avatar`}
+              className={`${avatarSize} rounded-full object-cover shadow-sm ring-2 ring-slate-900`}
+              title={member.display_name}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = fallbackAvatar(member.id, member.display_name);
+              }}
+            />
             {/* Tooltip */}
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-100 text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-xl">
               {member.display_name}
