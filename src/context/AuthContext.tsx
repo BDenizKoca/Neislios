@@ -39,7 +39,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false); // Finish loading after getting session    }).catch(() => {
+      setLoading(false); // Finish loading after getting session
+    }).catch(() => {
       setLoading(false); // Finish loading even on error
     });
 
