@@ -23,7 +23,7 @@ import ShareListModal from '../components/watchlists/ShareListModal';
 import ExportListModal from '../components/watchlists/ExportListModal';
 import { computeWatchlistStats } from '../utils/watchlistStats';
 import { isMovieDetails } from '../utils/tmdbUtils';
-import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { LightBulbIcon, ShareIcon, ArrowDownTrayIcon, MagnifyingGlassIcon, CheckCircleIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import CollaboratorAvatars from '../components/watchlists/CollaboratorAvatars';
 import { sortWatchlistItems } from '../utils/sortUtils';
 
@@ -464,24 +464,21 @@ function WatchlistDetailPage() {
         </div>
       </div>
 
-      {/* Watchlist Items Header + Quick Manage List Button */}
+      {/* Watchlist Items Header + Right-Aligned Manage List Button */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
-              Items ({sortedAndFilteredItems.length})
-            </h3>
-            {canEdit && (
-              <Link
-                to={`/watchlist/${watchlist.id}/manage`}
-                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-colors inline-flex items-center gap-1.5 shadow-sm"
-                title="Add or Manage Items"
-              >
-                <PlusIcon className="w-3.5 h-3.5" />
-                <span>+ Manage List</span>
-              </Link>
-            )}
-          </div>
+          <h3 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
+            Items ({sortedAndFilteredItems.length})
+          </h3>
+          {canEdit && (
+            <Link
+              to={`/watchlist/${watchlist.id}/manage`}
+              className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-colors inline-flex items-center shadow-sm"
+              title="Add or Manage Items"
+            >
+              <span>Manage List</span>
+            </Link>
+          )}
         </div>
 
         {watchlistItems.length === 0 && !isLoading ? (

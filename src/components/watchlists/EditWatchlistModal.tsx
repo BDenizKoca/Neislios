@@ -133,7 +133,7 @@ const EditWatchlistModal: React.FC<EditWatchlistModalProps> = ({
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
             Card Theme Color
           </label>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-2.5 p-1">
             {WATCHLIST_COLOR_PALETTE.map((color) => (
               <button
                 key={color}
