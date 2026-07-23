@@ -225,15 +225,27 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
                       <PlusIcon className="w-4 h-4 inline mr-1" />
                       {addedItems.has(previewMedia.details.id) ? 'Added to List' : 'Add to List'}
                     </button>
-                    <a
-                      href={`https://www.themoviedb.org/${previewMedia.media_type}/${previewMedia.details.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-secondary text-sm flex items-center gap-1.5"
-                    >
-                      <span>View on TMDB</span>
-                      <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                    </a>
+
+                    {(() => {
+                      const imdbId = isMovieDetails(previewMedia.details!)
+                        ? previewMedia.details.imdb_id
+                        : (previewMedia.details.external_ids?.imdb_id ?? null);
+                      const imdbUrl = imdbId
+                        ? `https://www.imdb.com/title/${imdbId}/`
+                        : `https://www.imdb.com/find/?q=${encodeURIComponent(isMovieDetails(previewMedia.details!) ? previewMedia.details.title : previewMedia.details.name)}`;
+
+                      return (
+                        <a
+                          href={imdbUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-black font-extrabold py-2 px-4 rounded-xl text-sm transition-all shadow-md w-fit"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                          <span>View on IMDb</span>
+                        </a>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -247,9 +259,9 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
           // Recommendation list mode
           <div className="space-y-4">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center p-12">
-                <div className="w-12 h-12 border-4 border-t-red-600 rounded-full animate-spin mb-4"></div>
-                <p className="text-slate-600 dark:text-slate-300 font-medium">
+              <div className="min-h-[220px] flex flex-col items-center justify-center text-center p-8 sm:p-12 w-full">
+                <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-800 border-t-red-600 rounded-full animate-spin mb-4"></div>
+                <p className="text-sm sm:text-base font-semibold text-slate-700 dark:text-slate-200 text-center max-w-xs mx-auto">
                   Generating tailored recommendations...
                 </p>
               </div>
@@ -258,7 +270,7 @@ const MediaRecommendationModal: React.FC<MediaRecommendationModalProps> = ({
                 {error}
               </div>
             ) : !items || items.length < 10 ? (
-              <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-center text-sm">
+              <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:amber-400 text-center text-sm">
                 Add at least 10 items to your watchlist to unlock AI recommendations!
               </div>
             ) : recommendations.length === 0 ? (

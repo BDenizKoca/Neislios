@@ -229,140 +229,247 @@ function MovieDetailsPage() {
   const cast = mediaDetails.credits?.cast?.slice(0, 6) || [];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-       {error && !loading && <p className="text-center p-3 text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl mb-4 text-sm font-medium">{error}</p>}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {error && !loading && (
+        <p className="p-3 text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl text-sm font-medium text-center">
+          {error}
+        </p>
+      )}
 
-       {/* Top Section */}
-       <div className="flex flex-col md:flex-row gap-6 mb-6">
-            <div className="md:w-1/3 flex flex-col items-center flex-shrink-0 mx-auto md:mx-0">
-                {posterUrl ? (
-                    <img src={posterUrl} alt={`${title} poster`} className="w-48 md:w-full h-auto rounded-2xl shadow-xl border border-slate-800" />
-                ) : (
-                    <div className="w-48 h-72 md:w-full md:h-auto md:aspect-[2/3] bg-slate-800 flex items-center justify-center text-slate-400 rounded-2xl shadow-xl">No Poster</div>
-                )}
-                <h1 className="text-lg md:text-2xl font-bold mt-3 text-slate-900 dark:text-slate-100 text-center">{title}</h1>
-            </div>
-            <div className="md:w-2/3 flex flex-col justify-center">
-                {mediaDetails.tagline && <p className="text-base italic text-slate-500 dark:text-slate-400 mt-1">{mediaDetails.tagline}</p>}
-                <div className="flex items-center flex-wrap gap-4 text-sm text-slate-500 dark:text-slate-400 mt-3 mb-3">
-                    <span className="flex items-center"><CalendarDaysIcon className="h-4 w-4 mr-1 text-slate-400"/>{year}</span>
-                    {mediaDetails.vote_average > 0 && <span className="flex items-center"><StarIcon className="h-4 w-4 mr-1 text-amber-400"/>{mediaDetails.vote_average.toFixed(1)}</span>}
-                    {runtime && <span className="flex items-center"><ClockIcon className="h-4 w-4 mr-1 text-slate-400"/>{runtime}</span>}
-                    {isTvDetails(mediaDetails) && mediaDetails.number_of_seasons && <span className="flex items-center"><TvIcon className="h-4 w-4 mr-1 text-slate-400"/>{mediaDetails.number_of_seasons} Season{mediaDetails.number_of_seasons > 1 ? 's' : ''}</span>}
-                </div>
-                 {mediaDetails.genres && mediaDetails.genres.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {mediaDetails.genres.map(genre => (
-                            <span key={genre.id} className="text-xs bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 font-medium px-3 py-1 rounded-full">{genre.name}</span>
-                        ))}
-                    </div>
-                 )}
-                 {imdbUrl && (
-                    <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-black font-semibold py-2 px-4 rounded-xl text-sm transition-all shadow-md w-fit">
-                        <ArrowTopRightOnSquareIcon className="h-4 w-4"/> View on IMDb
-                    </a>
-                 )}
-            </div>
-       </div>
-
-        {/* Overview */}
-        <div className="mt-6 glass-panel p-6 rounded-2xl">
-            <h2 className="text-xl font-bold mb-2 text-slate-900 dark:text-slate-100">Overview</h2>
-            <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{mediaDetails.overview || 'No overview available.'}</p>
-        </div>
-
-        {/* Cast Section */}
-        {cast.length > 0 && (
-            <div className="mt-8">
-                <h2 className="text-xl font-bold mb-3 text-slate-900 dark:text-slate-100">Cast</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                    {cast.map((member) => (
-                        <div key={member.id} className="text-center">
-                            <img
-                                src={getProfilePictureUrl(member.profile_path, 'w185') || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random&size=185`}
-                                alt={member.name}
-                                className="w-full h-auto aspect-[2/3] object-cover rounded-xl shadow mb-2"
-                                loading="lazy"
-                            />
-                            <p className="text-xs sm:text-sm font-semibold dark:text-slate-200 truncate" title={member.name}>{member.name}</p>
-                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate" title={member.character}>{member.character}</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
+      {/* Hero Header Panel */}
+      <div className="glass-panel p-5 sm:p-8 rounded-3xl relative overflow-hidden">
+        {/* Subtle Ambient Backdrop Overlay */}
+        {photos[0]?.url && (
+          <div
+            className="absolute inset-0 z-0 opacity-10 dark:opacity-15 blur-2xl pointer-events-none bg-cover bg-center"
+            style={{ backgroundImage: `url(${photos[0].url})` }}
+          />
         )}
 
-        {/* Actions */}
-        <div className="mt-8 grid grid-cols-2 gap-4">
-             <button onClick={handleToggleWatched} className={isWatched ? 'btn-secondary text-sm flex items-center justify-center gap-2' : 'btn-primary text-sm flex items-center justify-center gap-2'}>
-                {isWatched ? <EyeIcon className="h-5 w-5 text-red-500"/> : <EyeSlashIcon className="h-5 w-5"/>}
-                {isWatched ? 'Watched' : 'Mark Watched'}
-            </button>
-            {!loadingEditableLists && isFromWatchlist && contextWatchlistId && containingEditableLists.includes(contextWatchlistId) ? (
-                 <button onClick={() => handleRemoveFromList(contextWatchlistId)} className="btn-secondary text-sm flex items-center justify-center gap-2">
-                    <ListBulletIcon className="h-5 w-5"/> Remove from List
-                 </button>
+        <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start">
+          {/* Poster Image */}
+          <div className="w-48 sm:w-56 md:w-64 flex-shrink-0">
+            {posterUrl ? (
+              <img
+                src={posterUrl}
+                alt={`${title} poster`}
+                className="w-full h-auto rounded-2xl shadow-2xl border border-slate-200/40 dark:border-slate-700/60 object-cover"
+              />
             ) : (
-                 <button onClick={handleOpenAddToListModal} className="btn-secondary text-sm flex items-center justify-center gap-2">
-                    <ListBulletIcon className="h-5 w-5 mr-2"/> Add to List
-                 </button>
+              <div className="w-full aspect-[2/3] bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 font-semibold shadow-xl">
+                No Poster
+              </div>
             )}
+          </div>
+
+          {/* Main Info Column */}
+          <div className="flex-1 space-y-4 text-center md:text-left min-w-0">
+            <div>
+              <h1 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+                {title}
+              </h1>
+              {mediaDetails.tagline && (
+                <p className="text-sm sm:text-base italic text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                  "{mediaDetails.tagline}"
+                </p>
+              )}
+            </div>
+
+            {/* Metadata Pills / Badges */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60">
+                <CalendarDaysIcon className="h-4 w-4 text-slate-400" />
+                <span>{year}</span>
+              </span>
+
+              {mediaDetails.vote_average > 0 && (
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
+                  <StarIcon className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <span>{mediaDetails.vote_average.toFixed(1)}</span>
+                </span>
+              )}
+
+              {runtime && (
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60">
+                  <ClockIcon className="h-4 w-4 text-slate-400" />
+                  <span>{runtime}</span>
+                </span>
+              )}
+
+              {isTvDetails(mediaDetails) && mediaDetails.number_of_seasons && (
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60">
+                  <TvIcon className="h-4 w-4 text-slate-400" />
+                  <span>{mediaDetails.number_of_seasons} Season{mediaDetails.number_of_seasons > 1 ? 's' : ''}</span>
+                </span>
+              )}
+            </div>
+
+            {/* Genre Badges */}
+            {mediaDetails.genres && mediaDetails.genres.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                {mediaDetails.genres.map(genre => (
+                  <span
+                    key={genre.id}
+                    className="text-xs bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold px-3 py-1 rounded-full border border-slate-300/50 dark:border-slate-700/50"
+                  >
+                    {genre.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Primary Action Buttons (Mark Watched, Add/Remove List, IMDb) */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
+              <button
+                onClick={handleToggleWatched}
+                className={isWatched ? 'btn-secondary text-xs sm:text-sm px-4 py-2.5 flex items-center justify-center gap-2' : 'btn-primary text-xs sm:text-sm px-4 py-2.5 flex items-center justify-center gap-2'}
+              >
+                {isWatched ? <EyeIcon className="h-4 w-4 text-red-500" /> : <EyeSlashIcon className="h-4 w-4" />}
+                <span>{isWatched ? 'Watched' : 'Mark Watched'}</span>
+              </button>
+
+              {!loadingEditableLists && isFromWatchlist && contextWatchlistId && containingEditableLists.includes(contextWatchlistId) ? (
+                <button
+                  onClick={() => handleRemoveFromList(contextWatchlistId)}
+                  className="btn-secondary text-xs sm:text-sm px-4 py-2.5 flex items-center justify-center gap-2"
+                >
+                  <ListBulletIcon className="h-4 w-4" />
+                  <span>Remove from List</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleOpenAddToListModal}
+                  className="btn-secondary text-xs sm:text-sm px-4 py-2.5 flex items-center justify-center gap-2"
+                >
+                  <ListBulletIcon className="h-4 w-4" />
+                  <span>Add to List</span>
+                </button>
+              )}
+
+              {imdbUrl && (
+                <a
+                  href={imdbUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-black font-extrabold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-md hover:shadow-lg shrink-0"
+                >
+                  <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                  <span>View on IMDb</span>
+                </a>
+              )}
+            </div>
+          </div>
         </div>
+      </div>
 
-         {/* Friends Who Watched */}
-         <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-2 dark:text-white">Friends Who Watched</h2>
-            {loadingFriends ? ( <p className="text-gray-500 dark:text-gray-400 text-sm">Loading...</p> )
-             : friendsWhoWatched.length > 0 ? (
-                <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 text-sm">
-                    {friendsWhoWatched.map(friend => ( <li key={friend.id}>{friend.display_name}</li> ))}
-                </ul>
-            ) : ( <p className="text-gray-500 dark:text-gray-400 text-sm">None of your friends have marked this as watched yet.</p> )}
-         </div>
+      {/* Overview Card */}
+      <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-2">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Overview</h2>
+        <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-normal">
+          {mediaDetails.overview || 'No overview available.'}
+        </p>
+      </div>
 
-         {/* Trailer Section */}
-         {trailer && (
-            <div className="mt-6">
-                <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-xl font-semibold dark:text-white">Trailer</h2>
-                    <button onClick={() => setShowTrailer(!showTrailer)} className="flex items-center text-sm text-primary dark:text-primary hover:underline">
-                         <EyeIcon className="h-4 w-4 mr-1"/> {showTrailer ? 'Hide' : 'Show'} Trailer
-                    </button>
-                </div>
-                {showTrailer && (
-                    <div className="mt-2">
-                        <iframe src={`https://www.youtube.com/embed/${trailer.key}`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-64 md:h-80 rounded"></iframe>
-                    </div>
+      {/* Cast Section */}
+      {cast.length > 0 && (
+        <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-3">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Cast</h2>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
+            {cast.map((member) => (
+              <div key={member.id} className="text-center group">
+                <img
+                  src={getProfilePictureUrl(member.profile_path, 'w185') || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random&size=185`}
+                  alt={member.name}
+                  className="w-full h-auto aspect-[2/3] object-cover rounded-2xl shadow-md mb-2 group-hover:scale-105 transition-transform duration-200"
+                  loading="lazy"
+                />
+                <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate" title={member.name}>{member.name}</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate" title={member.character}>{member.character}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Friends Who Watched */}
+      <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-2">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Friends Who Watched</h2>
+        {loadingFriends ? (
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Loading...</p>
+        ) : friendsWhoWatched.length > 0 ? (
+          <div className="flex flex-wrap gap-2.5 pt-1">
+            {friendsWhoWatched.map(friend => (
+              <div key={friend.id} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60">
+                {friend.avatar_url ? (
+                  <img src={friend.avatar_url} alt={friend.display_name} className="w-5 h-5 rounded-full object-cover" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-red-600/20 text-red-500 font-bold text-[10px] flex items-center justify-center">
+                    {friend.display_name?.charAt(0) || 'U'}
+                  </div>
                 )}
-            </div>
-         )}
-
-         {/* Photos Section */}
-         {photos.length > 0 && (
-            <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-2 dark:text-white">Photos</h2>
-                <div className="flex space-x-2 overflow-x-auto pb-2 -mb-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
-                    {photos.map((img, index) => (
-                        <img
-                            key={index}
-                            src={img.url!}
-                            alt={`Scene ${index + 1}`}
-                            className="h-28 sm:h-32 md:h-40 w-auto rounded shadow-md object-cover flex-shrink-0"
-                            loading="lazy"
-                        />
-                    ))}
-                </div>
-            </div>
-         )}
-
-       {/* AddToListModal Instance */}
-       {selectedMediaForModal && (
-           <AddToListModal
-                isOpen={isAddToListModalOpen}
-                onClose={handleCloseAddToListModal}
-                mediaItem={selectedMediaForModal}
-            />
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{friend.display_name}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-slate-500 dark:text-slate-400 text-sm">None of your friends have marked this as watched yet.</p>
         )}
+      </div>
+
+      {/* Trailer Section */}
+      {trailer && (
+        <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-3">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Trailer</h2>
+            <button
+              onClick={() => setShowTrailer(!showTrailer)}
+              className="flex items-center gap-1 text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400 hover:underline"
+            >
+              <EyeIcon className="h-4 w-4" />
+              <span>{showTrailer ? 'Hide Trailer' : 'Show Trailer'}</span>
+            </button>
+          </div>
+          {showTrailer && (
+            <div className="mt-2 rounded-2xl overflow-hidden shadow-xl aspect-video w-full max-w-4xl mx-auto">
+              <iframe
+                src={`https://www.youtube.com/embed/${trailer.key}`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Photos Gallery Section */}
+      {photos.length > 0 && (
+        <div className="glass-panel p-5 sm:p-6 rounded-3xl space-y-3">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Photos</h2>
+          <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 dark:scrollbar-thumb-slate-600 dark:scrollbar-track-slate-800">
+            {photos.map((img, index) => (
+              <img
+                key={index}
+                src={img.url!}
+                alt={`Scene ${index + 1}`}
+                className="h-28 sm:h-36 md:h-44 w-auto rounded-2xl shadow-md object-cover flex-shrink-0 hover:scale-102 transition-transform"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AddToListModal Instance */}
+      {selectedMediaForModal && (
+        <AddToListModal
+          isOpen={isAddToListModalOpen}
+          onClose={handleCloseAddToListModal}
+          mediaItem={selectedMediaForModal}
+        />
+      )}
     </div>
   );
 }
