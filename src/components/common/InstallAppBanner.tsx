@@ -30,9 +30,9 @@ const InstallAppBanner: React.FC = () => {
 
   return (
     <>
-      <div className="fixed bottom-4 left-4 right-4 z-40 md:left-auto md:right-6 md:w-96 glass-modal p-4 rounded-3xl border border-red-500/30 dark:border-red-500/20 shadow-2xl shadow-red-950/20 flex items-center justify-between gap-3 transition-all duration-300">
+      <div className="fixed bottom-4 left-4 right-4 z-40 md:left-auto md:right-6 md:w-96 bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-white rounded-2xl flex items-center justify-between gap-3 p-4 transition-all duration-300">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center text-white font-black text-xl shadow-md shrink-0">
+          <div className="w-11 h-11 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl flex items-center justify-center font-black text-xl shrink-0">
             N
           </div>
           <div className="min-w-0">
@@ -48,7 +48,7 @@ const InstallAppBanner: React.FC = () => {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleInstallClick}
-            className="btn-primary py-2 px-3.5 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-red-600/20"
+            className="btn-primary py-2 px-3.5 text-xs font-bold rounded-xl flex items-center gap-1.5"
           >
             <ArrowDownTrayIcon className="w-4 h-4" />
             <span>Install</span>
