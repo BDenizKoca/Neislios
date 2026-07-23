@@ -65,14 +65,18 @@ function ProfilePage() {
     const toastId = toast.loading('Updating display name...');
 
     try {
-      // Primary: Direct update on profiles table
+      // Use upsert to bypass potentially missing UPDATE policy (same as GoogleOnboarding)
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ display_name: displayName.trim() })
-        .eq('id', user.id);
+        .upsert({
+          id: user.id,
+          display_name: displayName.trim(),
+          avatar_url: profile?.avatar_url, // Keep existing avatar
+          updated_at: new Date().toISOString(),
+        });
 
       if (updateError) {
-        // Fallback: RPC if direct update fails
+        // Fallback: RPC if upsert fails
         const { error: rpcError } = await supabase.rpc('update_display_name', {
           new_display_name: displayName.trim()
         });
@@ -83,7 +87,8 @@ function ProfilePage() {
       await fetchProfile();
     } catch (err: unknown) {
       logger.error("Error updating profile:", err);
-      toast.error(err instanceof Error ? err.message : 'Failed to update display name.', { id: toastId });
+      const errMsg = err instanceof Error ? err.message : (err as any)?.message || 'Failed to update display name.';
+      toast.error(errMsg, { id: toastId });
     } finally {
       setUpdatingDisplayName(false);
     }
@@ -100,14 +105,18 @@ function ProfilePage() {
     const toastId = toast.loading('Updating avatar...');
 
     try {
-      // Primary: Direct update on profiles table
+      // Use upsert to bypass potentially missing UPDATE policy
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: avatarUrl.trim() || null })
-        .eq('id', user.id);
+        .upsert({
+          id: user.id,
+          display_name: profile?.display_name, // Keep existing display name
+          avatar_url: avatarUrl.trim() || null,
+          updated_at: new Date().toISOString(),
+        });
 
       if (updateError) {
-        // Fallback: RPC if direct update fails
+        // Fallback: RPC if upsert fails
         const { error: rpcError } = await supabase.rpc('update_avatar_url', {
           new_avatar_url: avatarUrl.trim()
         });
@@ -118,7 +127,8 @@ function ProfilePage() {
       await fetchProfile();
     } catch (err: unknown) {
       logger.error("Error updating avatar URL:", err);
-      toast.error(err instanceof Error ? err.message : 'Failed to update avatar.', { id: toastId });
+      const errMsg = err instanceof Error ? err.message : (err as any)?.message || 'Failed to update avatar.';
+      toast.error(errMsg, { id: toastId });
     } finally {
       setUpdatingAvatar(false);
     }
