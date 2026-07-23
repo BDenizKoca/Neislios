@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { usePWA } from '../../hooks/usePWA';
+import InstallAppModal from '../common/InstallAppModal';
 import { 
   XMarkIcon, 
   HomeIcon, 
   UserIcon, 
   UserGroupIcon, 
   Cog6ToothIcon, 
-  ArrowLeftOnRectangleIcon 
+  ArrowLeftOnRectangleIcon,
+  DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
 
 interface SideMenuProps {
@@ -18,6 +21,16 @@ interface SideMenuProps {
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { isInstallable, isStandalone, isIOS, triggerPrompt } = usePWA();
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+
+  const handleInstallClick = () => {
+    if (isIOS) {
+      setIsInstallModalOpen(true);
+    } else {
+      triggerPrompt();
+    }
+  };
 
   const handleLogout = async () => {
     onClose();
@@ -100,8 +113,18 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
           </nav>
         </div>
 
-        {/* Footer Logout */}
-        <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
+        {/* Footer Actions */}
+        <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800/60 space-y-1">
+          {(!isStandalone && (isInstallable || isIOS)) && (
+            <button 
+              onClick={handleInstallClick} 
+              className="flex items-center gap-3.5 w-full px-4 py-3 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 rounded-2xl transition-colors"
+            >
+              <DevicePhoneMobileIcon className="w-5 h-5" />
+              <span>Install App</span>
+            </button>
+          )}
+
           <button 
             onClick={handleLogout} 
             className="flex items-center gap-3.5 w-full px-4 py-3 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-2xl transition-colors"
@@ -111,6 +134,11 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
       </aside>
+
+      <InstallAppModal 
+        isOpen={isInstallModalOpen} 
+        onClose={() => setIsInstallModalOpen(false)} 
+      />
     </>
   );
 };
